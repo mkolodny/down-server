@@ -57,4 +57,4 @@ target/
 .env
 
 # Vim
-.sw[op]
+*.sw[op]
