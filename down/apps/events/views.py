@@ -1,4 +1,16 @@
 from __future__ import unicode_literals
-from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Event, Invitation
+from .serializers import EventSerializer, InvitationSerializer
 
-# Create your views here.
+
+# TODO: Security
+class EventViewSet(viewsets.ModelViewSet):
+    serializer_class = EventSerializer
+    queryset = Event.objects.all()
+
+
+# TODO: Security
+class InvitationViewSet(viewsets.ModelViewSet):
+    serializer_class = InvitationSerializer
+    queryset = Invitation.objects.all()
