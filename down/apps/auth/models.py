@@ -31,7 +31,6 @@ class User(AbstractBaseUser):
 
 
 class SocialAccount(models.Model):
-    # TODO: Make this a OneToOneField
     user = models.ForeignKey(User)
     FACEBOOK = 1
     PROVIDER_TYPE = (
