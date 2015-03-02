@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import SocialAccount, User
 from .serializers import SocialAccountLoginSerializer, UserSerializer
-from down.apps.friends.models import Friend
+from down.apps.friends.models import Friendship
 
 
 # TODO: Security
@@ -112,9 +112,9 @@ class SocialAccountLogin(APIView):
             # TODO: Think about saving the social account uid on the user to avoid
             # retrieving the social account.
             account = SocialAccount.objects.get(uid=friend['id'])
-            friendship = Friend(user1_id=user.id, user2_id=account.user_id)
+            friendship = Friendship(user1_id=user.id, user2_id=account.user_id)
             friendships.append(friendship)
-        Friend.objects.bulk_create(friendships)
+        Friendship.objects.bulk_create(friendships)
 
     def get_facebook_data(self, url):
         """

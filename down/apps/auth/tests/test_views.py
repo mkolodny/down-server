@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from down.apps.auth.models import SocialAccount, User
-from down.apps.friends.models import Friend
+from down.apps.friends.models import Friendship
 from down.apps.auth.serializers import UserSerializer
 
 
@@ -111,7 +111,7 @@ class SocialAccountTests(APITestCase):
         mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
 
         # It should create friendships.
-        Friend.objects.get(user1=user, user2=friend)
+        Friendship.objects.get(user1=user, user2=friend)
 
         # It should log the user in.
         self.assertEqual(self.client.session['_auth_user_id'], user.id)

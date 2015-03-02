@@ -19,7 +19,7 @@ class User(AbstractBaseUser):
     firebase_token = models.TextField(null=True, unique=True)
     notify_token = models.TextField(null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
-    friends = models.ManyToManyField('self', through='friends.Friend',
+    friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False, related_name='user_friends')
     friend_requests = models.ManyToManyField('self',
                                              through='friends.FriendRequests',

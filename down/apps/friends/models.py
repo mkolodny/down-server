@@ -4,7 +4,7 @@ from django.contrib.gis.db import models
 from down.apps.auth.models import User
 
 
-class Friend(models.Model):
+class Friendship(models.Model):
     user1 = models.ForeignKey(User, related_name='friend1')
     user2 = models.ForeignKey(User, related_name='friend2')
     since = models.DateTimeField(auto_now_add=True)
