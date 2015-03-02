@@ -1,7 +1,14 @@
 Django==1.7.5
 dj-database-url==0.3.0
 dj-static==0.0.6
+djangorestframework==3.0.5
+firebase-token-generator==2.0.0
+httpretty==0.8.7
 ipython==2.4.1
+jsonfield==1.0.3
 gunicorn==19.2.1
+mock==1.0.1
 psycopg2==2.6
+firebase-token-generator==2.0.0
+requests==2.5.3
 static3==0.5.1

@@ -54,12 +54,14 @@ USE_TZ = True
 STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'
 
-# API
-#REST_FRAMEWORK = {
-#    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
-#}
-#API_PATH = '/api'
-
 # Auth
 #AUTH_USER_MODEL = 'housing.User'
+AUTHENTICATION_BACKENDS = ('down.apps.auth.backends.UserInstanceBackend',)
 PASSWORD_HASHERS = ('django.contrib.auth.hashers.SHA1PasswordHasher',)
+
+# Facebook
+FACEBOOK_APP_ID = os.environ['FACEBOOK_APP_ID']
+FACEBOOK_APP_SECRET = os.environ['FACEBOOK_APP_SECRET']
+
+# Firebase
+FIREBASE_SECRET = os.environ['FIREBASE_SECRET']

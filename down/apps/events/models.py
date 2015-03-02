@@ -10,6 +10,7 @@ class Event(models.Model):
     canceled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     datetime = models.DateTimeField(null=True, blank=True)
+    # TODO: Make location a one-to-one field to a place with coords and a name.
     location = models.PointField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     members = models.ManyToManyField(User, through='Invitation')
