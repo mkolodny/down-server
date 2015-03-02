@@ -48,7 +48,7 @@ class SocialAccountTests(APITestCase):
         # Mock the user's friend.
         friend = User(email='jclarke@gmail.com', name='Joan Clarke')
         friend.save()
-        friend_account = SocialAccount(user_id=friend.id,
+        friend_account = SocialAccount(user=friend,
                                        provider=SocialAccount.FACEBOOK,
                                        uid=friend_id)
         friend_account.save()
@@ -97,7 +97,7 @@ class SocialAccountTests(APITestCase):
             'image_url': image_url,
             'hometown': hometown,
         }
-        account = SocialAccount.objects.get(user_id=user.id,
+        account = SocialAccount.objects.get(user=user,
                                             provider=SocialAccount.FACEBOOK,
                                             uid=facebook_user_id)
         self.assertEqual(account.profile, profile)
@@ -111,7 +111,7 @@ class SocialAccountTests(APITestCase):
         mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
 
         # It should create friendships.
-        Friend.objects.get(user1_id=user.id, user2_id=friend.id)
+        Friend.objects.get(user1=user, user2=friend)
 
         # It should log the user in.
         self.assertEqual(self.client.session['_auth_user_id'], user.id)
