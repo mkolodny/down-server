@@ -6,10 +6,12 @@ from firebase_token_generator import create_token
 import requests
 from rest_framework import status, viewsets
 from rest_framework.decorators import detail_route
+from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import SocialAccount, User
 from .serializers import SocialAccountLoginSerializer, UserSerializer
+from down.apps.auth.filters import UserFilter
 from down.apps.events.models import Invitation
 from down.apps.events.serializers import EventSerializer
 from down.apps.friends.models import Friendship
@@ -19,6 +21,8 @@ from down.apps.friends.models import Friendship
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = UserFilter
 
     @detail_route(methods=['get'])
     def friends(self, request, pk=None):
@@ -27,7 +31,6 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(user.friends, many=True)
         return Response(serializer.data)
 
-    # TODO: invited_events
     @detail_route(methods=['get'])
     def invited_events(self, request, pk=None, url_path='invited-events'):
         # TODO: Handle when the user doesn't exist.

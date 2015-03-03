@@ -5,6 +5,8 @@ from down.apps.auth.models import User
 
 
 class Friendship(models.Model):
+    # TODO: Figure out why the only one friend is getting a new many-to-many friend
+    # when saving a friendship.
     user1 = models.ForeignKey(User, related_name='friend1')
     user2 = models.ForeignKey(User, related_name='friend2')
     since = models.DateTimeField(auto_now_add=True)

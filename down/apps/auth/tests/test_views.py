@@ -46,6 +46,18 @@ class UserTests(APITestCase):
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
+    def test_get_by_ids(self):
+        url = reverse('user-list')
+        ids = ','.join([unicode(self.user.id)])
+        url += '?ids=' + ids
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the users.
+        serializer = UserSerializer([self.user], many=True)
+        json_users = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_users)
+
     def test_get_username_unique(self):
         url = reverse('user-username-detail', kwargs={'username': 'tpain'})
         response = self.client.get(url)
