@@ -9,8 +9,10 @@ from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from down.apps.auth.models import SocialAccount, User
-from down.apps.friends.models import Friendship
 from down.apps.auth.serializers import UserSerializer
+from down.apps.events.models import Event, Invitation
+from down.apps.events.serializers import EventSerializer
+from down.apps.friends.models import Friendship
 
 
 class UserTests(APITestCase):
@@ -27,6 +29,12 @@ class UserTests(APITestCase):
         self.friend.save()
         friendship = Friendship(user1=self.user, user2=self.friend)
         friendship.save()
+
+        # Mock an event that the user's invited to.
+        self.event = Event(title='bars?!?!?!', creator=self.friend)
+        self.event.save()
+        self.invitation = Invitation(to_user=self.user, event=self.event)
+        self.invitation.save()
 
     def test_get(self):
         url = reverse('user-detail', kwargs={'pk': self.user.id})
@@ -59,6 +67,16 @@ class UserTests(APITestCase):
         serializer = UserSerializer([self.friend], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
+
+    def test_invited_events(self):
+        url = reverse('user-invited-events', kwargs={'pk': self.user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the user's invitations.
+        serializer = EventSerializer([self.event], many=True)
+        json_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_events)
 
 
 class SocialAccountTests(APITestCase):

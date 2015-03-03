@@ -1,6 +1,13 @@
 from __future__ import unicode_literals
 from rest_framework import serializers
 from .models import Event, Invitation, Place
+from down.apps.auth.serializers import UserSerializer
+
+
+class InvitationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Invitation
 
 
 class PlaceSerializer(serializers.ModelSerializer):
@@ -28,9 +35,3 @@ class EventSerializer(serializers.ModelSerializer):
         event.place = place
         event.save()
         return event
-
-
-class InvitationSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Invitation
