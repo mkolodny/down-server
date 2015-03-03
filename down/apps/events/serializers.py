@@ -18,6 +18,8 @@ class PlaceSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     place = PlaceSerializer()
+    members = InvitationSerializer(source='invitation_set', many=True,
+                                   read_only=True)
 
     class Meta:
         model = Event
