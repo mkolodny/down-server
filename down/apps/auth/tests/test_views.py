@@ -18,8 +18,15 @@ class UserTests(APITestCase):
     def setUp(self):
         # Mock a user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
-                         username='tdog')
+                         username='tdog', image_url='http://imgur.com/tdog')
         self.user.save()
+
+        # Mock the user's friend.
+        self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
+                           image_url='http://imgur.com/jcke')
+        self.friend.save()
+        friendship = Friendship(user1=self.user, user2=self.friend)
+        friendship.save()
 
     def test_get(self):
         url = reverse('user-detail', kwargs={'pk': self.user.id})
@@ -42,6 +49,16 @@ class UserTests(APITestCase):
         })
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_friends(self):
+        url = reverse('user-friends', kwargs={'pk': self.user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the user's friends.
+        serializer = UserSerializer([self.friend], many=True)
+        json_friends = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_friends)
 
 
 class SocialAccountTests(APITestCase):

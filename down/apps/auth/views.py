@@ -5,7 +5,7 @@ from urllib import urlencode
 from firebase_token_generator import create_token
 import requests
 from rest_framework import status, viewsets
-from rest_framework.decorators import list_route
+from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import SocialAccount, User
@@ -17,6 +17,13 @@ from down.apps.friends.models import Friendship
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
+
+    @detail_route(methods=['get'])
+    def friends(self, request, pk=None):
+        # TODO: Handle when the user doesn't exist.
+        user = User.objects.get(id=pk)
+        serializer = UserSerializer(user.friends, many=True)
+        return Response(serializer.data)
 
 
 class UserUsernameDetail(APIView):
