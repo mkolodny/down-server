@@ -15,19 +15,33 @@ from down.apps.auth.serializers import UserSerializer
 
 class UserTests(APITestCase):
 
-    def test_get(self):
+    def setUp(self):
         # Mock a user.
-        user = User(email='aturing@gmail.com', name='Alan Tdog Turing')
-        user.save()
+        self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
+                         username='tdog')
+        self.user.save()
 
-        url = reverse('user-detail', kwargs={'pk': user.id})
+    def test_get(self):
+        url = reverse('user-detail', kwargs={'pk': self.user.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the user.
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(self.user)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
+
+    def test_get_username_unique(self):
+        url = reverse('user-username-detail', kwargs={'username': 'tpain'})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_username_taken(self):
+        url = reverse('user-username-detail', kwargs={
+            'username': self.user.username,
+        })
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class SocialAccountTests(APITestCase):

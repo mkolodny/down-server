@@ -19,6 +19,16 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
 
 
+class UserUsernameDetail(APIView):
+
+    def get(self, request, username=None):
+        try:
+            User.objects.get(username=username)
+            return Response()
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+
 class SocialAccountLogin(APIView):
 
     def post(self, request):
