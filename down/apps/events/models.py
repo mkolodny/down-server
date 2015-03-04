@@ -5,8 +5,8 @@ from down.apps.auth.models import User
 
 
 class Place(models.Model):
-    geo = models.PointField()
-    name = models.TextField(null=True, blank=True)
+    name = models.TextField()
+    geo = models.PointField(null=True, blank=True)
 
 
 class Event(models.Model):

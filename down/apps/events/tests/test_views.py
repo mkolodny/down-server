@@ -24,7 +24,7 @@ class EventTests(APITestCase):
             'canceled': False,
             'datetime': timezone.now(),
             'place': {
-                'geo': 'POINT(40.6898319 -73.9904645)',
+                'name': 'Atlantic-Barclays Station',
             },
             'description': 'To the sewers!',
         }
