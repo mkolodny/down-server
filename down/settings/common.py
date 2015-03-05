@@ -53,6 +53,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'down', 'static'),
+)
 
 # Auth
 #AUTH_USER_MODEL = 'housing.User'
