@@ -1,1 +1,1 @@
-web: gunicorn down.wsgi --log-file -
+web: gunicorn -w 4 -k eventlet --max-requests 250 down.wsgi
