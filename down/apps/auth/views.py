@@ -88,7 +88,7 @@ class SocialAccountLogin(APIView):
         auth.login(request, user)
 
         # Generate a Firebase token.
-        auth_payload = {'uid': user.id}
+        auth_payload = {'uid': unicode(user.id)}
         firebase_token = create_token(settings.FIREBASE_SECRET, auth_payload)
 
         # TODO: Don't set the firebase token on the user. Just add it as
