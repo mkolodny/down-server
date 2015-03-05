@@ -164,7 +164,7 @@ class SocialAccountTests(APITestCase):
         self.assertEqual(httpretty.last_request().querystring, params)
 
         # It should generate a Firebase token.
-        auth_payload = {'uid': user.id}
+        auth_payload = {'uid': unicode(user.id)}
         mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
 
         # It should create friendships.
