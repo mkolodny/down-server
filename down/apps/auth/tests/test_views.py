@@ -116,24 +116,20 @@ class SocialAccountTests(APITestCase):
 
         # Request the user's profile.
         body = json.dumps({
-            'data': {
-                'id': facebook_user_id,
-                'email': email,
-                'name': name,
-                'hometown': hometown,
-            },
+            'id': facebook_user_id,
+            'email': email,
+            'name': name,
+            'hometown': hometown,
         })
         url = 'https://graph.facebook.com/v2.2/me'
         httpretty.register_uri(httpretty.GET, url, body=body,
                                content_type='application/json')
 
         # Request the user's friendlist.
-        body = json.dumps({
-            'data': [{
-              'name': 'Joan Clarke', 
-              'id': '10101293050283881',
-            }],
-        })
+        body = json.dumps([{
+            'name': 'Joan Clarke', 
+            'id': '10101293050283881',
+        }])
         url = 'https://graph.facebook.com/v2.2/me/friends'
         httpretty.register_uri(httpretty.GET, url, body=body,
                                content_type='application/json')

@@ -154,6 +154,5 @@ class SocialAccountLogin(APIView):
         """
         r = requests.get(url)
         # TODO: Handle request errors.
-        json = r.json()
         # TODO: Handle bad data.
-        return json['data']
+        return r.json()
