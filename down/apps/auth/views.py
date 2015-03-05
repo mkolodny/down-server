@@ -31,8 +31,8 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(user.friends, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=['get'])
-    def invited_events(self, request, pk=None, url_path='invited-events'):
+    @detail_route(methods=['get'], url_path='invited-events')
+    def invited_events(self, request, pk=None):
         # TODO: Handle when the user doesn't exist.
         user = User.objects.get(id=pk)
         invitations = Invitation.objects.filter(to_user=user)
