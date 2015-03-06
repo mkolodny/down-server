@@ -2,7 +2,7 @@
 
 PYTHON_VERSION=2.7.8
 POSTGRES_VERSION=9.4.1
-BASHRC="~/.bashrc"
+BASH_PROFILE="~/.bash_profile"
 
 #
 # Check if Homebrew is installed
@@ -14,7 +14,7 @@ if [[ $? != 0 ]] ; then
     echo "Installing Homebrew"
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     export PATH="/usr/local/bin:$PATH"
-    source $BASHRC
+    source $BASH_PROFILE
 else
     echo "Updating Homebrew packages"
     brew update
@@ -79,11 +79,13 @@ which -s virtualenvwrapper.sh
 if [[ $? != 0 ]] ; then
     echo "Installing virtualenvwrapper"
     sudo pip install virtualenvwrapper
-    echo "" >> $BASHRC
-    echo "### Added by Down" >> $BASHRC
-    echo "export WORKON_HOME=$HOME/.virtualenvs" >> $BASHRC
-    echo "source /usr/local/bin/virtualenvwrapper.sh" >> $BASHRC
-    source $BASHRC
+    echo "" >> $BASH_PROFILE
+    echo "### Added by Down" >> $BASH_PROFILE
+    echo "export WORKON_HOME=$HOME/.virtualenvs" >> $BASH_PROFILE
+    echo "source /usr/local/bin/virtualenvwrapper.sh" >> $BASH_PROFILE
+    source $BASH_PROFILE
+else
+    source `which virtualenvwrapper.sh`
 fi
 
 #
