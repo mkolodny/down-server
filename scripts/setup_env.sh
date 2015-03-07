@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PYTHON_VERSION=2.7.8
-POSTGRES_VERSION=9.4.1
+POSTGRES_VERSION=9.3.5
 BASH_PROFILE="$HOME/.bash_profile"
 
 #
@@ -53,12 +53,13 @@ heroku login
 #
 psql --version | grep ${POSTGRES_VERSION}
 if [[ $? != 0 ]] ; then
-    echo "Please install Postgres v9.4.1"
-    open http://postgresapp.com/
+    echo "Please install Postgres v9.3.5"
+    echo "Make sure to remove any previous versions of Postgres you have"
+    open https://github.com/PostgresApp/PostgresApp/releases/download/9.3.5.0/Postgres-9.3.5.0.zip
     read -p "Press return when done with Postgres installation"
     echo "" >> $BASH_PROFILE
     echo "### Add Postgres to the path (Down)" >> $BASH_PROFILE
-    echo "export PATH=/Applications/Postgres.app/Contents/Versions/9.4/bin:$PATH" >> $BASH_PROFILE
+    echo "export PATH=/Applications/Postgres.app/Contents/Versions/9.3/bin:\$PATH" >> $BASH_PROFILE
     source $BASH_PROFILE
 fi
 
