@@ -13,7 +13,7 @@ if [[ $? != 0 ]] ; then
     # https://github.com/mxcl/homebrew/wiki/installation
     echo "Installing Homebrew"
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    export PATH="/usr/local/bin:$PATH"
+    echo "export PATH=/usr/local/bin:\$PATH" >> $BASH_PROFILE
     source $BASH_PROFILE
 else
     echo "Updating Homebrew packages"
