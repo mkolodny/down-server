@@ -79,7 +79,7 @@ if ! psql -lqt | cut -d \| -f 1 | grep -w down; then
     psql -c "CREATE DATABASE down OWNER down ENCODING 'UTF8';"
     psql -c "CREATE EXTENSION postgis;"
 else
-    echo "A database with the name 'down' already exists"
+    echo "ERROR: A database with the name 'down' already exists"
     echo "Please remove that database, then run this script again"
     exit 0
 fi
