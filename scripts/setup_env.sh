@@ -56,6 +56,10 @@ if [[ $? != 0 ]] ; then
     echo "Please install Postgres v9.4.1"
     open http://postgresapp.com/
     read -p "Press return when done with Postgres installation"
+    echo "" >> $BASH_PROFILE
+    echo "### Add Postgres to the path (Down)" >> $BASH_PROFILE
+    echo "export PATH=/Applications/Postgres.app/Contents/Versions/9.4/bin:$PATH" >> $BASH_PROFILE
+    source $BASH_PROFILE
 fi
 
 #
@@ -80,7 +84,7 @@ if [[ $? != 0 ]] ; then
     echo "Installing virtualenvwrapper"
     sudo pip install virtualenvwrapper
     echo "" >> $BASH_PROFILE
-    echo "### Added by Down" >> $BASH_PROFILE
+    echo "### Virtualenvwrapper for Python virtual environments (Down)" >> $BASH_PROFILE
     echo "export WORKON_HOME=$HOME/.virtualenvs" >> $BASH_PROFILE
     echo "source /usr/local/bin/virtualenvwrapper.sh" >> $BASH_PROFILE
     source $BASH_PROFILE
