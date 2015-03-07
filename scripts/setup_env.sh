@@ -35,8 +35,8 @@ which -s heroku
 if [[ $? != 0 ]] ; then
     # Install Heroku toolbelt
     echo "Downloading Heroku toolbelt"
-    curl -O https://toolbelt.heroku.com/download/osx
-    open /tmp/heroku-toolbelt.pkg
+    open https://signup.heroku.com/dc
+    open https://toolbelt.heroku.com/
     read -p "Press return when done with Heroku installation"
 else
     echo "Updating Heroku"
