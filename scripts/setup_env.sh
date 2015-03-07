@@ -63,6 +63,13 @@ if [[ $? != 0 ]] ; then
 fi
 
 #
+# Install GeoDjango requirements.
+#
+brew install geos
+brew install gdal
+brew install proj
+
+#
 # Setup the database
 #
 if ! psql -lqt | cut -d \| -f 1 | grep -w down; then
