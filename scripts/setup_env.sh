@@ -2,7 +2,7 @@
 
 PYTHON_VERSION=2.7.8
 POSTGRES_VERSION=9.4.1
-BASH_PROFILE="~/.bash_profile"
+BASH_PROFILE="$HOME/.bash_profile"
 
 #
 # Check if Homebrew is installed
