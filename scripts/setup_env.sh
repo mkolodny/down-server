@@ -77,10 +77,6 @@ if ! psql -lqt | cut -d \| -f 1 | grep -w down; then
     psql -c "CREATE USER down WITH CREATEDB PASSWORD 'down';"
     psql -c "CREATE DATABASE down OWNER down ENCODING 'UTF8';"
     psql -c "CREATE EXTENSION postgis;"
-else
-    echo "Error: a database and/or user named 'down' already exists."
-    echo "Please remove them, then run the script again."
-    exit 0
 fi
 
 #
