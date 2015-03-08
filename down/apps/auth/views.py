@@ -140,7 +140,8 @@ class SocialAccountLogin(APIView):
         """
         params = {'access_token': access_token}
         url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
-        friends = self.get_facebook_data(url)
+        friends_response = self.get_facebook_data(url)
+        friends = friends_response['data']
         friendships = []
         for friend in friends:
             # TODO: Think about saving the social account uid on the user to avoid

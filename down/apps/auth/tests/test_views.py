@@ -128,10 +128,12 @@ class SocialAccountTests(APITestCase):
                                content_type='application/json')
 
         # Request the user's friendlist.
-        body = json.dumps([{
-            'name': 'Joan Clarke', 
-            'id': '10101293050283881',
-        }])
+        body = json.dumps({
+            'data': [{
+                'name': 'Joan Clarke', 
+                'id': '10101293050283881',
+            }],
+        })
         url = 'https://graph.facebook.com/v2.2/me/friends'
         httpretty.register_uri(httpretty.GET, url, body=body,
                                content_type='application/json')
