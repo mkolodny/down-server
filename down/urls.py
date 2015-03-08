@@ -9,16 +9,22 @@ from down.apps.auth.views import (
 from down.apps.events.views import EventViewSet, InvitationViewSet
 
 # TODO: Figure out how to split up the router urls into the individual apps.
+# API
+# With trailing slash appended:
 router = routers.SimpleRouter()
 router.register(r'users', UserViewSet)
 router.register(r'events', EventViewSet)
 router.register(r'invitations', InvitationViewSet)
+# Without trailing slash appended:
+slashless_router = routers.SimpleRouter(trailing_slash=False)
+slashless_router.registry = router.registry[:]
 
 urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^api/social-account$', SocialAccountLogin.as_view(),
+    url(r'^api/social-account/?$', SocialAccountLogin.as_view(),
         name='social-account-login'),
-    url(r'^api/users/username/(?P<username>\w+)$', UserUsernameDetail.as_view(),
+    url(r'^api/users/username/(?P<username>\w+)/?$', UserUsernameDetail.as_view(),
         name='user-username-detail'),
+    url(r'^api/', include(slashless_router.urls)),
     url(r'^api/', include(router.urls)),
 )

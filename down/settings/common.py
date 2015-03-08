@@ -37,6 +37,7 @@ ADMINS = (
     ('Andrew Linfoot', 'ajlin500@gmail.com'),
     ('Michael Kolodny', 'michaelckolodny@gmail.com'),
 )
+APPEND_SLASH = False
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
