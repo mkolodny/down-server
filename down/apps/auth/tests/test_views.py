@@ -46,6 +46,27 @@ class UserTests(APITestCase):
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
+    def test_put(self):
+        url = reverse('user-detail', kwargs={'pk': self.user.id})
+        new_name = 'Alan'
+        data = {
+            'email': self.user.email,
+            'name': new_name,
+            'username': self.user.username,
+            'image_url': self.user.image_url,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the user.
+        user = User.objects.get(id=self.user.id)
+        self.assertEqual(user.name, new_name)
+
+        # It should return the user.
+        serializer = UserSerializer(user)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
     def test_get_by_ids(self):
         url = reverse('user-list')
         ids = ','.join([unicode(self.user.id)])
