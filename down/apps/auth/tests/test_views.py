@@ -105,7 +105,7 @@ class SocialAccountTests(APITestCase):
                 id=facebook_user_id)
         hometown = 'Paddington, London'
         friend_id = '10101293050283881'
-        firebase_uuid = ';ljk0987'
+        firebase_uuid = 9876
         firebase_token = 'qwer1234'
 
         # Mock the user's friend.
@@ -167,7 +167,7 @@ class SocialAccountTests(APITestCase):
         self.assertEqual(httpretty.last_request().querystring, params)
 
         # It should generate a Firebase token.
-        auth_payload = {'uid': firebase_uuid}
+        auth_payload = {'uid': unicode(firebase_uuid)}
         mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
 
         # It should create friendships.
