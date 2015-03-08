@@ -138,7 +138,7 @@ class SocialAccountTests(APITestCase):
         mock_create_token.return_value = firebase_token
 
         url = reverse('social-account-login')
-        data = {'access_token': 'asdf123'}
+        data = {'access_token': facebook_token}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -178,3 +178,26 @@ class SocialAccountTests(APITestCase):
         serializer = UserSerializer(user)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
+
+    @httpretty.activate
+    def test_create_bad_profile_request(self):
+        facebook_token = 'asdf123'
+        friend_id = '10101293050283881'
+
+        # Mock the user's friend.
+        friend = User(email='jclarke@gmail.com', name='Joan Clarke')
+        friend.save()
+        friend_account = SocialAccount(user=friend,
+                                       provider=SocialAccount.FACEBOOK,
+                                       uid=friend_id)
+        friend_account.save()
+
+        # Request the user's profile.
+        url = 'https://graph.facebook.com/v2.2/me'
+        httpretty.register_uri(httpretty.GET, url, status=500,
+                               content_type='application/json')
+
+        url = reverse('social-account-login')
+        data = {'access_token': facebook_token}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)

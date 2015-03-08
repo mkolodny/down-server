@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
+from urllib import urlencode
 from django.conf import settings
 from django.contrib import auth
-from urllib import urlencode
 from firebase_token_generator import create_token
 import requests
 from rest_framework import status, viewsets
@@ -9,6 +9,7 @@ from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from .exceptions import ServiceUnavailable
 from .models import SocialAccount, User
 from .serializers import SocialAccountLoginSerializer, UserSerializer
 from down.apps.auth.filters import UserFilter
@@ -153,6 +154,7 @@ class SocialAccountLogin(APIView):
         Request data from Facebook, and return the data as a dictionary.
         """
         r = requests.get(url)
-        # TODO: Handle request errors.
         # TODO: Handle bad data.
+        if r.status_code != 200:
+            raise ServiceUnavailable(r.content)
         return r.json()
