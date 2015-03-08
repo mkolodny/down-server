@@ -15,7 +15,7 @@ class Event(models.Model):
     canceled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     datetime = models.DateTimeField(null=True, blank=True)
-    place = models.OneToOneField(Place, null=True, blank=True)
+    place = models.OneToOneField(Place, null=True, blank=True) # Make this a ForeignKey
     description = models.TextField(null=True, blank=True)
     members = models.ManyToManyField(User, through='Invitation')
 

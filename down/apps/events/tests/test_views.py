@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import time
 from django.utils import timezone
 from django.core.urlresolvers import reverse
 from rest_framework import status
@@ -22,7 +23,7 @@ class EventTests(APITestCase):
             'title': 'rat fishing!',
             'creator': self.user.id,
             'canceled': False,
-            'datetime': timezone.now(),
+            'datetime': int(time.mktime(timezone.now().timetuple())),
             'place': {
                 'name': 'Atlantic-Barclays Station',
             },

@@ -11,5 +11,6 @@ jsonfield==1.0.3
 gunicorn==19.2.1
 mock==1.0.1
 psycopg2==2.6
+pytz==2014.10
 requests==2.5.3
 static3==0.5.1
