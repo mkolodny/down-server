@@ -144,9 +144,15 @@ class SocialAccountLogin(APIView):
         friends = friends_response['data']
         friendships = []
         for friend in friends:
-            # TODO: Think about saving the social account uid on the user to avoid
-            # retrieving the social account.
-            account = SocialAccount.objects.get(uid=friend['id'])
+            # TODO: Figure out how to create multiple facebook apps for separate
+            # environments. Right now, since the main facebook app is being
+            # shared across all of our environments, facebook may think our users
+            # have friends on Down that are on a different environment.
+            # This is a hack to handle that problem for now.
+            try:
+                account = SocialAccount.objects.get(uid=friend['id'])
+            except SocialAccount.DoesNotExist:
+                continue
             friendship = Friendship(user1_id=user.id, user2_id=account.user_id)
             friendships.append(friendship)
         Friendship.objects.bulk_create(friendships)
