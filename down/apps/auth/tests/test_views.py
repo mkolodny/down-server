@@ -94,8 +94,9 @@ class UserTests(APITestCase):
 class SocialAccountTests(APITestCase):
 
     @mock.patch('down.apps.auth.views.create_token')
+    @mock.patch('down.apps.auth.views.uuid')
     @httpretty.activate
-    def test_create(self, mock_create_token):
+    def test_create(self, mock_uuid, mock_create_token):
         facebook_token = 'asdf123'
         facebook_user_id = 1207059
         email = 'aturing@gmail.com'
@@ -104,6 +105,7 @@ class SocialAccountTests(APITestCase):
                 id=facebook_user_id)
         hometown = 'Paddington, London'
         friend_id = '10101293050283881'
+        firebase_uuid = ';ljk0987'
         firebase_token = 'qwer1234'
 
         # Mock the user's friend.
@@ -135,6 +137,7 @@ class SocialAccountTests(APITestCase):
                                content_type='application/json')
 
         # Generate a Firebase token.
+        mock_uuid.uuid1.return_value = firebase_uuid
         mock_create_token.return_value = firebase_token
 
         url = reverse('social-account-login')
@@ -164,7 +167,7 @@ class SocialAccountTests(APITestCase):
         self.assertEqual(httpretty.last_request().querystring, params)
 
         # It should generate a Firebase token.
-        auth_payload = {'uid': unicode(user.id)}
+        auth_payload = {'uid': firebase_uuid}
         mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
 
         # It should create friendships.

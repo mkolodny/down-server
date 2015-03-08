@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from urllib import urlencode
+import uuid
 from django.conf import settings
 from django.contrib import auth
 from firebase_token_generator import create_token
@@ -89,7 +90,7 @@ class SocialAccountLogin(APIView):
         auth.login(request, user)
 
         # Generate a Firebase token.
-        auth_payload = {'uid': unicode(user.id)}
+        auth_payload = {'uid': uuid.uuid1()}
         firebase_token = create_token(settings.FIREBASE_SECRET, auth_payload)
 
         # TODO: Don't set the firebase token on the user. Just add it as
