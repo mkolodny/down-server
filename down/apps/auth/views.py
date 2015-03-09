@@ -148,7 +148,8 @@ class SocialAccountLogin(APIView):
             # environments. Right now, since the main facebook app is being
             # shared across all of our environments, facebook may think our users
             # have friends on Down that are on a different environment.
-            # This is a hack to handle that problem for now.
+            # Making sure the friend exists is a hack to handle that problem for
+            # now.
             try:
                 account = SocialAccount.objects.get(uid=friend['id'])
             except SocialAccount.DoesNotExist:

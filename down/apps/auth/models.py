@@ -20,11 +20,12 @@ class User(AbstractBaseUser):
     notify_token = models.TextField(null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     friends = models.ManyToManyField('self', through='friends.Friendship',
-                                     symmetrical=False, related_name='user_friends')
+                                     symmetrical=False,
+                                     related_name='related_friends+')
     friend_requests = models.ManyToManyField('self',
-                                             through='friends.FriendRequests',
-                                             symmetrical=False,
-                                             related_name='user_friend_requests')
+                                         through='friends.FriendRequests',
+                                         symmetrical=False,
+                                         related_name='related_friend_requests+')
 
     # Use name for the username field, since `self.username` might not be set.
     USERNAME_FIELD = 'name'

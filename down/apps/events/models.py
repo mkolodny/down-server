@@ -11,7 +11,7 @@ class Place(models.Model):
 
 class Event(models.Model):
     title = models.TextField()
-    creator = models.ForeignKey(User, related_name='event_creator')
+    creator = models.ForeignKey(User, related_name='creators')
     canceled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     datetime = models.DateTimeField(null=True, blank=True)
