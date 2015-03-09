@@ -193,8 +193,9 @@ class SocialAccountTests(APITestCase):
         auth_payload = {'uid': unicode(firebase_uuid)}
         mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
 
-        # It should create friendships.
+        # It should create symmetrical friendships.
         Friendship.objects.get(user1=user, user2=friend)
+        Friendship.objects.get(user1=friend, user2=user)
 
         # It should log the user in.
         self.assertEqual(self.client.session['_auth_user_id'], user.id)

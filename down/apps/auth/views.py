@@ -148,13 +148,17 @@ class SocialAccountLogin(APIView):
             # environments. Right now, since the main facebook app is being
             # shared across all of our environments, facebook may think our users
             # have friends on Down that are on a different environment.
-            # Making sure the friend exists is a hack to handle that problem for
-            # now.
+            # Making sure the friend exists is a hack to handle that problem until
+            # we create multiple facebook apps/environments.
             try:
                 account = SocialAccount.objects.get(uid=friend['id'])
             except SocialAccount.DoesNotExist:
                 continue
+
+            # Create symmetrical friendships.
             friendship = Friendship(user1_id=user.id, user2_id=account.user_id)
+            friendships.append(friendship)
+            friendship = Friendship(user1_id=account.user_id, user2_id=user.id)
             friendships.append(friendship)
         Friendship.objects.bulk_create(friendships)
 
