@@ -68,30 +68,32 @@ class EventTests(APITestCase):
 
 class InvitationTests(APITestCase):
 
-    def test_create(self):
+    def setUp(self):
         # Mock a couple users.
-        user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing')
-        user1.save()
-        user2 = User(email='jclarke@gmail.com', name='Joan Clarke')
-        user2.save()
+        self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing')
+        self.user1.save()
+        self.user2 = User(email='jclarke@gmail.com', name='Joan Clarke')
+        self.user2.save()
 
         # Mock a place.
-        place = Place(geo='POINT(40.6898319 -73.9904645)')
-        place.save()
+        self.place = Place(geo='POINT(40.6898319 -73.9904645)')
+        self.place.save()
 
         # Mock an event
-        event = Event(title='bars?!?!!', creator=user1,
-                      datetime=timezone.now(), place=place,
+        self.event = Event(title='bars?!?!!', creator=self.user1,
+                      datetime=timezone.now(), place=self.place,
                       description='bars!!!!')
-        event.save()
+        self.event.save()
 
+    def test_create(self):
         url = reverse('invitation-list')
         data = {
-            'to_user': user2.id,
-            'event': event.id,
+            'to_user': self.user2.id,
+            'event': self.event.id,
             'accepted': True,
         }
         response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the invitation.
         invitation = Invitation.objects.get(**data)
@@ -100,3 +102,21 @@ class InvitationTests(APITestCase):
         serializer = InvitationSerializer(invitation)
         json_invitation = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitation)
+
+    def test_update(self):
+        # Mock an invitation.
+        invitation = Invitation(to_user=self.user2, event=self.event,
+                                accepted=False)
+        invitation.save()
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        data = {
+            'to_user': invitation.to_user_id,
+            'event': invitation.event.id,
+            'accepted': False,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the invitation.
+        invitation = Invitation.objects.get(**data)
