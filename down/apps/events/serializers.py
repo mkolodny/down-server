@@ -50,11 +50,18 @@ class EventSerializer(serializers.ModelSerializer):
         Django REST Framework doesn't support writable nested fields by default.
         So first we create the place. Then we create an event that's related to the
         place.
+
+        We're doing this to avoid having to make two HTTP requests for something
+        super common - saving an event with a place.
         """
-        place = Place(**validated_data.pop('place'))
-        place.save()
+        # TODO: Test when the event doesn't have a place.
+        event_has_place = validated_data.has_key('place')
+        if event_has_place:
+            place = Place(**validated_data.pop('place'))
+            place.save()
 
         event = Event(**validated_data)
-        event.place = place
+        if event_has_place:
+            event.place = place
         event.save()
         return event
