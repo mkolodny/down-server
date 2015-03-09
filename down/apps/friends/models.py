@@ -16,7 +16,7 @@ class Friendship(models.Model):
 
     def save(self):
         # Make sure user1.id is less than user2.id to avoid duplicate friendships.
-        if self.user1.id > self.user2.id:
+        if self.user1_id > self.user2_id:
             self.user1, self.user2 = self.user2, self.user1
 
         super(Friendship, self).save()
