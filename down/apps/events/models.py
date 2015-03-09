@@ -24,4 +24,4 @@ class Invitation(models.Model):
     to_user = models.ForeignKey(User)
     event = models.ForeignKey(Event)
     accepted = models.BooleanField(default=False)
-    datetime_sent = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
