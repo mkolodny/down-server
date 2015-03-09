@@ -23,7 +23,7 @@ class UnixEpochDateField(serializers.DateTimeField):
 
 
 class InvitationSerializer(serializers.ModelSerializer):
-    datetime_sent = UnixEpochDateField(read_only=True)
+    created_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
