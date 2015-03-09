@@ -11,8 +11,11 @@ class Friendship(models.Model):
     user2 = models.ForeignKey(User, related_name='friend2')
     since = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('user1', 'user2')
+
     def save(self):
-        # Make sure user1.id is less than user2.id.
+        # Make sure user1.id is less than user2.id to avoid duplicate friendships.
         if self.user1.id > self.user2.id:
             self.user1, self.user2 = self.user2, self.user1
 
