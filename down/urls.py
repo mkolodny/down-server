@@ -7,6 +7,7 @@ from down.apps.auth.views import (
     UserViewSet,
 )
 from down.apps.events.views import EventViewSet, InvitationViewSet
+from down.apps.notifications.views import APNSDeviceViewSet
 
 # TODO: Figure out how to split up the router urls into the individual apps.
 # API
@@ -15,6 +16,7 @@ router = routers.SimpleRouter()
 router.register(r'users', UserViewSet)
 router.register(r'events', EventViewSet)
 router.register(r'invitations', InvitationViewSet)
+router.register(r'apnsdevices', APNSDeviceViewSet)
 # Without trailing slash appended:
 slashless_router = routers.SimpleRouter(trailing_slash=False)
 slashless_router.registry = router.registry[:]

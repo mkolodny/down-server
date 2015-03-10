@@ -13,11 +13,7 @@ class User(AbstractBaseUser):
     # Location can only be null from the time the user logs in to the
     # time that they give us permission to view their location.
     location = models.PointField(null=True, blank=True)
-    # The notify token can only be null from the time the user logs in
-    # to the time that they give us permission to send them
-    # notifications.
     firebase_token = models.TextField(null=True, unique=True)
-    notify_token = models.TextField(null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False,
@@ -28,7 +24,7 @@ class User(AbstractBaseUser):
                                          related_name='related_friend_requests+')
 
     # Use name for the username field, since `self.username` might not be set.
-    USERNAME_FIELD = 'name'
+    USERNAME_FIELD = 'email'
 
 
 class SocialAccount(models.Model):

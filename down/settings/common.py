@@ -20,6 +20,8 @@ INSTALLED_APPS = (
     'down.apps.auth',
     'down.apps.events',
     'down.apps.friends',
+    'down.apps.notifications',
+    'push_notifications',
 )
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -60,7 +62,7 @@ STATICFILES_DIRS = (
 )
 
 # Auth
-#AUTH_USER_MODEL = 'housing.User'
+AUTH_USER_MODEL = 'down_auth.User'
 AUTHENTICATION_BACKENDS = ('down.apps.auth.backends.UserInstanceBackend',)
 PASSWORD_HASHERS = ('django.contrib.auth.hashers.SHA1PasswordHasher',)
 
