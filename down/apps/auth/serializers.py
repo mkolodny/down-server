@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 from rest_framework import serializers
+from rest_framework_gis.serializers import GeoModelSerializer
 from .models import SocialAccount, User
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(GeoModelSerializer):
     firebase_token = serializers.ReadOnlyField(required=False)
 
     class Meta:

@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from datetime import datetime
 import time
 from rest_framework import serializers
+from rest_framework_gis.serializers import GeoModelSerializer
 import pytz
 from .models import Event, Invitation, Place
 from down.apps.auth.serializers import UserSerializer
@@ -29,7 +30,7 @@ class InvitationSerializer(serializers.ModelSerializer):
         model = Invitation
 
 
-class PlaceSerializer(serializers.ModelSerializer):
+class PlaceSerializer(GeoModelSerializer):
 
     class Meta:
         model = Place
