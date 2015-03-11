@@ -31,11 +31,3 @@ class APNSDeviceTests(APITestCase):
 
         # It should create a new device.
         APNSDevice.objects.get(**self.post_data)
-
-    def test_create_bad_registration_id(self):
-        # Set the registration id to a non-uuid string.
-        self.post_data['registration_id'] = '1'
-
-        url = reverse('apnsdevice-list')
-        response = self.client.post(url, self.post_data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
