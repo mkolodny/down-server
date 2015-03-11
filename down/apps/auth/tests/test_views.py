@@ -228,3 +228,11 @@ class SocialAccountTests(APITestCase):
         data = {'access_token': facebook_token}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class TermsTests(APITestCase):
+
+    def test_get(self):
+        url = reverse('terms')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

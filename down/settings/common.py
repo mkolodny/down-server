@@ -61,6 +61,11 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'down', 'static'),
 )
 
+# Templates
+TEMPLATE_DIRS = (
+    os.path.join(BASE_DIR, 'down/templates'),
+)
+
 # Auth
 AUTH_USER_MODEL = 'down_auth.User'
 AUTHENTICATION_BACKENDS = ('down.apps.auth.backends.UserInstanceBackend',)

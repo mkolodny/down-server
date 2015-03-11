@@ -3,10 +3,11 @@ from urllib import urlencode
 import uuid
 from django.conf import settings
 from django.contrib import auth
+from django.shortcuts import render
 from firebase_token_generator import create_token
 import requests
 from rest_framework import status, viewsets
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import api_view, detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -171,3 +172,8 @@ class SocialAccountLogin(APIView):
         if r.status_code != 200:
             raise ServiceUnavailable(r.content)
         return r.json()
+
+
+@api_view(['GET'])
+def terms_view(request):
+    return render(request, 'terms.html')

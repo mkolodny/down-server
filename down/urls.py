@@ -5,11 +5,13 @@ from down.apps.auth.views import (
     SocialAccountLogin,
     UserUsernameDetail,
     UserViewSet,
+    terms_view,
 )
 from down.apps.events.views import EventViewSet, InvitationViewSet
 from down.apps.notifications.views import APNSDeviceViewSet
 
 # TODO: Figure out how to split up the router urls into the individual apps.
+
 # API
 # With trailing slash appended:
 router = routers.SimpleRouter()
@@ -29,4 +31,5 @@ urlpatterns = patterns('',
         name='user-username-detail'),
     url(r'^api/', include(slashless_router.urls)),
     url(r'^api/', include(router.urls)),
+    url(r'^terms/?$', terms_view, name='terms'),
 )
