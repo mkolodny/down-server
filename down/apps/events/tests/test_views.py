@@ -18,6 +18,13 @@ class EventTests(APITestCase):
         # Mock a user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing')
         self.user.save()
+        registration_id = ('1ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.apns_device = APNSDevice(registration_id=registration_id,
+                                      device_id=device_id, name='iPhone, 8.2',
+                                      user=self.user)
+        self.apns_device.save()
 
         # Mock a place.
         self.place = Place(name='Founder House',
@@ -33,7 +40,7 @@ class EventTests(APITestCase):
     def test_create(self):
         url = reverse('event-list')
         data = {
-            'title': 'rat fishing!',
+            'title': 'rat fishing with the boys over at the place!',
             'creator': self.user.id,
             'canceled': False,
             'datetime': int(time.mktime(timezone.now().timetuple())),
@@ -68,10 +75,61 @@ class EventTests(APITestCase):
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
 
-    def test_create_message(self):
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_create_message(self, mock_send):
+        # Mock two of the user's friends.
+        friend = User(name='Michael Jordan', email='mj@gmail.com',
+                      image_url='http://imgur.com/mj')
+        friend.save()
+        registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        apns_device1 = APNSDevice(registration_id=registration_id,
+                                  device_id=device_id, name='iPhone, 8.2',
+                                  user=friend)
+        apns_device1.save()
+
+        friend1 = User(name='Bruce Lee', email='blee@gmail.com',
+                       image_url='http://imgur.com/blee')
+        friend1.save()
+        registration_id = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        apns_device2 = APNSDevice(registration_id=registration_id,
+                                  device_id=device_id, name='iPhone, 8.2',
+                                  user=friend1)
+        apns_device2.save()
+
+        # Mock the friends being down for the event.
+        invitation = Invitation(to_user=friend, event=self.event, accepted=True)
+        invitation.save()
+        invitation = Invitation(to_user=friend1, event=self.event, accepted=True)
+        invitation.save()
+
+        # Clear any previous notifications
+        mock_send.reset_mock()
+
         url = reverse('event-messages', kwargs={'pk': self.event.id})
-        response = self.client.post(url)
+        data = {
+            'text': 'So down!',
+            'user': friend1.id,
+        }
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should notify the user and the first friend that their friend
+        # commented on the event.
+        tokens = [
+            self.apns_device.registration_id,
+            apns_device1.registration_id,
+        ]
+        if len(self.event.title) > 25:
+            activity = self.event.title[:25] + '...'
+        else:
+            activity = self.event.title
+        message = '{name} to {activity}: {text}'.format(
+                name=friend1.name, activity=activity, text=data['text'])
+        mock_send.assert_called_once_with(registration_ids=tokens, alert=message)
 
 
 class InvitationTests(APITestCase):

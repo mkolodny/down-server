@@ -4,6 +4,7 @@ import time
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoModelSerializer
 import pytz
+from down.apps.auth.models import User
 from .models import Event, Invitation, Place
 from down.apps.auth.serializers import UserSerializer
 
@@ -66,3 +67,9 @@ class EventSerializer(serializers.ModelSerializer):
             event.place = place
         event.save()
         return event
+
+
+class MessageSentSerializer(serializers.Serializer):
+    text = serializers.CharField()
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())

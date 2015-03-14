@@ -68,6 +68,7 @@ class InvitationTests(APITestCase):
         invitation = Invitation(to_user=self.user, event=self.event)
         invitation.save()
 
+        # It should notify the user that they were invited to an event.
         token = self.apns_device1.registration_id
         message = '{name} is down for {activity}'.format(
                 name=self.event.creator.name,

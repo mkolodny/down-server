@@ -21,6 +21,24 @@ class Event(models.Model):
     description = models.TextField(null=True, blank=True)
     members = models.ManyToManyField(User, through='Invitation')
 
+    def get_relevant_member_devices(self, except_user):
+        """
+        Get all members who have accepted their invitation, except the
+        `except_user`.
+
+        Get the creator whether or not they've accepted the invitation.
+        """
+        # Exclude this user's accepted invitation.
+        member_invitations = Invitation.objects.filter(
+                accepted=True, event=self).exclude(to_user=except_user)
+        member_ids = [
+            invitation.to_user_id for invitation in member_invitations]
+        # Notify the creator even if they haven't accepted the invitation.
+        member_ids.append(self.creator_id)
+
+        # This filter operation will only return unique devices.
+        return APNSDevice.objects.filter(user_id__in=member_ids)
+
 
 class Invitation(models.Model):
     to_user = models.ForeignKey(User)
@@ -69,15 +87,8 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     message = '{name} is also down for {activity}'.format(
             name=user.name,
             activity=event.title)
-    # Exclude this user's accepted invitation.
-    member_invitations = Invitation.objects.filter(
-            accepted=True, event=event).exclude(id=invitation.id)
-    member_ids = [
-        invitation.to_user_id for invitation in member_invitations]
-    # Notify the creator even if they haven't accepted the invitation.
-    member_ids.append(event.creator_id)
-    # This filter operation will only return unique devices.
-    devices = APNSDevice.objects.filter(user_id__in=member_ids)
+    devices = event.get_relevant_member_devices(user)
+
     # TODO: Catch exception if sending the message fails.
     devices.send_message(message)
 
