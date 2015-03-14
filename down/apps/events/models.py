@@ -30,6 +30,9 @@ class Invitation(models.Model):
 
 @receiver(post_save, sender=Invitation)
 def send_new_invitation_notification(sender, instance, created, **kwargs):
+    """
+    Send a push notification to users who receive an invite to an event.
+    """
     if not created:
         return
 
