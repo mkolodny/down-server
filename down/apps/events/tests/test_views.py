@@ -30,7 +30,6 @@ class EventTests(APITestCase):
                       description='bars!!!!')
         self.event.save()
 
-
     def test_create(self):
         url = reverse('event-list')
         data = {
