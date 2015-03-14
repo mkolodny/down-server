@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 import time
 from django.utils import timezone
 from django.core.urlresolvers import reverse
+import mock
+from push_notifications.models import APNSDevice
 from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
@@ -18,7 +20,8 @@ class EventTests(APITestCase):
         self.user.save()
 
         # Mock a place.
-        self.place = Place(geo='POINT(40.6898319 -73.9904645)')
+        self.place = Place(name='Founder House',
+                           geo='POINT(40.6898319 -73.9904645)')
         self.place.save()
 
         # Mock an event.
@@ -40,7 +43,7 @@ class EventTests(APITestCase):
             },
             'description': 'To the sewers!',
         }
-        response = self.client.post(url, data)
+        response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the place.
@@ -81,8 +84,19 @@ class InvitationTests(APITestCase):
         self.user2 = User(email='jclarke@gmail.com', name='Joan Clarke')
         self.user2.save()
 
+        # Mock the user-to-be-invited's device
+        registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.apns_device = APNSDevice(registration_id=registration_id,
+                                      device_id=device_id,
+                                      name='iPhone, 8.2',
+                                      user=self.user2)
+        self.apns_device.save()
+
         # Mock a place.
-        self.place = Place(geo='POINT(40.6898319 -73.9904645)')
+        self.place = Place(name='Founder House',
+                           geo='POINT(40.6898319 -73.9904645)')
         self.place.save()
 
         # Mock an event
@@ -91,7 +105,8 @@ class InvitationTests(APITestCase):
                       description='bars!!!!')
         self.event.save()
 
-    def test_create(self):
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_create(self, mock_send):
         url = reverse('invitation-list')
         data = {
             'to_user': self.user2.id,
@@ -109,7 +124,8 @@ class InvitationTests(APITestCase):
         json_invitation = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitation)
 
-    def test_update(self):
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_update(self, mock_send):
         # Mock an invitation.
         invitation = Invitation(to_user=self.user2, event=self.event,
                                 accepted=False)

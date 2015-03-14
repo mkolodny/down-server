@@ -1,10 +1,10 @@
 Django==1.7.5
 dj-database-url==0.3.0
 django-filter==0.9.2
-django-push-notifications==1.2.0
+https://github.com/mkolodny/django-push-notifications/zipball/master
 django-uuidfield==0.5.0
 djangorestframework==3.0.4
-djangorestframework-gis==0.8
+djangorestframework-gis==0.8.0
 eventlet==0.17.1
 firebase-token-generator==2.0.0
 https://github.com/mkolodny/dj-static/zipball/master

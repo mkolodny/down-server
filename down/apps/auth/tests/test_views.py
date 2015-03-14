@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from binascii import a2b_hex
 import json
 import mock
 from urllib import urlencode
