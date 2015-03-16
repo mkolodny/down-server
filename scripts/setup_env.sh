@@ -73,6 +73,7 @@ brew install proj
 #
 # Setup the database
 #
+# TODO: Go into the postgres database before creating the postgis extension
 if ! psql -lqt | cut -d \| -f 1 | grep -w down; then
     echo "Creating database"
     psql -c "CREATE USER down WITH CREATEDB PASSWORD 'down';"

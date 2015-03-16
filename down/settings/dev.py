@@ -11,9 +11,3 @@ REST_FRAMEWORK = {
 
 # DB
 POSTGIS_VERSION = (2, 1, 3)
-
-# Push notifications
-PUSH_NOTIFICATIONS_SETTINGS = {
-    'APNS_CERTIFICATE': os.path.join(BASE_DIR, 'config/apns/aps_development.cer'),
-    'APNS_KEY': os.path.join(BASE_DIR, 'config/apns/aps_development.p12'),
-}

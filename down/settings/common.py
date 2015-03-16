@@ -77,3 +77,8 @@ FACEBOOK_APP_SECRET = os.environ['FACEBOOK_APP_SECRET']
 
 # Firebase
 FIREBASE_SECRET = os.environ['FIREBASE_SECRET']
+
+# Push notifications
+PUSH_NOTIFICATIONS_SETTINGS = {
+    'APNS_CERTIFICATE': os.path.join(BASE_DIR, 'config/apns/certkey.pem'),
+}
