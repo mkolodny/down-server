@@ -1,8 +1,8 @@
 from .common import *
 
 
-DEBUG = False
-TEMPLATE_DEBUG = False
+DEBUG = True
+TEMPLATE_DEBUG = True
 
 # API
 REST_FRAMEWORK = {
@@ -11,6 +11,3 @@ REST_FRAMEWORK = {
 
 # DB
 POSTGIS_VERSION = (2, 1, 3)
-
-# Staticfiles
-STATIC_ROOT = STATICFILES_DIRS[0]
