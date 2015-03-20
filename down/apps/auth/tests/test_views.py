@@ -237,3 +237,13 @@ class TermsTests(APITestCase):
         url = reverse('terms')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'terms.html')
+
+
+class FunnelTests(APITestCase):
+
+    def test_get(self):
+        url = reverse('funnel')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'funnel.html')
