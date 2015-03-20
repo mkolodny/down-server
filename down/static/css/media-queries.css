@@ -29,14 +29,3 @@
 	
 	h1, h2 { font-size: 32px; }
 }
-
-
-/* Retina-ize images/icons */
-
-@media only screen and (-webkit-min-device-pixel-ratio: 1.5), only screen and (min-resolution: 2dppx) {
-	
-	/* logo */
-    .top-content .logo a {
-    	background-image: url(../img/logo@2x.png) !important; background-repeat: no-repeat !important; background-size: 207px 74px !important;
-    }
-}

@@ -3,6 +3,7 @@ import json
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.contrib.gis.db import models
 from jsonfield import JSONField
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class User(AbstractBaseUser):
@@ -38,3 +39,8 @@ class SocialAccount(models.Model):
     profile = JSONField(default=json.dumps({}))
     last_login = models.DateTimeField(auto_now=True)
     date_joined = models.DateTimeField(auto_now_add=True)
+
+
+class LinfootFunnel(models.Model):
+    phone = PhoneNumberField(unique=True)
+    date_created = models.DateTimeField(auto_now_add=True)

@@ -9,7 +9,7 @@ import httpretty
 from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
-from down.apps.auth.models import SocialAccount, User
+from down.apps.auth.models import LinfootFunnel, SocialAccount, User
 from down.apps.auth.serializers import UserSerializer
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
@@ -240,10 +240,32 @@ class TermsTests(APITestCase):
         self.assertTemplateUsed(response, 'terms.html')
 
 
-class FunnelTests(APITestCase):
+class LandingTests(APITestCase):
 
     def test_get(self):
-        url = reverse('funnel')
+        url = reverse('landing')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTemplateUsed(response, 'funnel.html')
+        self.assertTemplateUsed(response, 'landing.html')
+
+
+class LinfootFunnelTests(APITestCase):
+
+    def test_create(self):
+        url = reverse('phonenumbers-list')
+        data = {'phone': '+12036227310'}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create a linfoot funnel.
+        LinfootFunnel.objects.get(**data)
+
+    def test_create_already_exists(self):
+        phone = '+12036227310'
+        funnel = LinfootFunnel(phone=phone)
+        funnel.save()
+
+        url = reverse('phonenumbers-list')
+        data = {'phone': phone}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

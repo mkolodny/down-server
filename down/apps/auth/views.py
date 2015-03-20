@@ -7,14 +7,18 @@ from django.shortcuts import render
 from django.views.generic.base import TemplateView
 from firebase_token_generator import create_token
 import requests
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .exceptions import ServiceUnavailable
-from .models import SocialAccount, User
-from .serializers import SocialAccountLoginSerializer, UserSerializer
+from .models import LinfootFunnel, SocialAccount, User
+from .serializers import (
+    SocialAccountLoginSerializer,
+    UserSerializer,
+    LinfootFunnelSerializer,
+)
 from down.apps.auth.filters import UserFilter
 from down.apps.events.models import Invitation
 from down.apps.events.serializers import EventSerializer
@@ -179,5 +183,10 @@ class TermsView(TemplateView):
     template_name = 'terms.html'
 
 
-class FunnelView(TemplateView):
-    template_name = 'funnel.html'
+class LandingView(TemplateView):
+    template_name = 'landing.html'
+
+
+class LinfootFunnelViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = LinfootFunnel.objects.all()
+    serializer_class = LinfootFunnelSerializer

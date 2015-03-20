@@ -79,14 +79,11 @@ img { max-width: 100%; }
   padding-bottom: 40px;
 }
 
-.top-content .logo a {
-  display: inline-block;
+.top-content .logo img {
   width: 207px;
   height: 74px;
-  margin: 0;
-  padding: 0;
-  background: url(../img/logo.png) left center no-repeat;
-  text-indent: -9999px;
+  margin-left: 16px;
+  vertical-align: top;
 }
 
 .top-content .description {
@@ -103,11 +100,53 @@ img { max-width: 100%; }
   margin-right: 20px;
 }
 
+#phone-form {
+  padding-top: 25px;
+}
+
+#phone {
+  height: 50px;
+  padding: 6px 50px;
+}
+
+#phone::-webkit-input-placeholder { /* WebKit browsers */
+  color: #ccc;
+}
+#phone:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+  color: #ccc;
+  opacity: 1;
+}
+#phone::-moz-placeholder { /* Mozilla Firefox 19+ */
+  color: #ccc;
+  opacity: 1;
+}
+#phone:-ms-input-placeholder { /* Internet Explorer 10+ */
+  color: #ccc;
+}
+
+.intl-tel-input {
+  color: #333;
+}
+
+#submit {
+  background-color: #6a38ab;
+  border-color: #fff;
+  color: #fff;
+  padding: 14px 39px;
+}
+
+#submit-error,
+#invalid-error,
+#success {
+  display: none;
+}
+
 
 /***** Footer *****/
 
 footer {
-  background: #333;
+  background-color: #fff;
+  color: #6a38ab;
 }
 
 .footer-content {
@@ -117,12 +156,11 @@ footer {
 .footer-copyright {
   font-size: 18px;
   line-height: 32px;
-  color: #fff;
   text-align: left;
 }
 
-.footer-copyright a, .footer-copyright a:focus { color: #fff; }
-.footer-copyright a:hover { color: #fff; border-bottom: 1px dotted #fff; }
+.footer-copyright a, .footer-copyright a:focus { color: #6a38ab; }
+.footer-copyright a:hover { color: #6a38ab; border-bottom: 1px dotted #6a38ab; }
 
 .footer-social {
   text-align: right;
@@ -130,6 +168,11 @@ footer {
 
 .ultm {
   margin: 0;
+}
+
+.ultm-email-1,
+.ultm-email-1:focus {
+  background-color: #6a38ab;
 }
 
 
