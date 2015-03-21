@@ -2,12 +2,13 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from rest_framework import routers
 from down.apps.auth.views import (
+    AppStoreView,
+    LandingView,
     LinfootFunnelViewSet,
     SocialAccountLogin,
+    TermsView,
     UserUsernameDetail,
     UserViewSet,
-    TermsView,
-    LandingView,
 )
 from down.apps.events.views import EventViewSet, InvitationViewSet
 from down.apps.notifications.views import APNSDeviceViewSet
@@ -35,5 +36,6 @@ urlpatterns = patterns('',
     url(r'^api/', include(router.urls)),
     url(r'^terms/?$', TermsView.as_view(), name='terms'),
     url(r'^$', LandingView.as_view(), name='landing'),
+    url(r'^app/?$', AppStoreView.as_view(), name='app-store'),
     url(r'^admin/', include(admin.site.urls)),
 )

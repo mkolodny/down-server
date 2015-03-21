@@ -269,3 +269,14 @@ class LinfootFunnelTests(APITestCase):
         data = {'phone': phone}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class AppStoreTests(APITestCase):
+
+    def test_redirect(self):
+        url = reverse('app-store')
+        response = self.client.get(url)
+        app_store_url = ('https://itunes.apple.com/us/app/down-connect-people'
+                         '-around/id969040287?mt=8')
+        self.assertRedirects(response, app_store_url,
+                             fetch_redirect_response=False)

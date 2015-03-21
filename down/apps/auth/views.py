@@ -4,7 +4,7 @@ import uuid
 from django.conf import settings
 from django.contrib import auth
 from django.shortcuts import render
-from django.views.generic.base import TemplateView
+from django.views.generic.base import RedirectView, TemplateView
 from firebase_token_generator import create_token
 import requests
 from rest_framework import mixins, status, viewsets
@@ -190,3 +190,9 @@ class LandingView(TemplateView):
 class LinfootFunnelViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = LinfootFunnel.objects.all()
     serializer_class = LinfootFunnelSerializer
+
+
+class AppStoreView(RedirectView):
+    url = ('https://itunes.apple.com/us/app/down-connect-people-around/id'
+           '969040287?mt=8')
+    permanent = False
