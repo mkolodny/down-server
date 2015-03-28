@@ -9,7 +9,7 @@ import httpretty
 from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
-from down.apps.auth.models import LinfootFunnel, SocialAccount, User
+from down.apps.auth.models import AuthCode, LinfootFunnel, SocialAccount, User
 from down.apps.auth.serializers import UserSerializer
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
@@ -229,6 +229,29 @@ class SocialAccountTests(APITestCase):
         data = {'access_token': facebook_token}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class AuthCodeTests(APITestCase):
+
+    def test_create(self):
+        url = reverse('authcode-list')
+        phone_number = '+12345678910'
+        response = self.client.post(url, {'phone': phone_number})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # There should be an AuthCode object with the test phone number
+        AuthCode.objects.get(phone=phone_number)
+
+    def test_create_invalid(self):
+        url = reverse('authcode-list')
+
+        # use invalid phone number
+        phone_number = '+12'
+
+        response = self.client.post(url, {'phone': phone_number})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class TermsTests(APITestCase):

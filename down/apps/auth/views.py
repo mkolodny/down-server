@@ -13,8 +13,9 @@ from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .exceptions import ServiceUnavailable
-from .models import LinfootFunnel, SocialAccount, User
+from .models import AuthCode, LinfootFunnel, SocialAccount, User
 from .serializers import (
+    AuthCodeSerializer,
     SocialAccountLoginSerializer,
     UserSerializer,
     LinfootFunnelSerializer,
@@ -177,6 +178,11 @@ class SocialAccountLogin(APIView):
         if r.status_code != 200:
             raise ServiceUnavailable(r.content)
         return r.json()
+
+
+class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = AuthCode.objects.all()
+    serializer_class = AuthCodeSerializer
 
 
 class TermsView(TemplateView):

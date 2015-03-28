@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 import json
+import random
+import string
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.contrib.gis.db import models
 from jsonfield import JSONField
@@ -26,6 +28,15 @@ class User(AbstractBaseUser):
 
     # Use name for the username field, since `self.username` might not be set.
     USERNAME_FIELD = 'email'
+
+
+def default_auth_code():
+    return ''.join([random.choice(string.digits) for i in xrange(6)])
+
+
+class AuthCode(models.Model):
+    code = models.TextField(default=default_auth_code)
+    phone = PhoneNumberField(unique=True)
 
 
 class SocialAccount(models.Model):

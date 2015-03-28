@@ -3,6 +3,7 @@ from django.contrib import admin
 from rest_framework import routers
 from down.apps.auth.views import (
     AppStoreView,
+    AuthCodeViewSet,
     LandingView,
     LinfootFunnelViewSet,
     SocialAccountLogin,
@@ -18,11 +19,12 @@ from down.apps.notifications.views import APNSDeviceViewSet
 # API
 # With trailing slash appended:
 router = routers.SimpleRouter()
-router.register(r'users', UserViewSet)
+router.register(r'apnsdevices', APNSDeviceViewSet)
+router.register(r'authcode', AuthCodeViewSet)
 router.register(r'events', EventViewSet)
 router.register(r'invitations', InvitationViewSet)
-router.register(r'apnsdevices', APNSDeviceViewSet)
 router.register(r'phonenumbers', LinfootFunnelViewSet, base_name='phonenumbers')
+router.register(r'users', UserViewSet)
 # Without trailing slash appended:
 slashless_router = routers.SimpleRouter(trailing_slash=False)
 slashless_router.registry = router.registry[:]
