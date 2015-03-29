@@ -185,6 +185,22 @@ class SocialAccountLogin(APIView):
 class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = AuthCode.objects.all()
     serializer_class = AuthCodeSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        elif serializer.errors.get('phone') == ['This field must be unique.']:
+            # We don't want to create/serialize a new authcode if one already exists
+            # TODO: Impement scheduled deletion of authcodes by "created_at" timestamp
+            return Response(status=status.HTTP_200_OK)
+
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
     
 
 class SessionView(APIView):

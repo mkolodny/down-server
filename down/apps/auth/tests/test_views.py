@@ -234,25 +234,34 @@ class SocialAccountTests(APITestCase):
 
 class AuthCodeTests(APITestCase):
 
-    def test_create(self):
-        url = reverse('authcode-list')
-        phone_number = '+12345678910'
-        response = self.client.post(url, {'phone': phone_number})
+    def setUp(self):
+        self.url = reverse('authcode-list')
+        self.phone_number = '+12345678910'
 
+    def test_create(self):
+        response = self.client.post(self.url, {'phone': self.phone_number})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # There should be an AuthCode object with the test phone number
-        AuthCode.objects.get(phone=phone_number)
+        AuthCode.objects.get(phone=self.phone_number)
 
     def test_create_invalid(self):
-        url = reverse('authcode-list')
-
         # use invalid phone number
-        phone_number = '+12'
+        invalid_phone_number = '+12'
 
-        response = self.client.post(url, {'phone': phone_number})
+        response = self.client.post(self.url, {'phone': invalid_phone_number})
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_already_exists(self):
+        mock_auth_code = AuthCode(phone=self.phone_number)
+        mock_auth_code.save()
+
+        response = self.client.post(self.url, {'phone': self.phone_number})
+
+        # We shouldn't re-create an auth code which already exists 
+        # for a given phone number
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class SessionTests(APITestCase):
