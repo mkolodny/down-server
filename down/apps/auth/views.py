@@ -8,17 +8,19 @@ from django.views.generic.base import RedirectView, TemplateView
 from firebase_token_generator import create_token
 import requests
 from rest_framework import mixins, status, viewsets
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .exceptions import ServiceUnavailable
-from .models import AuthCode, LinfootFunnel, SocialAccount, User
+from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
 from .serializers import (
     AuthCodeSerializer,
+    LinfootFunnelSerializer,
+    SessionSerializer,
     SocialAccountLoginSerializer,
     UserSerializer,
-    LinfootFunnelSerializer,
 )
 from down.apps.auth.filters import UserFilter
 from down.apps.events.models import Invitation
@@ -183,6 +185,49 @@ class SocialAccountLogin(APIView):
 class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = AuthCode.objects.all()
     serializer_class = AuthCodeSerializer
+    
+
+class SessionView(APIView):
+
+    def post(self, request):
+        # TODO: Handle when the data is invalid.
+        serializer = SessionSerializer(data=request.data)
+        serializer.is_valid()
+
+        try:
+            auth_code = AuthCode.objects.get(phone=serializer.data['phone'], 
+                                            code=serializer.data['code'])
+        except AuthCode.DoesNotExist:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        # Delete the auth code to keep the db clean
+        auth_code.delete()
+
+        # Get or create the user
+        try:
+            user_number = UserPhoneNumber.objects.get(phone=serializer.data['phone'])
+            # User exists
+            user = user_number.user
+        except UserPhoneNumber.DoesNotExist:
+            # User doesn't already exist, so create a blank new user and phone number
+            user = User()
+            user.save()
+
+            user_number = UserPhoneNumber(user=user, phone=serializer.data['phone'])
+            user_number.save()
+
+        token, created = Token.objects.get_or_create(user=user)
+        user.authtoken = token.key
+
+        # Generate a Firebase token every time.
+        # TODO: Don't set the firebase token on the user. Just add it as
+        # extra context to the user serializer.
+        auth_payload = {'uid': unicode(uuid.uuid1())}
+        firebase_token = create_token(settings.FIREBASE_SECRET, auth_payload)
+        user.firebase_token = firebase_token
+
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class TermsView(TemplateView):

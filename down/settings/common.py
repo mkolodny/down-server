@@ -22,6 +22,7 @@ INSTALLED_APPS = (
     'down.apps.friends',
     'down.apps.notifications',
     'push_notifications',
+    'rest_framework.authtoken',
 )
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',

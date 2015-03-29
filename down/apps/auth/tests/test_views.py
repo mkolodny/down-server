@@ -7,9 +7,10 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 import httpretty
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
-from down.apps.auth.models import AuthCode, LinfootFunnel, SocialAccount, User
+from down.apps.auth.models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
 from down.apps.auth.serializers import UserSerializer
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
@@ -252,6 +253,97 @@ class AuthCodeTests(APITestCase):
         response = self.client.post(url, {'phone': phone_number})
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class SessionTests(APITestCase):
+    
+    @mock.patch('down.apps.auth.views.create_token')
+    @mock.patch('down.apps.auth.views.uuid')
+    def test_create(self, mock_uuid, mock_create_token):
+        # Make sure no users have been created yet
+        self.assertEquals(User.objects.count(), 0)
+
+        # Generate a Firebase token.
+        firebase_uuid = 9876
+        firebase_token = 'qwer1234'
+        mock_uuid.uuid1.return_value = firebase_uuid
+        mock_create_token.return_value = firebase_token
+
+        url = reverse('session')
+        auth = AuthCode(phone='+12345678910')
+        auth.save()
+        response = self.client.post(url, {'phone': unicode(auth.phone), 'code': auth.code})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should delete the auth code
+        with self.assertRaises(AuthCode.DoesNotExist):
+            AuthCode.objects.get(code=auth.code, phone=auth.phone)
+
+        # Make sure we've created a user for this number 
+        user = User.objects.get()
+
+        # Make sure the phone number was created
+        UserPhoneNumber.objects.get(user=user, phone=auth.phone)
+
+        # Get the token, which should've been created
+        token = Token.objects.get(user=user)
+
+        # It should generate a Firebase token.
+        auth_payload = {'uid': unicode(firebase_uuid)}
+        mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
+
+        # Check that the response is the user we're expecting
+        user.authtoken = token.key
+        user.firebase_token = firebase_token
+        serializer = UserSerializer(user)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
+    def test_create_bad_credentials(self):
+        url = reverse('session')
+        auth = AuthCode(phone='+12345678910')
+        auth.save()
+        response = self.client.post(url, {'phone': unicode(auth.phone), 'code': (auth.code + 'x')})
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    @mock.patch('down.apps.auth.views.create_token')
+    @mock.patch('down.apps.auth.views.uuid')
+    def test_user_already_created(self, mock_uuid, mock_create_token):
+        firebase_uuid = 9876
+        firebase_token = 'qwer1234'
+        mock_uuid.uuid1.return_value = firebase_uuid
+        mock_create_token.return_value = firebase_token
+
+        # Mock an already created user
+        mock_user = User()
+        mock_user.save()
+
+        phone_number = '+12345678910'
+        mock_user_number = UserPhoneNumber(user=mock_user, phone=phone_number)
+        mock_user_number.save()
+
+        # User has already logged in, so mock their token
+        token = Token(user=mock_user)
+        token.save()
+
+        url = reverse('session')
+        auth = AuthCode(phone=phone_number)
+        auth.save()
+
+        response = self.client.post(url, {'phone': unicode(auth.phone), 'code': auth.code})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        mock_user.authtoken = token.key
+        mock_user.firebase_token = firebase_token
+        serializer = UserSerializer(mock_user)
+        mock_user_json = JSONRenderer().render(serializer.data)
+
+        # Response should have the same user object
+        user_json = response.content
+        self.assertEqual(user_json, mock_user_json)
+
+        # The number of users in the database should still be 1
+        self.assertEqual(User.objects.count(), 1)
 
 
 class TermsTests(APITestCase):

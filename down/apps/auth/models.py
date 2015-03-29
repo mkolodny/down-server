@@ -9,14 +9,15 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 
 class User(AbstractBaseUser):
-    email = models.EmailField(unique=True)
-    name = models.TextField()
-    image_url = models.URLField()
-    username = models.TextField(null=True, unique=True)
+    email = models.EmailField(null=True, blank=True, unique=True)
+    name = models.TextField(null=True, blank=True)
+    image_url = models.URLField(null=True, blank=True)
+    username = models.TextField(null=True, blank=True, unique=True)
     # Location can only be null from the time the user logs in to the
     # time that they give us permission to view their location.
     location = models.PointField(null=True, blank=True)
-    firebase_token = models.TextField(null=True, unique=True)
+    authtoken = models.TextField(null=True, blank=True)
+    firebase_token = models.TextField(null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False,
@@ -33,9 +34,13 @@ class User(AbstractBaseUser):
 def default_auth_code():
     return ''.join([random.choice(string.digits) for i in xrange(6)])
 
-
 class AuthCode(models.Model):
     code = models.TextField(default=default_auth_code)
+    phone = PhoneNumberField(unique=True)
+
+
+class UserPhoneNumber(models.Model):
+    user = models.ForeignKey(User)
     phone = PhoneNumberField(unique=True)
 
 
