@@ -51,12 +51,10 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
             return Response(status=status.HTTP_201_CREATED)
         else:
-            print serializer.errors
             # TODO: Test for when the data is invalid.
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-# TODO: Security
 class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)

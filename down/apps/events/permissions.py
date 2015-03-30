@@ -28,5 +28,9 @@ class IsEventCreatorOrUpdateOnly(permissions.BasePermission):
         if request.method == 'PUT':
             return True
 
-        event = Event.objects.get(id=request.data.get('event'))
-        return event.creator_id == request.user.id
+        try:
+            event = Event.objects.get(id=request.data.get('event'))
+            return event.creator_id == request.user.id
+        except Event.DoesNotExist:
+            # Pass off validation to the view.
+            return True
