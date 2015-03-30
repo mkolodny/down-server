@@ -135,10 +135,14 @@ class EventTests(APITestCase):
         # Clear any previous notifications
         mock_send.reset_mock()
 
+        # Set the user's friend to be the logged in user.
+        token = Token(user=friend1)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
         url = reverse('event-messages', kwargs={'pk': self.event.id})
         data = {
             'text': 'So down!',
-            'user': friend1.id,
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -156,6 +160,10 @@ class EventTests(APITestCase):
         message = '{name} to {activity}: {text}'.format(
                 name=friend1.name, activity=activity, text=data['text'])
         mock_send.assert_called_once_with(registration_ids=tokens, alert=message)
+
+    def test_create_message_not_logged_in_user(self):
+        # TODO
+        pass
 
 
 class InvitationTests(APITestCase):

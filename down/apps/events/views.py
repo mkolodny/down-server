@@ -28,14 +28,12 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         """
         data = {
             'text': request.data.get('text'),
-            'user': request.data.get('user'),
             'event': pk,
         }
         serializer = MessageSentSerializer(data=data)
         if serializer.is_valid():
             # Notify the other users who are down for the event about the user's
             # message.
-            user = User.objects.get(id=serializer.data['user'])
             event = Event.objects.get(id=serializer.data['event'])
 
             if len(event.title) > 25:
@@ -43,9 +41,9 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             else:
                 activity = event.title
             message = '{name} to {activity}: {text}'.format(
-                    name=user.name, activity=activity,
+                    name=request.user.name, activity=activity,
                     text=serializer.data['text'])
-            devices = event.get_relevant_member_devices(user)
+            devices = event.get_relevant_member_devices(request.user)
             # TODO: Catch exception if sending the message fails.
             devices.send_message(message)
 

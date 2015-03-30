@@ -71,5 +71,4 @@ class EventSerializer(serializers.ModelSerializer):
 
 class MessageSentSerializer(serializers.Serializer):
     text = serializers.CharField()
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all())
