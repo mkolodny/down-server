@@ -5,7 +5,6 @@ from rest_framework import mixins, viewsets
 from .serializers import APNSDeviceSerializer
 
 
-# TODO: Security
 class APNSDeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = APNSDeviceSerializer
     queryset = APNSDevice.objects.all()

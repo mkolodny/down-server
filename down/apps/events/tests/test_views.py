@@ -48,6 +48,9 @@ class EventTests(APITestCase):
         # Save urls.
         self.list_url = reverse('event-list')
         self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
+        self.create_message_url = reverse('event-messages', kwargs={
+            'pk': self.event.id,
+        })
 
     def test_create(self):
         data = {
@@ -140,11 +143,8 @@ class EventTests(APITestCase):
         token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
-        url = reverse('event-messages', kwargs={'pk': self.event.id})
-        data = {
-            'text': 'So down!',
-        }
-        response = self.client.post(url, data)
+        data = {'text': 'So down!'}
+        response = self.client.post(self.create_message_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should notify the user and the first friend that their friend
@@ -161,9 +161,13 @@ class EventTests(APITestCase):
                 name=friend1.name, activity=activity, text=data['text'])
         mock_send.assert_called_once_with(registration_ids=tokens, alert=message)
 
-    def test_create_message_not_logged_in_user(self):
-        # TODO
-        pass
+    def test_create_message_not_invited(self):
+        # Uninvite the logged in user.
+        self.invitation.delete()
+        
+        data = {'text': 'So down!'}
+        response = self.client.post(self.create_message_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class InvitationTests(APITestCase):
