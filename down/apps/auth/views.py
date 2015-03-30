@@ -88,9 +88,14 @@ class SocialAccountLogin(APIView):
         request.user.email = profile['email']
         request.user.name = profile['name']
         request.user.image_url = profile['image_url']
+        logger.info('updating user')
         request.user.save()
+        logger.info('updated user')
 
         # Create the user's social account.
+        logger.info('user id: {}'.format(request.user.id))
+        logger.info('provider: {}'.format(provider))
+        logger.info('fb id: {}'.format(profile['id']))
         account = SocialAccount(user_id=request.user.id, provider=provider,
                                 uid=profile['id'], profile=profile)
         account.save()

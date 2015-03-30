@@ -78,9 +78,8 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': ('%(asctime)s ' +
-                       'file=%(pathname)s line=%(lineno)s: ' +
-                       '%(message)s'),
+            'format': ('File "%(pathname)s", line %(lineno)s, in %(funcName)s\n' +
+                       '  %(message)s'),
             'datefmt': '%Y-%m-%d %H:%M:%S'
         },
         'simple': {
