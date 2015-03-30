@@ -173,7 +173,7 @@ class SocialAccountTests(APITestCase):
         httpretty.register_uri(httpretty.GET, friends_url, body=body,
                                content_type='application/json')
 
-        data = {'access_token': facebook_token, 'provider': SocialAccount.FACEBOOK}
+        data = {'access_token': facebook_token}
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 

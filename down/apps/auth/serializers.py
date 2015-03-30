@@ -39,7 +39,6 @@ class SessionSerializer(serializers.Serializer):
 class SocialAccountLoginSerializer(serializers.Serializer):
     access_token = serializers.CharField()
     provider = serializers.IntegerField(default=SocialAccount.FACEBOOK)
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all()) 
 
 
 class UserSerializer(GeoModelSerializer):
