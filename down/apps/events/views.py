@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 from down.apps.auth.models import User
@@ -12,7 +12,8 @@ from .serializers import (
 
 
 # TODO: Security
-class EventViewSet(viewsets.ModelViewSet):
+class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
+                   mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = EventSerializer
     queryset = Event.objects.all()
 
@@ -53,6 +54,8 @@ class EventViewSet(viewsets.ModelViewSet):
 
 
 # TODO: Security
-class InvitationViewSet(viewsets.ModelViewSet):
+class InvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+                        mixins.ListModelMixin, mixins.UpdateModelMixin,
+                        viewsets.GenericViewSet):
     serializer_class = InvitationSerializer
     queryset = Invitation.objects.all()

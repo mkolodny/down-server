@@ -30,7 +30,8 @@ from down.apps.friends.models import Friendship
 
 
 # TODO: Security
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
+                  mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     filter_backends = (DjangoFilterBackend,)
