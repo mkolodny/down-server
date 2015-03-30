@@ -75,13 +75,14 @@ class SocialAccountLogin(APIView):
         serializer.is_valid()
         import logging
         logger = logging.getLogger('console')
-        logger.info(serializer.data)
-        logger.info(request.user.id)
 
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
         access_token = serializer.data['access_token']
+        logger.info('getting profile')
         profile = self.get_profile(provider, access_token)
+        logger.info('profile:')
+        logger.info(profile)
 
         # Create a new user.
         request.user.email = profile['email']
@@ -94,11 +95,12 @@ class SocialAccountLogin(APIView):
                                 uid=profile['id'], profile=profile)
         account.save()
 
+        logger.info('saving friends')
         self.save_friends(provider, access_token, request.user)
-        status_code = status.HTTP_201_CREATED
+        logger.info('saved friends')
 
         serializer = UserSerializer(request.user)
-        return Response(serializer.data, status=status_code)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get_profile(self, provider, access_token):
         """

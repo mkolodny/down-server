@@ -79,7 +79,7 @@ LOGGING = {
     'formatters': {
         'verbose': {
             'format': ('%(asctime)s ' +
-                       'file=%(pathname)s line=%(lineno)s ' +
+                       'file=%(pathname)s line=%(lineno)s: ' +
                        '%(message)s'),
             'datefmt': '%Y-%m-%d %H:%M:%S'
         },
