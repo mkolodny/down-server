@@ -7,7 +7,7 @@ from django.shortcuts import render
 from django.views.generic.base import RedirectView, TemplateView
 from firebase_token_generator import create_token
 import requests
-from rest_framework import mixins, status, viewsets
+from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
@@ -64,6 +64,7 @@ class UserUsernameDetail(APIView):
 
 
 class SocialAccountLogin(APIView):
+    authentication_classes = (authentication.TokenAuthentication,)
 
     def post(self, request):
         # TODO: Handle when the data is invalid.
@@ -76,26 +77,20 @@ class SocialAccountLogin(APIView):
         profile = self.get_profile(provider, access_token)
 
         # Create a new user.
-        user = User.objects.get(id=serializer.data['user'])
-        user.email = profile['email']
-        user.name = profile['name']
-        user.image_url = profile['image_url']
-        user.save()
+        request.user.email = profile['email']
+        request.user.name = profile['name']
+        request.user.image_url = profile['image_url']
+        request.user.save()
 
         # Create the user's social account.
-        account = SocialAccount(user_id=user.id, provider=provider,
+        account = SocialAccount(user_id=request.user.id, provider=provider,
                                 uid=profile['id'], profile=profile)
         account.save()
 
-        self.save_friends(provider, access_token, user)
+        self.save_friends(provider, access_token, request.user)
         status_code = status.HTTP_201_CREATED
 
-        # Facebook is handling auth for us right now, so we just pass the user
-        # to authenticate to set the backend.
-        auth.authenticate(user=user)
-        auth.login(request, user)
-
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status_code)
 
     def get_profile(self, provider, access_token):

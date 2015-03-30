@@ -125,6 +125,13 @@ class SocialAccountTests(APITestCase):
     def setUp(self):
         self.url = reverse('social-account-login')
         self.profile_url = 'https://graph.facebook.com/v2.2/me'
+        self.user = User()
+        self.user.save()
+        self.token = Token(user=self.user)
+        self.token.save()
+
+        # Authorize the requests with the user's token.
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
     @httpretty.activate
     def test_create(self):
@@ -166,15 +173,13 @@ class SocialAccountTests(APITestCase):
         httpretty.register_uri(httpretty.GET, friends_url, body=body,
                                content_type='application/json')
 
-        user = User()
-        user.save()
-
-        data = {'access_token': facebook_token, 'user': user.id}
+        data = {'access_token': facebook_token, 'provider': SocialAccount.FACEBOOK}
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should update the user.
-        user = User.objects.get(id=user.id, email=email, name=name, image_url=image_url)
+        user = User.objects.get(id=self.user.id, email=email, name=name,
+                                image_url=image_url)
 
         # It should create the user's social account.
         profile = {
@@ -185,7 +190,7 @@ class SocialAccountTests(APITestCase):
             'image_url': image_url,
             'hometown': hometown,
         }
-        account = SocialAccount.objects.get(user=user,
+        account = SocialAccount.objects.get(user=self.user,
                                             provider=SocialAccount.FACEBOOK,
                                             uid=facebook_user_id)
         self.assertEqual(account.profile, profile)
@@ -195,11 +200,14 @@ class SocialAccountTests(APITestCase):
         self.assertEqual(httpretty.last_request().querystring, params)
 
         # It should create symmetrical facebook friendships.
-        User.objects.get(id=user.id, facebook_friends__id=friend.id)
-        User.objects.get(id=friend.id, facebook_friends__id=user.id)
+        User.objects.get(id=self.user.id, facebook_friends__id=friend.id)
+        User.objects.get(id=friend.id, facebook_friends__id=self.user.id)
 
         # It should return the user.
-        serializer = UserSerializer(user)
+        self.user.email = email
+        self.user.name = name
+        self.user.image_url = image_url
+        serializer = UserSerializer(self.user)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
@@ -220,12 +228,9 @@ class SocialAccountTests(APITestCase):
         httpretty.register_uri(httpretty.GET, self.profile_url, status=500,
                                content_type='application/json')
 
-        user = User()
-        user.save()
-
         data = {'access_token': facebook_token,
                 'provider': SocialAccount.FACEBOOK,
-                'user': user.id}
+                'user': self.user.id}
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
