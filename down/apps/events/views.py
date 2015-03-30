@@ -59,5 +59,7 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 # TODO: Security
 class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
-    serializer_class = InvitationSerializer
+    authentication_classes = (authentication.TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
     queryset = Invitation.objects.all()
+    serializer_class = InvitationSerializer

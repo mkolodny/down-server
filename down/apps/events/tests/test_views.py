@@ -167,6 +167,11 @@ class InvitationTests(APITestCase):
         self.user2 = User(email='jclarke@gmail.com', name='Joan Clarke')
         self.user2.save()
 
+        # Authorize the requests with the user's token.
+        self.token = Token(user=self.user1)
+        self.token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
         # Mock the user-to-be-invited's device
         registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '10df230567037dcc4')
@@ -188,15 +193,17 @@ class InvitationTests(APITestCase):
                       description='bars!!!!')
         self.event.save()
 
+        # Save urls.
+        self.list_url = reverse('invitation-list')
+
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create(self, mock_send):
-        url = reverse('invitation-list')
         data = {
             'to_user': self.user2.id,
             'event': self.event.id,
             'accepted': True,
         }
-        response = self.client.post(url, data)
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the invitation.
@@ -206,6 +213,13 @@ class InvitationTests(APITestCase):
         serializer = InvitationSerializer(invitation)
         json_invitation = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitation)
+
+    def test_create_not_logged_in(self):
+        # Don't include the user's credentials in the request.
+        self.client.credentials()
+
+        response = self.client.post(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_update(self, mock_send):
