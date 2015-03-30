@@ -222,9 +222,6 @@ class SessionView(APIView):
         serializer.is_valid()
 
         try:
-            import logging
-            logger = logging.getLogger('console')
-            logger.info(serializer.data)
             auth = AuthCode.objects.get(phone=serializer.data['phone'], 
                                         code=serializer.data['code'])
         except AuthCode.DoesNotExist:
