@@ -271,15 +271,30 @@ class AuthCodeTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_create_already_exists(self):
-        mock_auth_code = AuthCode(phone=self.phone_number)
-        mock_auth_code.save()
+    @mock.patch('down.apps.auth.views.TwilioRestClient')
+    def test_create_already_exists(self, mock_TwilioRestClient):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_TwilioRestClient.return_value = mock_client
+
+        auth = AuthCode(phone=self.phone_number)
+        auth.save()
 
         response = self.client.post(self.url, {'phone': self.phone_number})
 
         # We shouldn't re-create an auth code which already exists 
         # for a given phone number
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should init the Twilio client with the proper params.
+        mock_TwilioRestClient.assert_called_with(settings.TWILIO_ACCOUNT,
+                                                 settings.TWILIO_TOKEN)
+
+        # It should text the user the auth code.
+        message = 'Your Down code: {}'.format(auth.code)
+        mock_client.messages.create.assert_called_with(to=self.phone_number, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=message)
 
 
 class SessionTests(APITestCase):
