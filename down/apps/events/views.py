@@ -37,12 +37,7 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             event = Event.objects.get(id=serializer.data['event'])
 
             # Make sure that the current user was invited to the event.
-            # TODO: Figure out how to use rest framework's permission classes for
-            # this.
-            try:
-                Invitation.objects.get(event=event, to_user=request.user)
-            except Invitation.DoesNotExist:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+            self.check_object_permissions(request, event)
 
             if len(event.title) > 25:
                 activity = event.title[:25] + '...'
