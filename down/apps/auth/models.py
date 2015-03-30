@@ -32,7 +32,9 @@ class User(AbstractBaseUser):
 
 
 def default_auth_code():
-    return ''.join([random.choice(string.digits) for i in xrange(4)])
+    first_digit = random.choice(string.digits[1:])
+    last_three = ''.join([random.choice(string.digits) for i in xrange(3)])
+    return first_digit + last_three
 
 class AuthCode(models.Model):
     code = models.TextField(default=default_auth_code)
