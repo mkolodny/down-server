@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
-from rest_framework import mixins, status, viewsets
+from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 from down.apps.auth.models import User
 from .models import Event, Invitation
+from .permissions import UserWasInvited
 from .serializers import (
     EventSerializer,
     InvitationSerializer,
@@ -14,8 +15,10 @@ from .serializers import (
 # TODO: Security
 class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                    mixins.CreateModelMixin, viewsets.GenericViewSet):
-    serializer_class = EventSerializer
+    authentication_classes = (authentication.TokenAuthentication,)
+    permission_classes = (UserWasInvited,)
     queryset = Event.objects.all()
+    serializer_class = EventSerializer
 
     @detail_route(methods=['post'])
     def messages(self, request, pk=None):

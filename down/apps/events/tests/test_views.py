@@ -5,6 +5,7 @@ from django.core.urlresolvers import reverse
 import mock
 from push_notifications.models import APNSDevice
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from down.apps.auth.models import User
@@ -26,6 +27,11 @@ class EventTests(APITestCase):
                                       user=self.user)
         self.apns_device.save()
 
+        # Authorize the requests with the user's token.
+        self.token = Token(user=self.user)
+        self.token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
         # Mock a place.
         self.place = Place(name='Founder House',
                            geo='POINT(40.6898319 -73.9904645)')
@@ -33,9 +39,14 @@ class EventTests(APITestCase):
 
         # Mock an event.
         self.event = Event(title='bars?!?!!', creator=self.user,
-                      datetime=timezone.now(), place=self.place,
-                      description='bars!!!!')
+                           datetime=timezone.now(), place=self.place,
+                           description='bars!!!!')
         self.event.save()
+        self.invitation = Invitation(to_user=self.user, event=self.event)
+        self.invitation.save()
+
+        # Save urls.
+        self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
 
     def test_create(self):
         url = reverse('event-list')
@@ -65,15 +76,27 @@ class EventTests(APITestCase):
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
 
+    def test_create_not_logged_in(self):
+        # TODO
+        pass
+
     def test_get(self):
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
-        response = self.client.get(url)
+        response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the event.
         serializer = EventSerializer(self.event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
+
+    def test_get_not_invited(self):
+        # We know a user was invited because an invitation exists with them as
+        # the `to_user`. So, to mock the user not being invited, delete their
+        # invitation.
+        self.invitation.delete()
+
+        response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create_message(self, mock_send):
