@@ -31,6 +31,11 @@ class UserTests(APITestCase):
                          username='tdog', image_url='http://imgur.com/tdog')
         self.user.save()
 
+        # Authorize the requests with the user's token.
+        self.token = Token(user=self.user)
+        self.token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
         # Mock the user's friend.
         self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
                            image_url='http://imgur.com/jcke')
@@ -44,9 +49,12 @@ class UserTests(APITestCase):
         self.invitation = Invitation(to_user=self.user, event=self.event)
         self.invitation.save()
 
+        # Save the user urls.
+        self.detail_url = reverse('user-detail', kwargs={'pk': self.user.id})
+        self.list_url = reverse('user-list')
+
     def test_get(self):
-        url = reverse('user-detail', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
+        response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the user.
@@ -55,7 +63,6 @@ class UserTests(APITestCase):
         self.assertEqual(response.content, json_user)
 
     def test_put(self):
-        url = reverse('user-detail', kwargs={'pk': self.user.id})
         new_name = 'Alan'
         data = {
             'email': self.user.email,
@@ -63,7 +70,7 @@ class UserTests(APITestCase):
             'username': self.user.username,
             'image_url': self.user.image_url,
         }
-        response = self.client.put(url, data)
+        response = self.client.put(self.detail_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should update the user.
@@ -75,10 +82,14 @@ class UserTests(APITestCase):
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
+    def test_put_not_current_user(self):
+        detail_url = reverse('user-detail', kwargs={'pk': self.friend.id})
+        response = self.client.put(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_get_by_ids(self):
-        url = reverse('user-list')
         ids = ','.join([unicode(self.user.id)])
-        url += '?ids=' + ids
+        url = self.list_url + '?ids=' + ids
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -125,12 +136,14 @@ class SocialAccountTests(APITestCase):
     def setUp(self):
         self.url = reverse('social-account-login')
         self.profile_url = 'https://graph.facebook.com/v2.2/me'
+
+        # Mock the user.
         self.user = User()
         self.user.save()
-        self.token = Token(user=self.user)
-        self.token.save()
 
         # Authorize the requests with the user's token.
+        self.token = Token(user=self.user)
+        self.token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
     @httpretty.activate

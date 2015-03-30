@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from twilio.rest import TwilioRestClient
 from .exceptions import ServiceUnavailable
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
+from .permissions import IsCurrentUserOrReadOnly
 from .serializers import (
     AuthCodeSerializer,
     LinfootFunnelSerializer,
@@ -29,13 +30,14 @@ from down.apps.events.serializers import EventSerializer
 from down.apps.friends.models import Friendship
 
 
-# TODO: Security
 class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                   mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    serializer_class = UserSerializer
-    queryset = User.objects.all()
+    authentication_classes = (authentication.TokenAuthentication,)
     filter_backends = (DjangoFilterBackend,)
     filter_class = UserFilter
+    permission_classes = (IsCurrentUserOrReadOnly,)
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
     @detail_route(methods=['get'])
     def friends(self, request, pk=None):
