@@ -11,5 +11,5 @@ class AuthCodeTests(APITestCase):
         auth = AuthCode()
 
         # Valid auth code is six numbers
-        self.assertRegexpMatches(auth.code, r'^\d{6}$')
+        self.assertRegexpMatches(auth.code, r'^\d{4}$')
 
