@@ -222,7 +222,6 @@ class SessionView(APIView):
         serializer.is_valid()
 
         try:
-            raise Exception(serializer.data)
             auth = AuthCode.objects.get(phone=serializer.data['phone'], 
                                         code=serializer.data['code'])
         except AuthCode.DoesNotExist:
