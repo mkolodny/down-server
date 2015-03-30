@@ -240,19 +240,21 @@ class SocialAccountTests(APITestCase):
 
 class AuthCodeTests(APITestCase):
 
+    def setUp(self):
+        self.url = reverse('authcode-list')
+        self.phone_number = '+12345678910'
+
     @mock.patch('down.apps.auth.views.TwilioRestClient')
     def test_create(self, mock_TwilioRestClient):
         # Mock the Twilio SMS API.
         mock_client = mock.MagicMock()
         mock_TwilioRestClient.return_value = mock_client
 
-        url = reverse('authcode-list')
-        phone_number = '+12345678910'
-        response = self.client.post(url, {'phone': phone_number})
+        response = self.client.post(self.url, {'phone': self.phone_number})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # There should be an AuthCode object with the test phone number
-        auth = AuthCode.objects.get(phone=phone_number)
+        auth = AuthCode.objects.get(phone=self.phone_number)
 
         # It should init the Twilio client with the proper params.
         mock_TwilioRestClient.assert_called_with(settings.TWILIO_ACCOUNT,
@@ -260,19 +262,27 @@ class AuthCodeTests(APITestCase):
 
         # It should text the user the auth code.
         message = 'Your Down code: {}'.format(auth.code)
-        mock_client.messages.create.assert_called_with(to=phone_number, 
+        mock_client.messages.create.assert_called_with(to=self.phone_number, 
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
 
     def test_create_invalid(self):
-        url = reverse('authcode-list')
-
         # use invalid phone number
-        phone_number = '+12'
+        invalid_phone_number = '+12'
 
-        response = self.client.post(url, {'phone': phone_number})
+        response = self.client.post(self.url, {'phone': invalid_phone_number})
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_already_exists(self):
+        mock_auth_code = AuthCode(phone=self.phone_number)
+        mock_auth_code.save()
+
+        response = self.client.post(self.url, {'phone': self.phone_number})
+
+        # We shouldn't re-create an auth code which already exists 
+        # for a given phone number
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class SessionTests(APITestCase):

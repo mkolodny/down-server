@@ -187,17 +187,31 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = AuthCode.objects.all()
     serializer_class = AuthCodeSerializer
 
-    def create(self, request):
-        response = super(AuthCodeViewSet, self).create(request)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
 
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            self.send_auth_sms(serializer.data['code'], serializer.data['phone'])
+            return Response(serializer.data, status=status.HTTP_201_CREATED,
+                            headers=headers)
+
+        elif serializer.errors.get('phone') == ['This field must be unique.']:
+            # We don't want to create/serialize a new authcode if one already exists
+            # TODO: Impement scheduled deletion of authcodes by "created_at" timestamp
+            auth = AuthCode.objects.get(phone=request.data['phone'])
+            self.send_auth_sms(auth.code, request.data['phone'])
+            return Response(status=status.HTTP_200_OK)
+
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def send_auth_sms(self, auth_code, phone):
         # Text the user their auth code.
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        auth_code = response.data['code']
         message = 'Your Down code: {}'.format(auth_code)
-        client.messages.create(to=response.data['phone'],
-                               from_=settings.TWILIO_PHONE, body=message)
-
-        return Response(status=status.HTTP_201_CREATED)
+        client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=message)
     
 
 class SessionView(APIView):
