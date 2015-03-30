@@ -79,30 +79,29 @@ class SocialAccountLogin(APIView):
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
         access_token = serializer.data['access_token']
-        logger.info('getting profile')
         profile = self.get_profile(provider, access_token)
-        logger.info('profile:')
-        logger.info(profile)
 
-        # Create a new user.
+        # Update the user.
         request.user.email = profile['email']
         request.user.name = profile['name']
         request.user.image_url = profile['image_url']
-        logger.info('updating user')
-        request.user.save()
-        logger.info('updated user')
+        logger.info(request.user)
+        logger.info(request.user.id)
+        from django.forms.models import model_to_dict
+        logger.info(model_to_dict(request.user))
+        try:
+            request.user.save()
+        except Exception as e:
+            logger.info(type(e).__name__)
+            logger.info(e)
+            raise Exception()
 
         # Create the user's social account.
-        logger.info('user id: {}'.format(request.user.id))
-        logger.info('provider: {}'.format(provider))
-        logger.info('fb id: {}'.format(profile['id']))
         account = SocialAccount(user_id=request.user.id, provider=provider,
                                 uid=profile['id'], profile=profile)
         account.save()
 
-        logger.info('saving friends')
         self.save_friends(provider, access_token, request.user)
-        logger.info('saved friends')
 
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
