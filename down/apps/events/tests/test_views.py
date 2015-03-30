@@ -46,10 +46,10 @@ class EventTests(APITestCase):
         self.invitation.save()
 
         # Save urls.
+        self.list_url = reverse('event-list')
         self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
 
     def test_create(self):
-        url = reverse('event-list')
         data = {
             'title': 'rat fishing with the boys over at the place!',
             'creator': self.user.id,
@@ -60,7 +60,7 @@ class EventTests(APITestCase):
             },
             'description': 'To the sewers!',
         }
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the place.
@@ -77,8 +77,11 @@ class EventTests(APITestCase):
         self.assertEqual(response.content, json_event)
 
     def test_create_not_logged_in(self):
-        # TODO
-        pass
+        # Don't include the user's credentials in the request.
+        self.client.credentials()
+
+        response = self.client.post(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_get(self):
         response = self.client.get(self.detail_url)

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from down.apps.auth.models import User
 from .models import Event, Invitation
@@ -12,11 +13,10 @@ from .serializers import (
 )
 
 
-# TODO: Security
 class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                    mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
-    permission_classes = (UserWasInvited,)
+    permission_classes = (IsAuthenticated, UserWasInvited,)
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
