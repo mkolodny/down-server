@@ -57,8 +57,7 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
 
 # TODO: Security
-class InvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
-                        mixins.ListModelMixin, mixins.UpdateModelMixin,
+class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     serializer_class = InvitationSerializer
     queryset = Invitation.objects.all()
