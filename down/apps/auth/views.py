@@ -13,6 +13,7 @@ from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from twilio.rest import TwilioRestClient
 from .exceptions import ServiceUnavailable
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
 from .serializers import (
@@ -185,6 +186,18 @@ class SocialAccountLogin(APIView):
 class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = AuthCode.objects.all()
     serializer_class = AuthCodeSerializer
+
+    def create(self, request):
+        response = super(AuthCodeViewSet, self).create(request)
+
+        # Text the user their auth code.
+        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
+        auth_code = response.data['code']
+        message = 'Your Down code: {}'.format(auth_code)
+        client.messages.create(to=response.data['phone'],
+                               from_=settings.TWILIO_PHONE, body=message)
+
+        return Response(status=status.HTTP_201_CREATED)
     
 
 class SessionView(APIView):
@@ -195,13 +208,13 @@ class SessionView(APIView):
         serializer.is_valid()
 
         try:
-            auth_code = AuthCode.objects.get(phone=serializer.data['phone'], 
-                                            code=serializer.data['code'])
+            auth = AuthCode.objects.get(phone=serializer.data['phone'], 
+                                        code=serializer.data['code'])
         except AuthCode.DoesNotExist:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         # Delete the auth code to keep the db clean
-        auth_code.delete()
+        auth.delete()
 
         # Get or create the user
         try:

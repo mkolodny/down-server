@@ -10,7 +10,13 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
-from down.apps.auth.models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
+from down.apps.auth.models import (
+    AuthCode,
+    LinfootFunnel,
+    SocialAccount,
+    User,
+    UserPhoneNumber,
+)
 from down.apps.auth.serializers import UserSerializer
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
@@ -234,15 +240,29 @@ class SocialAccountTests(APITestCase):
 
 class AuthCodeTests(APITestCase):
 
-    def test_create(self):
+    @mock.patch('down.apps.auth.views.TwilioRestClient')
+    def test_create(self, mock_TwilioRestClient):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_TwilioRestClient.return_value = mock_client
+
         url = reverse('authcode-list')
         phone_number = '+12345678910'
         response = self.client.post(url, {'phone': phone_number})
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # There should be an AuthCode object with the test phone number
-        AuthCode.objects.get(phone=phone_number)
+        auth = AuthCode.objects.get(phone=phone_number)
+
+        # It should init the Twilio client with the proper params.
+        mock_TwilioRestClient.assert_called_with(settings.TWILIO_ACCOUNT,
+                                                 settings.TWILIO_TOKEN)
+
+        # It should text the user the auth code.
+        message = 'Your Down code: {}'.format(auth.code)
+        mock_client.messages.create.assert_called_with(to=phone_number, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=message)
 
     def test_create_invalid(self):
         url = reverse('authcode-list')
