@@ -221,6 +221,22 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_create_not_event_creator(self):
+        # Make the not-logged-in user the event creator.
+        self.event.creator = self.user2
+        self.event.save()
+
+        data = {
+            'to_user': self.user1.id,
+            'event': self.event.id,
+        }
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_event_doesnt_exist(self):
+        # TODO
+        pass
+
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_update(self, mock_send):
         # Mock an invitation.

@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from down.apps.auth.models import User
 from .models import Event, Invitation
-from .permissions import UserWasInvited
+from .permissions import WasInvited, IsEventCreatorOrUpdateOnly
 from .serializers import (
     EventSerializer,
     InvitationSerializer,
@@ -16,7 +16,7 @@ from .serializers import (
 class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                    mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
-    permission_classes = (IsAuthenticated, UserWasInvited,)
+    permission_classes = (IsAuthenticated, WasInvited)
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
@@ -60,6 +60,6 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsEventCreatorOrUpdateOnly)
     queryset = Invitation.objects.all()
     serializer_class = InvitationSerializer
