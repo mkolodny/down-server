@@ -39,6 +39,7 @@ class SessionSerializer(serializers.Serializer):
 class SocialAccountLoginSerializer(serializers.Serializer):
     access_token = serializers.CharField()
     provider = serializers.IntegerField(default=SocialAccount.FACEBOOK)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all()) 
 
 
 class UserSerializer(GeoModelSerializer):
@@ -46,7 +47,7 @@ class UserSerializer(GeoModelSerializer):
 
     class Meta:
         model = User
-        exclude = ('password', 'date_joined', 'last_login')
+        exclude = ('password', 'date_joined', 'last_login', 'facebook_friends')
 
 
 

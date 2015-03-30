@@ -66,8 +66,8 @@ class UserUsernameDetail(APIView):
 class SocialAccountLogin(APIView):
 
     def post(self, request):
-        serializer = SocialAccountLoginSerializer(data=request.data)
         # TODO: Handle when the data is invalid.
+        serializer = SocialAccountLoginSerializer(data=request.data)
         serializer.is_valid()
 
         # Request the user's profile from the selected provider.
@@ -75,37 +75,25 @@ class SocialAccountLogin(APIView):
         access_token = serializer.data['access_token']
         profile = self.get_profile(provider, access_token)
 
-        # Check whether the user is already signed up.
-        try:
-            account = SocialAccount.objects.get(uid=profile['id'])
-            user = account.user
-            status_code = status.HTTP_200_OK
-        except SocialAccount.DoesNotExist:
-            # Create a new user.
-            user = User(email=profile['email'], name=profile['name'],
-                        image_url=profile['image_url'])
-            user.save()
+        # Create a new user.
+        user = User.objects.get(id=serializer.data['user'])
+        user.email = profile['email']
+        user.name = profile['name']
+        user.image_url = profile['image_url']
+        user.save()
 
-            # Create the user's social account.
-            account = SocialAccount(user_id=user.id, provider=provider,
-                                    uid=profile['id'], profile=profile)
-            account.save()
+        # Create the user's social account.
+        account = SocialAccount(user_id=user.id, provider=provider,
+                                uid=profile['id'], profile=profile)
+        account.save()
 
-            self.save_friends(provider, access_token, user)
-            status_code = status.HTTP_201_CREATED
+        self.save_friends(provider, access_token, user)
+        status_code = status.HTTP_201_CREATED
 
         # Facebook is handling auth for us right now, so we just pass the user
         # to authenticate to set the backend.
         auth.authenticate(user=user)
         auth.login(request, user)
-
-        # Generate a Firebase token.
-        auth_payload = {'uid': unicode(uuid.uuid1())}
-        firebase_token = create_token(settings.FIREBASE_SECRET, auth_payload)
-
-        # TODO: Don't set the firebase token on the user. Just add it as
-        # extra context to the user serializer.
-        user.firebase_token = firebase_token
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status_code)
@@ -166,11 +154,9 @@ class SocialAccountLogin(APIView):
                 continue
 
             # Create symmetrical friendships.
-            friendship = Friendship(user1_id=user.id, user2_id=account.user_id)
-            friendships.append(friendship)
-            friendship = Friendship(user1_id=account.user_id, user2_id=user.id)
-            friendships.append(friendship)
-        Friendship.objects.bulk_create(friendships)
+            account_user = account.user
+            user.facebook_friends.add(account_user)
+            account_user.facebook_friends.add(user)
 
     def get_facebook_data(self, url):
         """

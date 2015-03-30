@@ -121,11 +121,13 @@ class UserTests(APITestCase):
 
 
 class SocialAccountTests(APITestCase):
+    
+    def setUp(self):
+        self.url = reverse('social-account-login')
+        self.profile_url = 'https://graph.facebook.com/v2.2/me'
 
-    @mock.patch('down.apps.auth.views.create_token')
-    @mock.patch('down.apps.auth.views.uuid')
     @httpretty.activate
-    def test_create(self, mock_uuid, mock_create_token):
+    def test_create(self):
         facebook_token = 'asdf123'
         facebook_user_id = 1207059
         email = 'aturing@gmail.com'
@@ -134,8 +136,6 @@ class SocialAccountTests(APITestCase):
                 id=facebook_user_id)
         hometown = 'Paddington, London'
         friend_id = '10101293050283881'
-        firebase_uuid = 9876
-        firebase_token = 'qwer1234'
 
         # Mock the user's friend.
         friend = User(email='jclarke@gmail.com', name='Joan Clarke')
@@ -152,8 +152,7 @@ class SocialAccountTests(APITestCase):
             'name': name,
             'hometown': hometown,
         })
-        url = 'https://graph.facebook.com/v2.2/me'
-        httpretty.register_uri(httpretty.GET, url, body=body,
+        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
                                content_type='application/json')
 
         # Request the user's friendlist.
@@ -163,21 +162,19 @@ class SocialAccountTests(APITestCase):
                 'id': '10101293050283881',
             }],
         })
-        url = 'https://graph.facebook.com/v2.2/me/friends'
-        httpretty.register_uri(httpretty.GET, url, body=body,
+        friends_url = 'https://graph.facebook.com/v2.2/me/friends'
+        httpretty.register_uri(httpretty.GET, friends_url, body=body,
                                content_type='application/json')
 
-        # Generate a Firebase token.
-        mock_uuid.uuid1.return_value = firebase_uuid
-        mock_create_token.return_value = firebase_token
+        user = User()
+        user.save()
 
-        url = reverse('social-account-login')
-        data = {'access_token': facebook_token}
-        response = self.client.post(url, data)
+        data = {'access_token': facebook_token, 'user': user.id}
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should create a user.
-        user = User.objects.get(email=email, name=name, image_url=image_url)
+        # It should update the user.
+        user = User.objects.get(id=user.id, email=email, name=name, image_url=image_url)
 
         # It should create the user's social account.
         profile = {
@@ -197,19 +194,11 @@ class SocialAccountTests(APITestCase):
         params = {'access_token': [facebook_token]}
         self.assertEqual(httpretty.last_request().querystring, params)
 
-        # It should generate a Firebase token.
-        auth_payload = {'uid': unicode(firebase_uuid)}
-        mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
-
-        # It should create symmetrical friendships.
-        Friendship.objects.get(user1=user, user2=friend)
-        Friendship.objects.get(user1=friend, user2=user)
-
-        # It should log the user in.
-        self.assertEqual(self.client.session['_auth_user_id'], user.id)
+        # It should create symmetrical facebook friendships.
+        User.objects.get(id=user.id, facebook_friends__id=friend.id)
+        User.objects.get(id=friend.id, facebook_friends__id=user.id)
 
         # It should return the user.
-        user.firebase_token = firebase_token
         serializer = UserSerializer(user)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
@@ -228,13 +217,16 @@ class SocialAccountTests(APITestCase):
         friend_account.save()
 
         # Request the user's profile.
-        url = 'https://graph.facebook.com/v2.2/me'
-        httpretty.register_uri(httpretty.GET, url, status=500,
+        httpretty.register_uri(httpretty.GET, self.profile_url, status=500,
                                content_type='application/json')
 
-        url = reverse('social-account-login')
-        data = {'access_token': facebook_token}
-        response = self.client.post(url, data)
+        user = User()
+        user.save()
+
+        data = {'access_token': facebook_token,
+                'provider': SocialAccount.FACEBOOK,
+                'user': user.id}
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
