@@ -140,6 +140,16 @@ class SocialAccountTests(APITestCase):
         # Mock the user.
         self.user = User()
         self.user.save()
+        self.phone = UserPhoneNumber(user=self.user, phone='+12036227310')
+        self.phone.save()
+
+        # Mock the user's friend.
+        self.friend = User(email='jclarke@gmail.com', name='Joan Clarke')
+        self.friend.save()
+        self.friend_account = SocialAccount(user=self.friend,
+                                            provider=SocialAccount.FACEBOOK,
+                                            uid='10101293050283881')
+        self.friend_account.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user)
@@ -155,15 +165,6 @@ class SocialAccountTests(APITestCase):
         image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
                 id=facebook_user_id)
         hometown = 'Paddington, London'
-        friend_id = '10101293050283881'
-
-        # Mock the user's friend.
-        friend = User(email='jclarke@gmail.com', name='Joan Clarke')
-        friend.save()
-        friend_account = SocialAccount(user=friend,
-                                       provider=SocialAccount.FACEBOOK,
-                                       uid=friend_id)
-        friend_account.save()
 
         # Request the user's profile.
         body = json.dumps({
@@ -213,8 +214,8 @@ class SocialAccountTests(APITestCase):
         self.assertEqual(httpretty.last_request().querystring, params)
 
         # It should create symmetrical facebook friendships.
-        User.objects.get(id=self.user.id, facebook_friends__id=friend.id)
-        User.objects.get(id=friend.id, facebook_friends__id=self.user.id)
+        User.objects.get(id=self.user.id, facebook_friends__id=self.friend.id)
+        User.objects.get(id=self.friend.id, facebook_friends__id=self.user.id)
 
         # It should return the user.
         self.user.email = email
@@ -226,26 +227,52 @@ class SocialAccountTests(APITestCase):
 
     @httpretty.activate
     def test_create_bad_profile_request(self):
-        facebook_token = 'asdf123'
-        friend_id = '10101293050283881'
-
-        # Mock the user's friend.
-        friend = User(email='jclarke@gmail.com', name='Joan Clarke')
-        friend.save()
-        friend_account = SocialAccount(user=friend,
-                                       provider=SocialAccount.FACEBOOK,
-                                       uid=friend_id)
-        friend_account.save()
-
         # Request the user's profile.
         httpretty.register_uri(httpretty.GET, self.profile_url, status=500,
                                content_type='application/json')
 
-        data = {'access_token': facebook_token,
-                'provider': SocialAccount.FACEBOOK,
-                'user': self.user.id}
+        data = {
+            'access_token': 'asdf123',
+            'provider': SocialAccount.FACEBOOK,
+            'user': self.user.id,
+        }
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    @httpretty.activate
+    def test_create_already_exists(self):
+        # Users who've already signed up will have an email, username and
+        # image_url.
+        facebook_user_id = 1207059
+        image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
+                id=facebook_user_id)
+        user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
+                    image_url=image_url)
+        user.save()
+
+        # Request the user's profile.
+        body = json.dumps({
+            'id': facebook_user_id,
+            'email': user.email,
+            'name': user.name,
+            'image_url': user.image_url,
+        })
+        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
+                               content_type='application/json')
+
+        data = {'access_token': 'asdf123'}
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should delete the old user.
+        with self.assertRaises(User.DoesNotExist):
+            User.objects.get(id=self.user.id)
+
+        # It should update the user's token to point to the old user.
+        Token.objects.get(key=self.token.key, user=user)
+
+        # It should point the old user's phone number to the new user.
+        UserPhoneNumber.objects.get(id=self.phone.id, user=user)
 
 
 class AuthCodeTests(APITestCase):

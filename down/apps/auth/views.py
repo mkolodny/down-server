@@ -73,38 +73,43 @@ class SocialAccountLogin(APIView):
         # TODO: Handle when the data is invalid.
         serializer = SocialAccountLoginSerializer(data=request.data)
         serializer.is_valid()
-        import logging
-        logger = logging.getLogger('console')
 
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
         access_token = serializer.data['access_token']
         profile = self.get_profile(provider, access_token)
 
-        # Update the user.
-        request.user.email = profile['email']
-        request.user.name = profile['name']
-        request.user.image_url = profile['image_url']
-        logger.info(request.user)
-        logger.info(request.user.id)
-        from django.forms.models import model_to_dict
-        logger.info(model_to_dict(request.user))
+        # Check whether the user has already signed up.
         try:
+            user = User.objects.get(email=profile['email'])
+            
+            # Update all of the new user's objects to point to the old user, and
+            # delete the new user.
+            phone = UserPhoneNumber.objects.get(user=request.user)
+            phone.user = user
+            phone.save()
+            request.user.delete()
+            request.auth.user = user
+            request.auth.save()
+
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            # Update the user.
+            request.user.email = profile['email']
+            request.user.name = profile['name']
+            request.user.image_url = profile['image_url']
             request.user.save()
-        except Exception as e:
-            logger.info(type(e).__name__)
-            logger.info(e)
-            raise Exception()
 
-        # Create the user's social account.
-        account = SocialAccount(user_id=request.user.id, provider=provider,
-                                uid=profile['id'], profile=profile)
-        account.save()
+            # Create the user's social account.
+            account = SocialAccount(user_id=request.user.id, provider=provider,
+                                    uid=profile['id'], profile=profile)
+            account.save()
 
-        self.save_friends(provider, access_token, request.user)
+            self.save_friends(provider, access_token, request.user)
 
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            serializer = UserSerializer(request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get_profile(self, provider, access_token):
         """
