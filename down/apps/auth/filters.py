@@ -20,4 +20,4 @@ class UserFilter(FilterSet):
 
     class Meta:
         model = User
-        fields = ['ids']
+        fields = ['ids', 'username']
