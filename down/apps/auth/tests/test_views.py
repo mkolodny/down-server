@@ -130,6 +130,19 @@ class UserTests(APITestCase):
         json_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_events)
 
+    def test_facebook_friends(self):
+        # Make the user's friend their facebook friend.
+        self.user.facebook_friends.add(self.friend)
+
+        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the user's facebook friends.
+        serializer = UserSerializer([self.friend], many=True)
+        json_friends = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_friends)
+
 
 class SocialAccountTests(APITestCase):
     

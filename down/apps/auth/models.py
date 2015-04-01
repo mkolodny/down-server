@@ -22,9 +22,8 @@ class User(AbstractBaseUser):
     friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False,
                                      related_name='related_friends+')
-    facebook_friends = models.ManyToManyField('self', 
-                                              symmetrical=False,
-                                              related_name='related_facebook_friends+')
+    facebook_friends = models.ManyToManyField('self',  symmetrical=False,
+            related_name='related_facebook_friends+')
     friend_requests = models.ManyToManyField('self',
                                          through='friends.FriendRequests',
                                          symmetrical=False,
