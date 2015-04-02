@@ -40,7 +40,7 @@ class UserTests(APITestCase):
         self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
                            image_url='http://imgur.com/jcke')
         self.friend.save()
-        friendship = Friendship(user1=self.user, user2=self.friend)
+        friendship = Friendship(user=self.user, friend=self.friend)
         friendship.save()
 
         # Mock an event that the user's invited to.

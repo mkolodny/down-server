@@ -13,6 +13,7 @@ from down.apps.auth.views import (
     UserViewSet,
 )
 from down.apps.events.views import EventViewSet, InvitationViewSet
+from down.apps.friends.views import FriendshipViewSet
 from down.apps.notifications.views import APNSDeviceViewSet
 
 # TODO: Figure out how to split up the router urls into the individual apps.
@@ -23,6 +24,7 @@ router = routers.SimpleRouter()
 router.register(r'apnsdevices', APNSDeviceViewSet)
 router.register(r'authcode', AuthCodeViewSet)
 router.register(r'events', EventViewSet)
+router.register(r'friendships', FriendshipViewSet)
 router.register(r'invitations', InvitationViewSet)
 router.register(r'phonenumbers', LinfootFunnelViewSet, base_name='phonenumbers')
 router.register(r'users', UserViewSet)

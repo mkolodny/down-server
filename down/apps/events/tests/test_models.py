@@ -19,18 +19,18 @@ class InvitationTests(APITestCase):
         self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
                       image_url='http://imgur.com/jcke')
         self.friend.save()
-        self.friendship = Friendship(user1=self.user, user2=self.friend)
+        self.friendship = Friendship(user=self.user, friend=self.friend)
         self.friendship.save()
-        self.friendship = Friendship(user1=self.friend, user2=self.user)
+        self.friendship = Friendship(user=self.friend, friend=self.user)
         self.friendship.save()
 
         # Mock another friend.
         self.friend1 = User(email='mjordan@gmail.com', name='Michael Jordan',
                       image_url='http://imgur.com/mj')
         self.friend1.save()
-        self.friendship = Friendship(user1=self.friend, user2=self.friend1)
+        self.friendship = Friendship(user=self.friend, friend=self.friend1)
         self.friendship.save()
-        self.friendship = Friendship(user1=self.friend1, user2=self.friend)
+        self.friendship = Friendship(user=self.friend1, friend=self.friend)
         self.friendship.save()
 
         # Mock an event that the user's invited to.

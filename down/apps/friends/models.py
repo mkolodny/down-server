@@ -7,12 +7,12 @@ from down.apps.auth.models import User
 class Friendship(models.Model):
     # TODO: Figure out why the only one friend is getting a new many-to-many friend
     # when saving a friendship.
-    user1 = models.ForeignKey(User, related_name='friend1s+')
-    user2 = models.ForeignKey(User, related_name='friend2s+')
+    user = models.ForeignKey(User, related_name='user+')
+    friend = models.ForeignKey(User, related_name='friend+')
     since = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user1', 'user2')
+        unique_together = ('user', 'friend')
 
 
 class FriendRequests(models.Model):
