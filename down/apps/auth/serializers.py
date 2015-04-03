@@ -47,6 +47,3 @@ class UserSerializer(GeoModelSerializer):
     class Meta:
         model = User
         exclude = ('password', 'date_joined', 'last_login', 'facebook_friends')
-
-
-

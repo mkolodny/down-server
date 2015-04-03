@@ -5,10 +5,11 @@ from rest_framework import serializers
 from rest_framework_gis.serializers import GeoModelSerializer
 import pytz
 from down.apps.auth.models import User
-from .models import Event, Invitation, Place
 from down.apps.auth.serializers import UserSerializer
+from .models import Event, Invitation, Place
 
 
+# TODO: Move this somewhere more general.
 class UnixEpochDateField(serializers.DateTimeField):
 
     def to_representation(self, value):
