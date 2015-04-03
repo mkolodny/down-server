@@ -92,3 +92,30 @@ class FriendshipTests(APITestCase):
 
         response = self.client.get(self.query_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete(self):
+        # Mock a friendship.
+        friendship = Friendship(user=self.user, friend=self.friend)
+        friendship.save()
+
+        detail_url = reverse('friendship-detail', kwargs={'pk': friendship.id})
+        response = self.client.delete(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # It should delete the friendship.
+        with self.assertRaises(Friendship.DoesNotExist):
+            Friendship.objects.get(id=friendship.id)
+
+    def test_delete_not_current_user(self):
+        # Mock a friendship.
+        friendship = Friendship(user=self.user, friend=self.friend)
+        friendship.save()
+
+        # Authorize the requests with the second user's token.
+        self.token = Token(user=self.friend)
+        self.token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        detail_url = reverse('friendship-detail', kwargs={'pk': friendship.id})
+        response = self.client.delete(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
