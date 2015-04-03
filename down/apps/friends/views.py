@@ -11,7 +11,8 @@ from .serializers import FriendshipSerializer
 
 
 class FriendshipViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
-                        mixins.DestroyModelMixin, viewsets.GenericViewSet):
+                        mixins.DestroyModelMixin, mixins.UpdateModelMixin,
+                        viewsets.GenericViewSet):
     authentication_classes = (TokenAuthentication,)
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('user', 'friend')

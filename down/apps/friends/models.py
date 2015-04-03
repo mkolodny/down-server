@@ -10,20 +10,7 @@ class Friendship(models.Model):
     user = models.ForeignKey(User, related_name='user+')
     friend = models.ForeignKey(User, related_name='friend+')
     since = models.DateTimeField(auto_now_add=True)
+    acknowledged = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('user', 'friend')
-
-
-class FriendRequests(models.Model):
-    from_user = models.ForeignKey(User, related_name='from_users')
-    to_user = models.ForeignKey(User, related_name='to_users')
-    YES = 1
-    NO = 2
-    RESPONSE_TYPE = (
-        (YES, 'yes'),
-        (NO, 'no'),
-    )
-    response = models.SmallIntegerField(null=True, blank=True,
-                                        choices=RESPONSE_TYPE)
-    datetime = models.DateTimeField(auto_now_add=True)
