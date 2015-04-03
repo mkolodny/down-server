@@ -70,9 +70,11 @@ class FriendshipTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_query_by_user_friend(self):
-        # Mock a friendship.
+        # Mock two friendships.
         friendship = Friendship(user=self.user, friend=self.friend)
         friendship.save()
+        other_friendship = Friendship(user=self.friend, friend=self.user)
+        other_friendship.save()
 
         response = self.client.get(self.query_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
