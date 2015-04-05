@@ -22,7 +22,7 @@ from down.apps.notifications.views import APNSDeviceViewSet
 # With trailing slash appended:
 router = routers.SimpleRouter()
 router.register(r'apnsdevices', APNSDeviceViewSet)
-router.register(r'authcode', AuthCodeViewSet)
+router.register(r'authcodes', AuthCodeViewSet)
 router.register(r'events', EventViewSet)
 router.register(r'friendships', FriendshipViewSet)
 router.register(r'invitations', InvitationViewSet)
