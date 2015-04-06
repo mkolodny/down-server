@@ -22,6 +22,7 @@ from .permissions import IsCurrentUserOrReadOnly
 from .serializers import (
     AuthCodeSerializer,
     LinfootFunnelSerializer,
+    PhoneSerializer,
     SessionSerializer,
     SocialAccountLoginSerializer,
     UserSerializer,
@@ -246,11 +247,13 @@ class SessionView(APIView):
 
         # Get or create the user
         try:
-            user_number = UserPhoneNumber.objects.get(phone=serializer.data['phone'])
+            phone = serializer.data['phone']
+            user_number = UserPhoneNumber.objects.get(phone=phone)
             # User exists
             user = user_number.user
         except UserPhoneNumber.DoesNotExist:
-            # User doesn't already exist, so create a blank new user and phone number
+            # User doesn't already exist, so create a blank new user and phone
+            # number.
             user = User()
             user.save()
 
@@ -270,6 +273,32 @@ class SessionView(APIView):
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class UserPhoneNumberView(APIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        """
+        Return a list of users with the given phone numbers.
+
+        We're using POST here mainly because the list of phone numbers can be
+        longer than the max length url (were we to put them in the query
+        parameters).
+        """
+        serializer = PhoneSerializer(data=request.data, many=True)
+        # TODO: Test for when invalid data is sent.
+        serializer.is_valid()
+
+        # Get all users with phone numbers in the phone number data.
+        phones = [phone_dict['phone'] for phone_dict in serializer.data]
+        user_phones = UserPhoneNumber.objects.filter(phone__in=phones)
+        user_ids = [user_phone.id for user_phone in user_phones]
+        users = User.objects.filter(id__in=user_ids)
+
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TermsView(TemplateView):
