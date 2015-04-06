@@ -55,6 +55,7 @@ class UserTests(APITestCase):
         # Save the user urls.
         self.detail_url = reverse('user-detail', kwargs={'pk': self.user.id})
         self.list_url = reverse('user-list')
+        self.me_url = '{list_url}me'.format(list_url=self.list_url)
 
     def tearDown(self):
         self.patcher.stop()
@@ -67,6 +68,26 @@ class UserTests(APITestCase):
         serializer = UserSerializer(self.user)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
+
+    def test_get_not_logged_in(self):
+        # TODO
+        pass
+
+    def test_get_me(self):
+        response = self.client.get(self.me_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the authenticated user.
+        serializer = UserSerializer(self.user)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
+    def test_get_me_not_logged_in(self):
+        # Remove the user's credentials.
+        self.client.credentials()
+
+        response = self.client.get(self.me_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_put(self):
         new_name = 'Alan'
