@@ -162,7 +162,7 @@ class InvitationTests(APITestCase):
 
         # We should have pushed an update to firebase adding the user to the 
         # table of event members for this event
-        url = "{firebase_url}/events/members/{event_id}/.json?auth={firebase_secret}".format(
+        url = '{firebase_url}/events/members/{event_id}/.json?auth={firebase_secret}'.format(
                 firebase_url = settings.FIREBASE_URL,
                 event_id = self.event.id,
                 firebase_secret = settings.FIREBASE_SECRET)
