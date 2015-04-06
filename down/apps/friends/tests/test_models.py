@@ -12,7 +12,7 @@ class FriendTests(APITestCase):
         self.mock_patch = self.patcher.start()
 
         # Mock a user
-        self.user = User(name="Alan Tdog Turing")
+        self.user = User(name='Alan Tdog Turing')
         self.user.save()
 
         # Mock the user's device.
@@ -25,7 +25,7 @@ class FriendTests(APITestCase):
         self.user_apns_device.save()
 
         # Mock another user to be added as a friend by the user
-        self.friend = User(name="Richard FoShizzle Feynman")
+        self.friend = User(name='Richard FoShizzle Feynman')
         self.friend.save()
 
         # Mock the friend's device.
