@@ -56,6 +56,9 @@ class SocialAccount(models.Model):
     last_login = models.DateTimeField(auto_now=True)
     date_joined = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('provider', 'uid')
+
 
 class LinfootFunnel(models.Model):
     phone = PhoneNumberField(unique=True)
