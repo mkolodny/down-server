@@ -28,7 +28,7 @@ from .serializers import (
     UserSerializer,
 )
 from down.apps.auth.filters import UserFilter
-from down.apps.events.models import Invitation
+from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
 from down.apps.friends.models import Friendship
 
@@ -91,10 +91,9 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
     @detail_route(methods=['get'])
     def invited_events(self, request, pk=None):
-        # TODO: Handle when the user doesn't exist.
-        user = User.objects.get(id=pk)
-        invitations = Invitation.objects.filter(to_user=user)
-        events = [invitation.event for invitation in invitations]
+        invitations = Invitation.objects.filter(to_user=request.user)
+        event_ids = [invitation.event_id for invitation in invitations]
+        events = Event.objects.filter(id__in=event_ids)
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
 
