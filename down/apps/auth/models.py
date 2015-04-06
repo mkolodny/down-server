@@ -22,8 +22,6 @@ class User(AbstractBaseUser):
     friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False,
                                      related_name='related_friends+')
-    facebook_friends = models.ManyToManyField('self',  symmetrical=False,
-            related_name='related_facebook_friends+')
 
     # Use name for the username field, since `self.username` might not be set.
     USERNAME_FIELD = 'email'

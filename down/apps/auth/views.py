@@ -176,8 +176,6 @@ class SocialAccountLogin(APIView):
                                     uid=profile['id'], profile=profile)
             account.save()
 
-            self.save_friends(provider, access_token, request.user)
-
             serializer = UserSerializer(request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -200,56 +198,14 @@ class SocialAccountLogin(APIView):
         """
         params = {'access_token': access_token}
         url = 'https://graph.facebook.com/v2.2/me?' + urlencode(params)
-        profile = self.get_facebook_data(url)
-        profile['image_url'] = ('https://graph.facebook.com/v2.2/{id}/'
-                'picture').format(id=profile['id'])
-        return profile
-
-    def save_friends(self, provider, access_token, user):
-        """
-        Get the user's friends on `provider`, and save them as the user's friends.
-
-        TODO: Let user's befriend only the people they want to be friends with on
-        down.
-        """
-        if provider == SocialAccount.FACEBOOK:
-            self.save_facebook_friends(access_token, user)
-
-    def save_facebook_friends(self, access_token, user):
-        """
-        Save the user's Facebook friends as down friends.
-        """
-        params = {'access_token': access_token}
-        url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
-        friends_response = self.get_facebook_data(url)
-        friends = friends_response['data']
-        friendships = []
-        for friend in friends:
-            # TODO: Figure out how to create multiple facebook apps for separate
-            # environments. Right now, since the main facebook app is being
-            # shared across all of our environments, facebook may think our users
-            # have friends on Down that are on a different environment.
-            # Making sure the friend exists is a hack to handle that problem until
-            # we create multiple facebook apps/environments.
-            try:
-                account = SocialAccount.objects.get(uid=friend['id'])
-            except SocialAccount.DoesNotExist:
-                continue
-
-            # Create symmetrical friendships.
-            account_user = account.user
-            user.facebook_friends.add(account_user)
-            account_user.facebook_friends.add(user)
-
-    def get_facebook_data(self, url):
-        """
-        Request data from Facebook, and return the data as a dictionary.
-        """
         r = requests.get(url)
-        # TODO: Handle bad data.
         if r.status_code != 200:
             raise ServiceUnavailable(r.content)
-        return r.json()
+        # TODO: Handle bad data.
+        profile = r.json()
+        profile['image_url'] = ('https://graph.facebook.com/v2.2/{id}/'
+                                'picture').format(id=profile['id'])
+        return profile
 
 
 class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):

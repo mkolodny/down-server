@@ -293,17 +293,6 @@ class SocialAccountTests(APITestCase):
         httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
                                content_type='application/json')
 
-        # Request the user's friendlist.
-        body = json.dumps({
-            'data': [{
-                'name': 'Joan Clarke', 
-                'id': '10101293050283881',
-            }],
-        })
-        friends_url = 'https://graph.facebook.com/v2.2/me/friends'
-        httpretty.register_uri(httpretty.GET, friends_url, body=body,
-                               content_type='application/json')
-
         data = {'access_token': facebook_token}
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -330,10 +319,6 @@ class SocialAccountTests(APITestCase):
         params = {'access_token': [facebook_token]}
         self.assertEqual(httpretty.last_request().querystring, params)
 
-        # It should create symmetrical facebook friendships.
-        User.objects.get(id=self.user.id, facebook_friends__id=self.friend.id)
-        User.objects.get(id=self.friend.id, facebook_friends__id=self.user.id)
-
         # It should return the user.
         self.user.email = email
         self.user.name = name
@@ -359,7 +344,7 @@ class SocialAccountTests(APITestCase):
     @httpretty.activate
     def test_create_already_exists(self):
         # Users who've already signed up will have an email, username and
-        # image_url.
+        # image_url. So mock a user that already has those attributes.
         facebook_user_id = 1207059
         image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
                 id=facebook_user_id)
