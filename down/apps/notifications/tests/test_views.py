@@ -17,9 +17,9 @@ class APNSDeviceTests(APITestCase):
         self.user.save()
 
         # Mock POST data.
-        b64_registration_id = 'Zi28NYqEvBdX74vATBujSH8CocmCUj37zqJZ1B5X+Os='
         self.post_data = {
-            'registration_id': b64_registration_id,
+            'registration_id': ('662dbc358a84bc1757ef8bc04c1ba3487f02a1c982523df'
+                                'bcea259d41e57f8eb'),
             'device_id': 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F',
             'name': 'iPhone, 8.2',
             'user': self.user.id,
@@ -31,6 +31,4 @@ class APNSDeviceTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create a new device.
-        data = self.post_data
-        data['registration_id'] = b2a_hex(a2b_base64(data['registration_id']))
         APNSDevice.objects.get(**self.post_data)
