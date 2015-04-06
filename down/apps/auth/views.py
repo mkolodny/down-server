@@ -37,7 +37,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     authentication_classes = (TokenAuthentication,)
     filter_backends = (DjangoFilterBackend,)
     filter_class = UserFilter
-    permission_classes = (IsCurrentUserOrReadOnly,)
+    permission_classes = (IsAuthenticated, IsCurrentUserOrReadOnly)
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -64,7 +64,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
 
-    @list_route(methods=['get'], permission_classes=[IsAuthenticated])
+    @list_route(methods=['get'])
     def me(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
@@ -82,6 +82,7 @@ class UserUsernameDetail(APIView):
 
 class SocialAccountLogin(APIView):
     authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         # TODO: Handle when the data is invalid.
