@@ -255,7 +255,8 @@ class SessionView(APIView):
         # Generate a Firebase token every time.
         # TODO: Don't set the firebase token on the user. Just add it as
         # extra context to the user serializer.
-        auth_payload = {'uid': unicode(uuid.uuid1())}
+        #auth_payload = {'uid': unicode(uuid.uuid1())}
+        auth_payload = {'uid': unicode(user.id)}
         firebase_token = create_token(settings.FIREBASE_SECRET, auth_payload)
         user.firebase_token = firebase_token
 

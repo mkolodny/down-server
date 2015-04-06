@@ -370,15 +370,12 @@ class AuthCodeTests(APITestCase):
 class SessionTests(APITestCase):
     
     @mock.patch('down.apps.auth.views.create_token')
-    @mock.patch('down.apps.auth.views.uuid')
-    def test_create(self, mock_uuid, mock_create_token):
+    def test_create(self, mock_create_token):
         # Make sure no users have been created yet
         self.assertEquals(User.objects.count(), 0)
 
         # Generate a Firebase token.
-        firebase_uuid = 9876
         firebase_token = 'qwer1234'
-        mock_uuid.uuid1.return_value = firebase_uuid
         mock_create_token.return_value = firebase_token
 
         url = reverse('session')
@@ -401,7 +398,7 @@ class SessionTests(APITestCase):
         token = Token.objects.get(user=user)
 
         # It should generate a Firebase token.
-        auth_payload = {'uid': unicode(firebase_uuid)}
+        auth_payload = {'uid': unicode(user.id)}
         mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
 
         # Check that the response is the user we're expecting
