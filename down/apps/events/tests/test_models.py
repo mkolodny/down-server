@@ -168,8 +168,6 @@ class InvitationTests(APITestCase):
                 firebase_secret = settings.FIREBASE_SECRET)
         data = {self.user.id: True}
 
-        httpretty.register_uri(httpretty.PATCH, url)
-
         # Invite the user
         invitation = Invitation(to_user=self.user, event=self.event)
         invitation.save()
