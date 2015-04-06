@@ -52,6 +52,12 @@ class UserTests(APITestCase):
         self.invitation = Invitation(to_user=self.user, event=self.event)
         self.invitation.save()
 
+        # Mock the users' phone numbers.
+        self.friend_phone = UserPhoneNumber(user=self.friend, phone='+12036227310')
+        self.friend_phone.save()
+        self.user_phone = UserPhoneNumber(user=self.user, phone='+14388843460')
+        self.user_phone.save()
+
         # Save the user urls.
         self.detail_url = reverse('user-detail', kwargs={'pk': self.user.id})
         self.list_url = reverse('user-list')
@@ -123,8 +129,19 @@ class UserTests(APITestCase):
 
     def test_query_by_username(self):
         url = '{list_url}?username={username}'.format(list_url=self.list_url,
-                                                       username=self.user.username)
+                                                      username=self.user.username)
         response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list with the user.
+        serializer = UserSerializer([self.user], many=True)
+        json_users = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_users)
+
+    def test_query_by_phones(self):
+        url = '{list_url}phones'.format(list_url=self.list_url)
+        data = {'phones': [unicode(self.user_phone.phone)]}
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list with the user.
@@ -484,51 +501,6 @@ class SessionTests(APITestCase):
 
         # The number of users in the database should still be 1
         self.assertEqual(User.objects.count(), 1)
-
-
-class PhoneListTests(APITestCase):
-
-    def setUp(self):
-        # Mock two users.
-        self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing',
-                          username='tdog', image_url='http://imgur.com/tdog')
-        self.user1.save()
-        self.user2 = User(email='jclarke@gmail.com', name='Joan Clarke',
-                          image_url='http://imgur.com/jcke')
-        self.user2.save()
-
-        # Mock the users' phone numbers.
-        self.user2_phone = UserPhoneNumber(user=self.user2, phone='+14388843460')
-        self.user2_phone.save()
-        self.user1_phone = UserPhoneNumber(user=self.user1, phone='+12036227310')
-        self.user1_phone.save()
-
-        # Authorize the requests with the first user's token.
-        self.token = Token(user=self.user1)
-        self.token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
-
-        # Save urls.
-        self.list_url = reverse('userphone')
-
-    def test_query_by_phone(self):
-        data = [{
-            'phone': unicode(self.user1_phone.phone),
-        }]
-        response = self.client.post(self.list_url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return the users.
-        serializer = UserSerializer([self.user1], many=True)
-        json_users = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_users)
-
-    def test_query_by_phone_not_logged_in(self):
-        # Remove the user's credentials.
-        self.client.credentials()
-
-        response = self.client.post(self.list_url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class TermsTests(APITestCase):

@@ -50,4 +50,4 @@ class UserSerializer(GeoModelSerializer):
 
 
 class PhoneSerializer(serializers.Serializer):
-    phone = PhoneNumberField()
+    phones = serializers.ListField(child=PhoneNumberField())
