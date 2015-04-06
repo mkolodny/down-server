@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
+from django.conf import settings
+import json
 import mock
+import requests
 from push_notifications.models import APNSDevice
 from rest_framework.test import APITestCase
 from down.apps.auth.models import User
@@ -10,6 +13,9 @@ from down.apps.friends.models import Friendship
 class InvitationTests(APITestCase):
 
     def setUp(self):
+        self.patcher = mock.patch('requests.patch')
+        self.mock_patch = self.patcher.start()
+
         # Mock a user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                          username='tdog', image_url='http://imgur.com/tdog')
@@ -62,6 +68,9 @@ class InvitationTests(APITestCase):
                                       user=self.friend1)
         self.apns_device3.save()
 
+    def tearDown(self):
+        self.patcher.stop()
+    
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_create_notify(self, mock_send):
         # Invite the user.
@@ -145,3 +154,24 @@ class InvitationTests(APITestCase):
 
         # It should NOT (ugh..) send another notification.
         self.assertFalse(mock_send.called)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_send_invite_update_firebase_members_list(self, mock_send):
+        # TODO add integration test to ensure we get the correct reponse 
+        # back from the firebase server
+
+        # We should have pushed an update to firebase adding the user to the 
+        # table of event members for this event
+        url = "{firebase_url}/events/members/{event_id}/.json?auth={firebase_secret}".format(
+                firebase_url = settings.FIREBASE_URL,
+                event_id = self.event.id,
+                firebase_secret = settings.FIREBASE_SECRET)
+        data = {self.user.id: True}
+
+        httpretty.register_uri(httpretty.PATCH, url)
+
+        # Invite the user
+        invitation = Invitation(to_user=self.user, event=self.event)
+        invitation.save()
+
+        self.mock_patch.assert_called_once_with(url, json.dumps(data))

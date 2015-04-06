@@ -8,6 +8,9 @@ from down.apps.friends.models import Friendship
 class FriendTests(APITestCase):
 
     def setUp(self):
+        self.patcher = mock.patch('requests.patch')
+        self.mock_patch = self.patcher.start()
+
         # Mock a user
         self.user = User(name="Alan Tdog Turing")
         self.user.save()
@@ -33,6 +36,9 @@ class FriendTests(APITestCase):
                                       device_id=device_id2, name='iPhone, 8.2',
                                       user=self.friend)
         self.friend_apns_device.save()
+
+    def tearDown(self):
+        self.patcher.stop()
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_friendship_create_notify(self, mock_send): 

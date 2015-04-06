@@ -16,6 +16,9 @@ from down.apps.events.serializers import EventSerializer, InvitationSerializer
 class EventTests(APITestCase):
 
     def setUp(self):
+        self.patcher = mock.patch('requests.patch')
+        self.mock_patch = self.patcher.start()
+
         # Mock a user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing')
         self.user.save()
@@ -51,6 +54,9 @@ class EventTests(APITestCase):
         self.create_message_url = reverse('event-messages', kwargs={
             'pk': self.event.id,
         })
+    
+    def tearDown(self):
+        self.patcher.stop()
 
     def test_create(self):
         data = {
@@ -173,6 +179,9 @@ class EventTests(APITestCase):
 class InvitationTests(APITestCase):
 
     def setUp(self):
+        self.patcher = mock.patch('requests.patch')
+        self.mock_patch = self.patcher.start()
+
         # Mock a couple users.
         self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing')
         self.user1.save()
@@ -207,6 +216,9 @@ class InvitationTests(APITestCase):
 
         # Save urls.
         self.list_url = reverse('invitation-list')
+
+    def tearDown(self):
+        self.patcher.stop()
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create(self, mock_send):

@@ -2,6 +2,9 @@ from __future__ import unicode_literals
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.conf import settings
+import json
+import requests
 from push_notifications.models import APNSDevice
 from down.apps.auth.models import User
 
@@ -66,6 +69,25 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
                                                      activity=event.title)
     devices = APNSDevice.objects.filter(user_id=invitation.to_user_id)
     devices.send_message(message)
+
+@receiver(post_save, sender=Invitation)
+def add_user_to_firebase_members_list(sender, instance, created, **kwargs):
+    """
+    Update the firebase members list table with the new user so that the firebase
+    security rules will allow them to read and write messages to the event chat
+    """
+    if not created:
+        return
+
+    invitation = instance
+
+    url = "{firebase_url}/events/members/{event_id}/.json?auth={firebase_secret}".format(
+            firebase_url = settings.FIREBASE_URL,
+            event_id = invitation.event.id,
+            firebase_secret = settings.FIREBASE_SECRET)
+    data = {invitation.to_user.id: True}
+    requests.patch(url, json.dumps(data))
+
 
 @receiver(post_save, sender=Invitation)
 def send_invitation_accept_notification(sender, instance, created, **kwargs):

@@ -26,6 +26,9 @@ from down.apps.friends.models import Friendship
 class UserTests(APITestCase):
 
     def setUp(self):
+        self.patcher = mock.patch('requests.patch')
+        self.mock_patch = self.patcher.start()
+
         # Mock a user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                          username='tdog', image_url='http://imgur.com/tdog')
@@ -52,6 +55,9 @@ class UserTests(APITestCase):
         # Save the user urls.
         self.detail_url = reverse('user-detail', kwargs={'pk': self.user.id})
         self.list_url = reverse('user-list')
+
+    def tearDown(self):
+        self.patcher.stop()
 
     def test_get(self):
         response = self.client.get(self.detail_url)
