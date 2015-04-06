@@ -294,7 +294,7 @@ class UserPhoneNumberView(APIView):
         # Get all users with phone numbers in the phone number data.
         phones = [phone_dict['phone'] for phone_dict in serializer.data]
         user_phones = UserPhoneNumber.objects.filter(phone__in=phones)
-        user_ids = [user_phone.id for user_phone in user_phones]
+        user_ids = [user_phone.user_id for user_phone in user_phones]
         users = User.objects.filter(id__in=user_ids)
 
         serializer = UserSerializer(users, many=True)

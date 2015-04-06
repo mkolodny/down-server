@@ -498,10 +498,10 @@ class PhoneListTests(APITestCase):
         self.user2.save()
 
         # Mock the users' phone numbers.
-        self.user1_phone = UserPhoneNumber(user=self.user1, phone='+12036227310')
-        self.user1_phone.save()
         self.user2_phone = UserPhoneNumber(user=self.user2, phone='+14388843460')
         self.user2_phone.save()
+        self.user1_phone = UserPhoneNumber(user=self.user1, phone='+12036227310')
+        self.user1_phone.save()
 
         # Authorize the requests with the first user's token.
         self.token = Token(user=self.user1)
