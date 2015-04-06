@@ -51,9 +51,42 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
     @detail_route(methods=['get'])
     def facebook_friends(self, request, pk=None):
-        # TODO: Handle when the user doesn't exist.
-        user = User.objects.get(id=pk)
-        serializer = UserSerializer(user.facebook_friends, many=True)
+        """
+        Get a list of the user's facebook friends.
+        """
+        # Ask Facebook for the user's Facebook friends who are using Down.
+        user_facebook_account = SocialAccount.objects.get(user=request.user)
+        params = {'access_token': user_facebook_account.uid}
+        url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
+        r = requests.get(url)
+        if r.status_code != status.HTTP_200_OK:
+            raise ServiceUnavailable(r.content)
+        try:
+            facebook_json = r.json()
+        except ValueError:
+            raise ServiceUnavailable('Facebook response data was not JSON.')
+        try:
+            facebook_friends = facebook_json['data']
+        except KeyError:
+            raise ServiceUnavailable('Facebook response did not contain data.')
+
+        # Use the list of the user's Facebook friends to create a queryset of the
+        # user's friends on Down.
+        friend_ids = []
+        for facebook_friend in facebook_friends:
+            # TODO: Figure out how to create multiple facebook apps for separate
+            # environments. Right now, since the main facebook app is being
+            # shared across all of our environments, facebook may think our users
+            # have friends on Down that are on a different environment.
+            # Making sure the friend exists is a hack to handle that problem until
+            # we create multiple facebook apps/environments.
+            try:
+                account = SocialAccount.objects.get(uid=facebook_friend['id'])
+                friend_ids.append(account.user_id)
+            except SocialAccount.DoesNotExist:
+                continue
+        friends = User.objects.filter(id__in=friend_ids)
+        serializer = UserSerializer(friends, many=True)
         return Response(serializer.data)
 
     @detail_route(methods=['get'])

@@ -33,6 +33,10 @@ class UserTests(APITestCase):
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                          username='tdog', image_url='http://imgur.com/tdog')
         self.user.save()
+        self.user_social = SocialAccount(user=self.user,
+                                         provider=SocialAccount.FACEBOOK,
+                                         uid='10101293050283881')
+        self.user_social.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user)
@@ -45,6 +49,10 @@ class UserTests(APITestCase):
         self.friend.save()
         friendship = Friendship(user=self.user, friend=self.friend)
         friendship.save()
+        self.friend_social = SocialAccount(user=self.friend,
+                                           provider=SocialAccount.FACEBOOK,
+                                           uid='20101293050283881')
+        self.friend_social.save()
 
         # Mock an event that the user's invited to.
         self.event = Event(title='bars?!?!?!', creator=self.friend)
@@ -62,6 +70,7 @@ class UserTests(APITestCase):
         self.detail_url = reverse('user-detail', kwargs={'pk': self.user.id})
         self.list_url = reverse('user-list')
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
+        self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
 
     def tearDown(self):
         self.patcher.stop()
@@ -181,18 +190,62 @@ class UserTests(APITestCase):
         json_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_events)
 
+    @httpretty.activate
     def test_facebook_friends(self):
-        # Make the user's friend their facebook friend.
-        self.user.facebook_friends.add(self.friend)
-
+        # Mock the user's facebook friends.
+        body = json.dumps({
+            'data': [{
+                'name': 'Joan Clarke', 
+                'id': self.friend_social.uid,
+            }],
+        })
+        httpretty.register_uri(httpretty.GET, self.friends_url, body=body,
+                               content_type='application/json')
+        
         url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return a list of the user's facebook friends.
+        # It should request the user's friends with their facebook access token.
+        querystring = {'access_token': [self.user_social.uid]}
+        self.assertEqual(httpretty.last_request().querystring, querystring)
+
+        # It should return a list of the users facebook friends.
         serializer = UserSerializer([self.friend], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
+
+    @httpretty.activate
+    def test_facebook_friends_bad_response(self):
+        # Mock a bad response from Facebook when requesting the user's facebook
+        # friends.
+        httpretty.register_uri(httpretty.GET, self.friends_url,
+                               status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    @httpretty.activate
+    def test_facebook_friends_no_content(self):
+        # Mock bad response data from Facebook when requesting the user's facebook
+        # friends.
+        httpretty.register_uri(httpretty.GET, self.friends_url, body='',
+                               status=status.HTTP_200_OK)
+        
+        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    @httpretty.activate
+    def test_facebook_friends_no_data(self):
+        # Mock Facebook response data without a `data` property.
+        httpretty.register_uri(httpretty.GET, self.friends_url, body=json.dumps({}),
+                               status=status.HTTP_200_OK)
+        
+        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class SocialAccountTests(APITestCase):
