@@ -7,10 +7,12 @@ from django.shortcuts import render
 from django.views.generic.base import RedirectView, TemplateView
 from firebase_token_generator import create_token
 import requests
-from rest_framework import authentication, mixins, status, viewsets
+from rest_framework import mixins, status, viewsets
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.filters import DjangoFilterBackend
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio.rest import TwilioRestClient
@@ -32,10 +34,10 @@ from down.apps.friends.models import Friendship
 
 class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                   mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    authentication_classes = (authentication.TokenAuthentication,)
+    authentication_classes = (TokenAuthentication,)
     filter_backends = (DjangoFilterBackend,)
     filter_class = UserFilter
-    permission_classes = (IsCurrentUserOrReadOnly,)
+    permission_classes = (IsAuthenticated, IsCurrentUserOrReadOnly)
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -62,6 +64,11 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
 
+    @list_route(methods=['get'])
+    def me(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
 
 class UserUsernameDetail(APIView):
 
@@ -74,7 +81,8 @@ class UserUsernameDetail(APIView):
 
 
 class SocialAccountLogin(APIView):
-    authentication_classes = (authentication.TokenAuthentication,)
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         # TODO: Handle when the data is invalid.

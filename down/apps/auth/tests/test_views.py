@@ -55,6 +55,7 @@ class UserTests(APITestCase):
         # Save the user urls.
         self.detail_url = reverse('user-detail', kwargs={'pk': self.user.id})
         self.list_url = reverse('user-list')
+        self.me_url = '{list_url}me'.format(list_url=self.list_url)
 
     def tearDown(self):
         self.patcher.stop()
@@ -64,6 +65,22 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the user.
+        serializer = UserSerializer(self.user)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
+    def test_get_not_logged_in(self):
+        # Remove the user's credentials.
+        self.client.credentials()
+
+        response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_get_me(self):
+        response = self.client.get(self.me_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the authenticated user.
         serializer = UserSerializer(self.user)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
@@ -304,6 +321,13 @@ class SocialAccountTests(APITestCase):
         # It should point the old user's phone number to the new user.
         UserPhoneNumber.objects.get(id=self.phone.id, user=user)
 
+    def test_create_not_logged_in(self):
+        # Log the user out.
+        self.client.credentials()
+
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class AuthCodeTests(APITestCase):
 
@@ -378,10 +402,13 @@ class SessionTests(APITestCase):
         firebase_token = 'qwer1234'
         mock_create_token.return_value = firebase_token
 
-        url = reverse('session')
+        # Mock the user's auth code.
         auth = AuthCode(phone='+12345678910')
         auth.save()
-        response = self.client.post(url, {'phone': unicode(auth.phone), 'code': auth.code})
+
+        url = reverse('session')
+        data = {'phone': unicode(auth.phone), 'code': auth.code}
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should delete the auth code
@@ -409,10 +436,13 @@ class SessionTests(APITestCase):
         self.assertEqual(response.content, json_user)
 
     def test_create_bad_credentials(self):
-        url = reverse('session')
+        # Mock an auth code.
         auth = AuthCode(phone='+12345678910')
         auth.save()
-        response = self.client.post(url, {'phone': unicode(auth.phone), 'code': (auth.code + 'x')})
+
+        url = reverse('session')
+        data = {'phone': unicode(auth.phone), 'code': (auth.code + 'x')}
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     @mock.patch('down.apps.auth.views.create_token')
