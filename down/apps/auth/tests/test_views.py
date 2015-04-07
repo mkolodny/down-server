@@ -549,6 +549,11 @@ class UserPhoneNumberViewSet(APITestCase):
         self.user_phone = UserPhoneNumber(user=self.user, phone='+14388843460')
         self.user_phone.save()
 
+        # Authorize the requests with the user's token.
+        self.token = Token(user=self.user)
+        self.token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
         # Save URLs.
         self.list_url = reverse('userphone')
 
@@ -561,6 +566,13 @@ class UserPhoneNumberViewSet(APITestCase):
         serializer = UserPhoneNumberSerializer([self.user_phone], many=True)
         json_user_phones = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phones)
+
+    def test_query_by_phones_not_logged_in(self):
+        # Unauth the user.
+        self.client.credentials()
+
+        response = self.client.post(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class TermsTests(APITestCase):

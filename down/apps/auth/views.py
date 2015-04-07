@@ -267,6 +267,8 @@ class SessionView(APIView):
 
 
 class UserPhoneNumberView(APIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         """
