@@ -123,6 +123,9 @@ class SocialAccountLogin(APIView):
         # TODO: Handle when the data is invalid.
         serializer = SocialAccountLoginSerializer(data=request.data)
         serializer.is_valid()
+        import logging
+        logger = logging.getLogger('console')
+        logger.info(serializer.data)
 
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
@@ -223,25 +226,18 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 class SessionView(APIView):
 
     def post(self, request):
-        import logging
-        logger = logging.getLogger('console')
         # TODO: Handle when the data is invalid.
         serializer = SessionSerializer(data=request.data)
         serializer.is_valid()
-        logging.info('validated serializer')
-        logging.info('serializer data:')
-        logging.info(serializer.data)
 
         try:
             auth = AuthCode.objects.get(phone=serializer.data['phone'], 
                                         code=serializer.data['code'])
-            logging.info('got auth code')
         except AuthCode.DoesNotExist:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         # Delete the auth code to keep the db clean
         auth.delete()
-        logging.info('deleted auth code')
 
         # Get or create the user
         try:
@@ -249,23 +245,17 @@ class SessionView(APIView):
             user_number = UserPhoneNumber.objects.get(phone=phone)
             # User exists
             user = user_number.user
-            logging.info('got user phone number')
         except UserPhoneNumber.DoesNotExist:
             # User doesn't already exist, so create a blank new user and phone
             # number.
             user = User()
             user.save()
-            logging.info('created user')
 
             user_number = UserPhoneNumber(user=user, phone=serializer.data['phone'])
             user_number.save()
-            logging.info('created user phone number')
 
         token, created = Token.objects.get_or_create(user=user)
-        logging.info('created token?')
-        logging.info(created)
         user.authtoken = token.key
-        logging.info('set the user\'s auth token')
 
         # Generate a Firebase token every time.
         # TODO: Don't set the firebase token on the user. Just add it as
@@ -273,11 +263,9 @@ class SessionView(APIView):
         #auth_payload = {'uid': unicode(uuid.uuid1())}
         auth_payload = {'uid': unicode(user.id)}
         firebase_token = create_token(settings.FIREBASE_SECRET, auth_payload)
-        logging.info('created firebase token')
         user.firebase_token = firebase_token
 
         serializer = UserSerializer(user)
-        logging.info('serialized the user')
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
