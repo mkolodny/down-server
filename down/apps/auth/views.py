@@ -126,6 +126,7 @@ class SocialAccountLogin(APIView):
         import logging
         logger = logging.getLogger('console')
         logger.info(serializer.data)
+        raise ServiceUnavailable()
 
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
