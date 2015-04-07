@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework_gis.serializers import GeoModelSerializer
-from .models import AuthCode, LinfootFunnel, SocialAccount, User
+from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
 from phonenumber_field import phonenumber
 
 
@@ -51,3 +51,11 @@ class UserSerializer(GeoModelSerializer):
 
 class PhoneSerializer(serializers.Serializer):
     phones = serializers.ListField(child=PhoneNumberField())
+
+
+class UserPhoneNumberSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    phone = PhoneNumberField()
+
+    class Meta:
+        model = UserPhoneNumber

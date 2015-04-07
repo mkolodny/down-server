@@ -26,6 +26,7 @@ from .serializers import (
     SessionSerializer,
     SocialAccountLoginSerializer,
     UserSerializer,
+    UserPhoneNumberSerializer,
 )
 from down.apps.auth.filters import UserFilter
 from down.apps.events.models import Event, Invitation
@@ -102,27 +103,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     def me(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
-
-    @list_route(methods=['post'])
-    def phones(self, request):
-        """
-        Return a list of users with the given phone numbers.
-
-        We're using POST here mainly because the list of phone numbers may not
-        be able to fit in the query parameters of a GET request.
-        """
-        # TODO: Handle when the data is invalid.
-        serializer = PhoneSerializer(data=request.data)
-        serializer.is_valid()
-
-        # Get all users with phone numbers in the phone number data.
-        phones = [phone for phone in serializer.data['phones']]
-        user_phones = UserPhoneNumber.objects.filter(phone__in=phones)
-        user_ids = [user_phone.user_id for user_phone in user_phones]
-        users = User.objects.filter(id__in=user_ids)
-
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserUsernameDetail(APIView):
@@ -284,6 +264,28 @@ class SessionView(APIView):
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class UserPhoneNumberView(APIView):
+
+    def post(self, request):
+        """
+        Return a list of users with the given phone numbers.
+
+        We're using POST here mainly because the list of phone numbers may not
+        be able to fit in the query parameters of a GET request.
+        """
+        # TODO: Handle when the data is invalid.
+        serializer = PhoneSerializer(data=request.data)
+        serializer.is_valid()
+
+        # Filter user phone numbers using the phone number data.
+        phones = serializer.data['phones']
+        user_phones = UserPhoneNumber.objects.filter(phone__in=phones)
+        user_phones.prefetch_related('user')
+
+        serializer = UserPhoneNumberSerializer(user_phones, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TermsView(TemplateView):

@@ -11,6 +11,7 @@ from down.apps.auth.views import (
     TermsView,
     UserUsernameDetail,
     UserViewSet,
+    UserPhoneNumberView,
 )
 from down.apps.events.views import EventViewSet, InvitationViewSet
 from down.apps.friends.views import FriendshipViewSet
@@ -36,6 +37,7 @@ slashless_router = routers.SimpleRouter(trailing_slash=False)
 slashless_router.registry = router.registry[:]
 
 urlpatterns = patterns('',
+    url(r'^api/userphones/?$', UserPhoneNumberView.as_view(), name='userphone'),
     url(r'^api/social-account/?$', SocialAccountLogin.as_view(),
         name='social-account-login'),
     url(r'^api/users/username/(?P<username>\w+)/?$', UserUsernameDetail.as_view(),

@@ -17,7 +17,7 @@ from down.apps.auth.models import (
     User,
     UserPhoneNumber,
 )
-from down.apps.auth.serializers import UserSerializer
+from down.apps.auth.serializers import UserSerializer, UserPhoneNumberSerializer
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
 from down.apps.friends.models import Friendship
@@ -140,17 +140,6 @@ class UserTests(APITestCase):
         url = '{list_url}?username={username}'.format(list_url=self.list_url,
                                                       username=self.user.username)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return a list with the user.
-        serializer = UserSerializer([self.user], many=True)
-        json_users = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_users)
-
-    def test_query_by_phones(self):
-        url = '{list_url}phones'.format(list_url=self.list_url)
-        data = {'phones': [unicode(self.user_phone.phone)]}
-        response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list with the user.
@@ -539,6 +528,37 @@ class SessionTests(APITestCase):
 
         # The number of users in the database should still be 1
         self.assertEqual(User.objects.count(), 1)
+
+
+class UserPhoneNumberViewSet(APITestCase):
+
+    def setUp(self):
+        # Mock two users.
+        self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
+                         username='tdog', image_url='http://imgur.com/tdog')
+        self.user.save()
+        self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
+                           image_url='http://imgur.com/jcke')
+        self.friend.save()
+
+        # Mock the users' phone numbers.
+        self.friend_phone = UserPhoneNumber(user=self.friend, phone='+12036227310')
+        self.friend_phone.save()
+        self.user_phone = UserPhoneNumber(user=self.user, phone='+14388843460')
+        self.user_phone.save()
+
+        # Save URLs.
+        self.list_url = reverse('userphone')
+
+    def test_query_by_phones(self):
+        data = {'phones': [unicode(self.user_phone.phone)]}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list with the user.
+        serializer = UserPhoneNumberSerializer([self.user_phone], many=True)
+        json_user_phones = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user_phones)
 
 
 class TermsTests(APITestCase):
