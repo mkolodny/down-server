@@ -277,22 +277,14 @@ class UserPhoneNumberView(APIView):
         We're using POST here mainly because the list of phone numbers may not
         be able to fit in the query parameters of a GET request.
         """
-        import logging
-        logger = logging.getLogger('console')
-        logger.info('request data:')
-        logger.info(request.data)
         # TODO: Handle when the data is invalid.
         serializer = PhoneSerializer(data=request.data)
         serializer.is_valid()
-        logger.info('phone serializer data:')
-        logger.info(serializer.data)
 
         # Filter user phone numbers using the phone number data.
         phones = serializer.data['phones']
         user_phones = UserPhoneNumber.objects.filter(phone__in=phones)
         user_phones.prefetch_related('user')
-        logger.info('user phones:')
-        logger.info(user_phones)
 
         serializer = UserPhoneNumberSerializer(user_phones, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
