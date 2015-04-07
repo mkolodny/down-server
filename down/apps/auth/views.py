@@ -57,7 +57,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         """
         # Ask Facebook for the user's Facebook friends who are using Down.
         user_facebook_account = SocialAccount.objects.get(user=request.user)
-        params = {'access_token': user_facebook_account.uid}
+        params = {'access_token': user_facebook_account.profile['access_token']}
         url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
         r = requests.get(url)
         if r.status_code != status.HTTP_200_OK:

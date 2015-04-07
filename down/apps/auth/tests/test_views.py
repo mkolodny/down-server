@@ -35,7 +35,8 @@ class UserTests(APITestCase):
         self.user.save()
         self.user_social = SocialAccount(user=self.user,
                                          provider=SocialAccount.FACEBOOK,
-                                         uid='10101293050283881')
+                                         uid='10101293050283881',
+                                         profile={'access_token': '1234asdf'})
         self.user_social.save()
 
         # Authorize the requests with the user's token.
@@ -51,7 +52,8 @@ class UserTests(APITestCase):
         friendship.save()
         self.friend_social = SocialAccount(user=self.friend,
                                            provider=SocialAccount.FACEBOOK,
-                                           uid='20101293050283881')
+                                           uid='20101293050283881',
+                                           profile={'access_token': '2234asdf'})
         self.friend_social.save()
 
         # Mock an event that the user's invited to.
@@ -196,7 +198,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should request the user's friends with their facebook access token.
-        querystring = {'access_token': [self.user_social.uid]}
+        querystring = {'access_token': [self.user_social.profile['access_token']]}
         self.assertEqual(httpretty.last_request().querystring, querystring)
 
         # It should return a list of the users facebook friends.
