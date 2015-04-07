@@ -469,7 +469,7 @@ class SessionTests(APITestCase):
         token = Token.objects.get(user=user)
 
         # It should generate a Firebase token.
-        auth_payload = {'uid': user.id}
+        auth_payload = {'uid': unicode(user.id)}
         mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
 
         # Check that the response is the user we're expecting
