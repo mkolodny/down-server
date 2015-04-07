@@ -123,10 +123,6 @@ class SocialAccountLogin(APIView):
         # TODO: Handle when the data is invalid.
         serializer = SocialAccountLoginSerializer(data=request.data)
         serializer.is_valid()
-        import logging
-        logger = logging.getLogger('console')
-        logger.info(serializer.data)
-        raise ServiceUnavailable()
 
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
