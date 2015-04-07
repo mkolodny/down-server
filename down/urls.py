@@ -37,7 +37,8 @@ slashless_router = routers.SimpleRouter(trailing_slash=False)
 slashless_router.registry = router.registry[:]
 
 urlpatterns = patterns('',
-    url(r'^api/userphones/?$', UserPhoneNumberView.as_view(), name='userphone'),
+    url(r'^api/userphones/phones/?$', UserPhoneNumberView.as_view(),
+        name='userphone'),
     url(r'^api/social-account/?$', SocialAccountLogin.as_view(),
         name='social-account-login'),
     url(r'^api/users/username/(?P<username>\w+)/?$', UserUsernameDetail.as_view(),
