@@ -94,6 +94,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         invitations = Invitation.objects.filter(to_user=request.user)
         event_ids = [invitation.event_id for invitation in invitations]
         events = Event.objects.filter(id__in=event_ids)
+        events.prefetch_related('place')
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
 
