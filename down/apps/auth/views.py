@@ -73,19 +73,11 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
         # Use the list of the user's Facebook friends to create a queryset of the
         # user's friends on Down.
-        friend_ids = []
-        for facebook_friend in facebook_friends:
-            # TODO: Figure out how to create multiple facebook apps for separate
-            # environments. Right now, since the main facebook app is being
-            # shared across all of our environments, facebook may think our users
-            # have friends on Down that are on a different environment.
-            # Making sure the friend exists is a hack to handle that problem until
-            # we create multiple facebook apps/environments.
-            try:
-                account = SocialAccount.objects.get(uid=facebook_friend['id'])
-                friend_ids.append(account.user_id)
-            except SocialAccount.DoesNotExist:
-                continue
+        facebook_friend_ids = [
+            facebook_friend['id'] for facebook_friend in facebook_friends
+        ]
+        social_accounts = SocialAccount.objects.filter(uid__in=facebook_friend_ids)
+        friend_ids = [account.user_id for account in social_accounts]
         friends = User.objects.filter(id__in=friend_ids)
         serializer = UserSerializer(friends, many=True)
         return Response(serializer.data)
