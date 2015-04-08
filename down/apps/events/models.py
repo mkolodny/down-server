@@ -81,11 +81,12 @@ def add_user_to_firebase_members_list(sender, instance, created, **kwargs):
 
     invitation = instance
 
-    url = "{firebase_url}/events/members/{event_id}/.json?auth={firebase_secret}".format(
+    url = ('{firebase_url}/events/members/{event_id}/.json?auth='
+           '{firebase_secret}').format(
             firebase_url = settings.FIREBASE_URL,
-            event_id = invitation.event.id,
+            event_id = invitation.event_id,
             firebase_secret = settings.FIREBASE_SECRET)
-    data = {invitation.to_user.id: True}
+    data = {invitation.to_user_id: True}
     requests.patch(url, json.dumps(data))
 
 
