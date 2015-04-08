@@ -209,6 +209,7 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         # Text the user their auth code.
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
         message = 'Your Down code: {}'.format(auth_code)
+        # TODO: Handle TwilioRestException.
         client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=message)
     
 

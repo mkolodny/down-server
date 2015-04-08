@@ -9,3 +9,7 @@ class FriendshipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Friendship
+
+
+class FriendSerializer(serializers.Serializer):
+    friend = serializers.IntegerField()

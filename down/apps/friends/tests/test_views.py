@@ -42,6 +42,7 @@ class FriendshipTests(APITestCase):
         self.added_me_url = '{list_url}?friend={friend}'.format(
                 list_url=self.list_url,
                 friend=self.user.id)
+        self.friend_url = reverse('friendship-friend')
 
     def test_create(self):
         # Delete the mocked friendship.
@@ -143,6 +144,15 @@ class FriendshipTests(APITestCase):
 
         response = self.client.delete(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_friend(self):
+        data = {'friend': self.friend.id}
+        response = self.client.delete(self.friend_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should delete the friendship.
+        with self.assertRaises(Friendship.DoesNotExist):
+            Friendship.objects.get(id=self.friendship.id)
 
     def test_acknowledge_added_me(self):
         data = {
