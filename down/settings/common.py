@@ -113,11 +113,6 @@ FACEBOOK_APP_SECRET = os.environ['FACEBOOK_APP_SECRET']
 FIREBASE_URL = os.environ['FIREBASE_URL']
 FIREBASE_SECRET = os.environ['FIREBASE_SECRET']
 
-# Push notifications
-PUSH_NOTIFICATIONS_SETTINGS = {
-    'APNS_CERTIFICATE': os.path.join(BASE_DIR, 'config/apns/certkey.pem'),
-}
-
 # Twilio
 TWILIO_ACCOUNT = os.environ['TWILIO_ACCOUNT']
 TWILIO_TOKEN = os.environ['TWILIO_TOKEN']
