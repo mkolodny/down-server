@@ -15,6 +15,7 @@ from rest_framework.filters import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
 from .exceptions import ServiceUnavailable
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
@@ -209,8 +210,11 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         # Text the user their auth code.
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
         message = 'Your Down code: {}'.format(auth_code)
-        # TODO: Handle TwilioRestException.
-        client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=message)
+        try:
+            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
+                                   body=message)
+        except TwilioRestException:
+            raise ServiceUnavailable('Twilio\'s shitting the bed...')
     
 
 class SessionView(APIView):

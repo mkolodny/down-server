@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
+from twilio import TwilioRestException
 from down.apps.auth.models import (
     AuthCode,
     LinfootFunnel,
@@ -421,9 +422,6 @@ class AuthCodeTests(APITestCase):
         auth.save()
 
         response = self.client.post(self.url, {'phone': self.phone_number})
-
-        # We shouldn't re-create an auth code which already exists 
-        # for a given phone number
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should init the Twilio client with the proper params.
@@ -435,6 +433,21 @@ class AuthCodeTests(APITestCase):
         mock_client.messages.create.assert_called_with(to=self.phone_number, 
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
+
+    @mock.patch('down.apps.auth.views.TwilioRestClient')
+    def test_create_twilio_error(self, mock_TwilioRestClient):
+        # Mock the Twilio SMS API to raise an exception.
+        mock_client = mock.MagicMock()
+        mock_TwilioRestClient.return_value = mock_client
+        mock_client.messages.create.side_effect = TwilioRestException(
+                status.HTTP_500_INTERNAL_SERVER_ERROR, 'https://www.twilio.com')
+
+        # Mock the user's auth code.
+        auth = AuthCode(phone=self.phone_number)
+        auth.save()
+
+        response = self.client.post(self.url, {'phone': self.phone_number})
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class SessionTests(APITestCase):
