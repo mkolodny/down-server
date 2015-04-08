@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import time
 from django.utils import timezone
+from django.conf import settings
 from django.core.urlresolvers import reverse
 import mock
 from push_notifications.models import APNSDevice
@@ -8,6 +9,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
+from twilio import TwilioRestException
 from down.apps.auth.models import User
 from down.apps.events.models import Event, Invitation, Place
 from down.apps.events.serializers import EventSerializer, InvitationSerializer
@@ -20,7 +22,8 @@ class EventTests(APITestCase):
         self.mock_patch = self.patcher.start()
 
         # Mock a user.
-        self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing')
+        self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
+                         username='tdog')
         self.user.save()
         registration_id = ('1ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '10df230567037dcc4')
@@ -114,7 +117,7 @@ class EventTests(APITestCase):
     def test_create_message(self, mock_send):
         # Mock two of the user's friends.
         friend = User(name='Michael Jordan', email='mj@gmail.com',
-                      image_url='http://imgur.com/mj')
+                      username='mj', image_url='http://imgur.com/mj')
         friend.save()
         registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '10df230567037dcc4')
@@ -125,7 +128,7 @@ class EventTests(APITestCase):
         apns_device1.save()
 
         friend1 = User(name='Bruce Lee', email='blee@gmail.com',
-                       image_url='http://imgur.com/blee')
+                       username='blee', image_url='http://imgur.com/blee')
         friend1.save()
         registration_id = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '10df230567037dcc4')
@@ -183,9 +186,11 @@ class InvitationTests(APITestCase):
         self.mock_patch = self.patcher.start()
 
         # Mock a couple users.
-        self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing')
+        self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing',
+                          username='tdog')
         self.user1.save()
-        self.user2 = User(email='jclarke@gmail.com', name='Joan Clarke')
+        self.user2 = User(email='jclarke@gmail.com', name='Joan Clarke',
+                          username='jcke')
         self.user2.save()
 
         # Authorize the requests with the user's token.

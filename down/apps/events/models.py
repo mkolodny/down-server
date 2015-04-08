@@ -4,9 +4,10 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 import json
-import requests
 from push_notifications.models import APNSDevice
-from down.apps.auth.models import User
+import requests
+from twilio.rest import TwilioRestClient
+from down.apps.auth.models import User, UserPhoneNumber
 
 
 class Place(models.Model):
@@ -53,7 +54,9 @@ class Invitation(models.Model):
 @receiver(post_save, sender=Invitation)
 def send_new_invitation_notification(sender, instance, created, **kwargs):
     """
-    Send a push notification to users who receive an invite to an event.
+    Notify users who receive an invite to an event. If the user has the app
+    installed, send them a push notification. Otherwise, text them the
+    invitation.
     """
     if not created:
         return
@@ -65,10 +68,40 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
     if invitation.to_user_id == event.creator_id:
         return
 
-    message = '{name} is down for {activity}'.format(name=event.creator.name,
-                                                     activity=event.title)
-    devices = APNSDevice.objects.filter(user_id=invitation.to_user_id)
-    devices.send_message(message)
+    to_user = invitation.to_user
+    if to_user.username:
+        # The user has the app installed, so send them a push notification.
+        message = '{name} is down for {activity}'.format(name=event.creator.name,
+                                                         activity=event.title)
+        devices = APNSDevice.objects.filter(user=to_user)
+        devices.send_message(message)
+    else:
+        # The user doesn't have the app installed, so text them the invitation.
+        if event.datetime and event.place:
+            event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
+            message = ('{name} is down for {activity} at {place} on {date}'
+                       '\n--\nSent from Down (http://down.life/app)').format(
+                       name=to_user.name, activity=event.title,
+                       place=event.place.name, date=event_date)
+        elif event.place:
+            message = ('{name} is down for {activity} at {place}'
+                       '\n--\nSent from Down (http://down.life/app)').format(
+                       name=to_user.name, activity=event.title,
+                       place=event.place.name)
+        elif event.datetime:
+            event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
+            message = ('{name} is down for {activity} on {date}'
+                       '\n--\nSent from Down (http://down.life/app)').format(
+                       name=to_user.name, activity=event.title,
+                       date=event_date)
+        else:
+            message = ('{name} is down for {activity}'
+                       '\n--\nSent from Down (http://down.life/app)').format(
+                       name=to_user.name, activity=event.title)
+        phone = unicode(UserPhoneNumber.objects.get(user=to_user).phone)
+        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
+        client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
+                               body=message)
 
 @receiver(post_save, sender=Invitation)
 def add_user_to_firebase_members_list(sender, instance, created, **kwargs):

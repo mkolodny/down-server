@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
 from django.conf import settings
+from django.utils import timezone
 import json
 import mock
 import requests
 from push_notifications.models import APNSDevice
 from rest_framework.test import APITestCase
-from down.apps.auth.models import User
-from down.apps.events.models import Event, Invitation
+from down.apps.auth.models import User, UserPhoneNumber
+from down.apps.events.models import Event, Invitation, Place
 from down.apps.friends.models import Friendship
 
 
@@ -20,10 +21,12 @@ class InvitationTests(APITestCase):
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                          username='tdog', image_url='http://imgur.com/tdog')
         self.user.save()
+        self.user_phone = UserPhoneNumber(user=self.user, phone='+14388843460')
+        self.user_phone.save()
 
         # Mock the user's friend.
         self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
-                      image_url='http://imgur.com/jcke')
+                           username='jcke', image_url='http://imgur.com/jcke')
         self.friend.save()
         self.friendship = Friendship(user=self.user, friend=self.friend)
         self.friendship.save()
@@ -32,7 +35,7 @@ class InvitationTests(APITestCase):
 
         # Mock another friend.
         self.friend1 = User(email='mjordan@gmail.com', name='Michael Jordan',
-                      image_url='http://imgur.com/mj')
+                            username='mj', image_url='http://imgur.com/mj')
         self.friend1.save()
         self.friendship = Friendship(user=self.friend, friend=self.friend1)
         self.friendship.save()
@@ -40,7 +43,12 @@ class InvitationTests(APITestCase):
         self.friendship.save()
 
         # Mock an event that the user's invited to.
-        self.event = Event(title='bars?!?!?!', creator=self.friend)
+        self.place = Place(name='Founder House',
+                           geo='POINT(40.6898319 -73.9904645)')
+        self.place.save()
+        self.event = Event(title='bars?!?!?!', creator=self.friend,
+                           datetime=timezone.now(), place=self.place,
+                           description='bars?!?!?!')
         self.event.save()
 
         # Mock the invited user's device.
@@ -83,6 +91,73 @@ class InvitationTests(APITestCase):
                 name=self.event.creator.name,
                 activity=self.event.title)
         mock_send.assert_called_once_with(registration_ids=[token], alert=message)
+
+    @mock.patch('down.apps.events.models.TwilioRestClient')
+    def mock_twilio(self, expected_message, mock_TwilioRestClient):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_TwilioRestClient.return_value = mock_client
+
+        # Since we'll text users who don't have a username, delete the user's
+        # username.
+        self.user.username = None
+        self.user.save()
+
+        # Invite the user.
+        invitation = Invitation(to_user=self.user, event=self.event)
+        invitation.save()
+
+        # It should init the Twilio client with the proper params.
+        mock_TwilioRestClient.assert_called_with(settings.TWILIO_ACCOUNT,
+                                                 settings.TWILIO_TOKEN)
+
+        # It should text the user the auth code.
+        phone = unicode(self.user_phone.phone)
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=expected_message)
+
+    def test_post_create_text_message_full(self):
+        event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
+        message = ('{name} is down for {activity} at {place} on {date}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=self.user.name, activity=self.event.title,
+                   place=self.place.name, date=event_date)
+        self.mock_twilio(message)
+
+    def test_post_create_text_message_no_date(self):
+        # Remove the event's date.
+        self.event.datetime = None
+        self.event.save()
+
+        message = ('{name} is down for {activity} at {place}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=self.user.name, activity=self.event.title,
+                   place=self.place.name)
+        self.mock_twilio(message)
+
+    def test_post_create_text_message_no_place(self):
+        # Remove the event's place.
+        self.event.place = None
+        self.event.save()
+
+        event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
+        message = ('{name} is down for {activity} on {date}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=self.user.name, activity=self.event.title,
+                   date=event_date)
+        self.mock_twilio(message)
+
+    def test_post_create_text_message_no_place_or_date(self):
+        # Remove the event's place and date.
+        self.event.place = None
+        self.event.datetime = None
+        self.event.save()
+
+        message = ('{name} is down for {activity}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=self.user.name, activity=self.event.title)
+        self.mock_twilio(message)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_accept_notify(self, mock_send):
