@@ -121,7 +121,7 @@ class InvitationTests(APITestCase):
         event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
         message = ('{name} is down for {activity} at {place} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
-                   name=self.user.name, activity=self.event.title,
+                   name=self.friend.name, activity=self.event.title,
                    place=self.place.name, date=event_date)
         self.mock_twilio(message)
 
@@ -132,7 +132,7 @@ class InvitationTests(APITestCase):
 
         message = ('{name} is down for {activity} at {place}'
                    '\n--\nSent from Down (http://down.life/app)').format(
-                   name=self.user.name, activity=self.event.title,
+                   name=self.friend.name, activity=self.event.title,
                    place=self.place.name)
         self.mock_twilio(message)
 
@@ -144,7 +144,7 @@ class InvitationTests(APITestCase):
         event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
         message = ('{name} is down for {activity} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
-                   name=self.user.name, activity=self.event.title,
+                   name=self.friend.name, activity=self.event.title,
                    date=event_date)
         self.mock_twilio(message)
 
@@ -156,7 +156,7 @@ class InvitationTests(APITestCase):
 
         message = ('{name} is down for {activity}'
                    '\n--\nSent from Down (http://down.life/app)').format(
-                   name=self.user.name, activity=self.event.title)
+                   name=self.friend.name, activity=self.event.title)
         self.mock_twilio(message)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')

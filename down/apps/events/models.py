@@ -69,9 +69,10 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
         return
 
     to_user = invitation.to_user
+    creator = event.creator
     if to_user.username:
         # The user has the app installed, so send them a push notification.
-        message = '{name} is down for {activity}'.format(name=event.creator.name,
+        message = '{name} is down for {activity}'.format(name=creator.name,
                                                          activity=event.title)
         devices = APNSDevice.objects.filter(user=to_user)
         devices.send_message(message)
@@ -81,23 +82,23 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
             event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
             message = ('{name} is down for {activity} at {place} on {date}'
                        '\n--\nSent from Down (http://down.life/app)').format(
-                       name=to_user.name, activity=event.title,
+                       name=creator.name, activity=event.title,
                        place=event.place.name, date=event_date)
         elif event.place:
             message = ('{name} is down for {activity} at {place}'
                        '\n--\nSent from Down (http://down.life/app)').format(
-                       name=to_user.name, activity=event.title,
+                       name=creator.name, activity=event.title,
                        place=event.place.name)
         elif event.datetime:
             event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
             message = ('{name} is down for {activity} on {date}'
                        '\n--\nSent from Down (http://down.life/app)').format(
-                       name=to_user.name, activity=event.title,
+                       name=creator.name, activity=event.title,
                        date=event_date)
         else:
             message = ('{name} is down for {activity}'
                        '\n--\nSent from Down (http://down.life/app)').format(
-                       name=to_user.name, activity=event.title)
+                       name=creator.name, activity=event.title)
         phone = unicode(UserPhoneNumber.objects.get(user=to_user).phone)
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
         client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
