@@ -54,8 +54,19 @@ class PhoneSerializer(serializers.Serializer):
 
 
 class UserPhoneNumberSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = UserSerializer(read_only=True)
     phone = PhoneNumberField()
 
     class Meta:
         model = UserPhoneNumber
+
+    def create(self, validated_data):
+        # Create a new empty user.
+        user = User()
+        user.save()
+
+        # Create a user phone with the new user.
+        userphone = UserPhoneNumber(user=user, phone=validated_data['phone'])
+        userphone.save()
+
+        return userphone

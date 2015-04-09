@@ -11,7 +11,7 @@ from down.apps.auth.views import (
     TermsView,
     UserUsernameDetail,
     UserViewSet,
-    UserPhoneNumberView,
+    UserPhoneNumberViewSet,
 )
 from down.apps.events.views import EventViewSet, InvitationViewSet
 from down.apps.friends.views import FriendshipViewSet
@@ -28,6 +28,7 @@ router.register(r'events', EventViewSet)
 router.register(r'friendships', FriendshipViewSet)
 router.register(r'invitations', InvitationViewSet)
 router.register(r'phonenumbers', LinfootFunnelViewSet, base_name='phonenumbers')
+router.register(r'userphones', UserPhoneNumberViewSet, base_name='userphone')
 router.register(r'users', UserViewSet)
 # Prints the (url, viewset, base_name) for each route.
 #for route in router.registry:
@@ -37,8 +38,6 @@ slashless_router = routers.SimpleRouter(trailing_slash=False)
 slashless_router.registry = router.registry[:]
 
 urlpatterns = patterns('',
-    url(r'^api/userphones/phones/?$', UserPhoneNumberView.as_view(),
-        name='userphone'),
     url(r'^api/social-account/?$', SocialAccountLogin.as_view(),
         name='social-account-login'),
     url(r'^api/users/username/(?P<username>\w+)/?$', UserUsernameDetail.as_view(),

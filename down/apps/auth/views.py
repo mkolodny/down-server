@@ -263,11 +263,14 @@ class SessionView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class UserPhoneNumberView(APIView):
+class UserPhoneNumberViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+    queryset = UserPhoneNumber.objects.all()
+    serializer_class = UserPhoneNumberSerializer
 
-    def post(self, request):
+    @list_route(methods=['post'])
+    def phones(self, request):
         """
         Return a list of users with the given phone numbers.
 

@@ -545,7 +545,7 @@ class SessionTests(APITestCase):
         self.assertEqual(User.objects.count(), 1)
 
 
-class UserPhoneNumberViewSet(APITestCase):
+class UserPhoneNumberViewSetTests(APITestCase):
 
     def setUp(self):
         # Mock two users.
@@ -568,11 +568,12 @@ class UserPhoneNumberViewSet(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
         # Save URLs.
-        self.list_url = reverse('userphone')
+        self.list_url = reverse('userphone-list')
+        self.phones_url = reverse('userphone-phones')
 
     def test_query_by_phones(self):
         data = {'phones': [unicode(self.user_phone.phone)]}
-        response = self.client.post(self.list_url, data)
+        response = self.client.post(self.phones_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list with the user.
@@ -584,8 +585,22 @@ class UserPhoneNumberViewSet(APITestCase):
         # Unauth the user.
         self.client.credentials()
 
-        response = self.client.post(self.list_url)
+        response = self.client.post(self.phones_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create(self):
+        # Save the number of users so far.
+        num_users = User.objects.count()
+
+        data = {'phone': '+19178699626'}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create a userphone with the given number.
+        UserPhoneNumber.objects.get(**data)
+
+        # It should create a new user.
+        self.assertEqual(User.objects.count(), num_users+1)
 
 
 class TermsTests(APITestCase):
