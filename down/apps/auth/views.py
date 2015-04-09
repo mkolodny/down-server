@@ -186,8 +186,11 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = AuthCodeSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        # If the user is the Apple test user, fake a good response.
+        if request.data.get('phone') == '+15555555555':
+            return Response(status=status.HTTP_201_CREATED)
 
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
@@ -230,8 +233,10 @@ class SessionView(APIView):
         except AuthCode.DoesNotExist:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        # Delete the auth code to keep the db clean
-        auth.delete()
+        # If the user is the Apple test user, don't delete the auth code.
+        if serializer.data['phone'] != '+15555555555':
+            # Delete the auth code to keep the db clean
+            auth.delete()
 
         # Get or create the user
         try:

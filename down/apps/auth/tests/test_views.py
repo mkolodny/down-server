@@ -449,6 +449,10 @@ class AuthCodeTests(APITestCase):
         response = self.client.post(self.url, {'phone': self.phone_number})
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
+    def test_create_apple_test_user(self):
+        response = self.client.post(self.url, {'phone': '+15555555555'})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
 
 class SessionTests(APITestCase):
     
@@ -506,7 +510,7 @@ class SessionTests(APITestCase):
 
     @mock.patch('down.apps.auth.views.create_token')
     @mock.patch('down.apps.auth.views.uuid')
-    def test_user_already_created(self, mock_uuid, mock_create_token):
+    def create_already_created(self, phone_number, mock_uuid, mock_create_token):
         firebase_uuid = 9876
         firebase_token = 'qwer1234'
         mock_uuid.uuid1.return_value = firebase_uuid
@@ -516,7 +520,6 @@ class SessionTests(APITestCase):
         mock_user = User()
         mock_user.save()
 
-        phone_number = '+12345678910'
         mock_user_number = UserPhoneNumber(user=mock_user, phone=phone_number)
         mock_user_number.save()
 
@@ -525,10 +528,10 @@ class SessionTests(APITestCase):
         token.save()
 
         url = reverse('session')
-        auth = AuthCode(phone=phone_number)
-        auth.save()
+        self.auth = AuthCode(phone=phone_number)
+        self.auth.save()
 
-        data = {'phone': unicode(auth.phone), 'code': auth.code}
+        data = {'phone': unicode(self.auth.phone), 'code': self.auth.code}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -543,6 +546,17 @@ class SessionTests(APITestCase):
 
         # The number of users in the database should still be 1
         self.assertEqual(User.objects.count(), 1)
+
+    def test_create_already_created(self):
+        phone_number = '+12345678910'
+        self.create_already_created(phone_number)
+
+    def test_create_apple_test_user(self):
+        phone_number = '+15555555555'
+        self.create_already_created(phone_number)
+
+        # The user's auth code should still exist.
+        AuthCode.objects.get(id=self.auth.id)
 
 
 class UserPhoneNumberViewSetTests(APITestCase):
