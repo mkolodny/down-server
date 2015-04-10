@@ -113,16 +113,6 @@ class SocialAccountLogin(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        # Check if this is the Apple test user.
-        try:
-            userphone = UserPhoneNumber.objects.get(user=request.user)
-            if unicode(userphone.phone) == '+15555555555':
-                # Just return the test user.
-                serializer = UserSerializer(request.user)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-        except UserPhoneNumber.DoesNotExist:
-            pass
-
         # TODO: Handle when the data is invalid.
         serializer = SocialAccountLoginSerializer(data=request.data)
         serializer.is_valid()

@@ -375,19 +375,6 @@ class SocialAccountTests(APITestCase):
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_create_apple_test_user(self):
-        # Set the user's phone number to be the test number.
-        self.phone.phone = '+15555555555'
-        self.phone.save()
-
-        response = self.client.post(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return the user.
-        serializer = UserSerializer(self.user)
-        json_user = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_user)
-
 
 class AuthCodeTests(APITestCase):
 
