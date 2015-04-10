@@ -135,10 +135,16 @@ class SocialAccountLogin(APIView):
             
             # Update all of the new user's objects to point to the old user, and
             # delete the new user.
+            logger.info('request user:')
+            logger.info(request.user.id)
             phone = UserPhoneNumber.objects.get(user=request.user)
+            logger.info('got userphone')
+            logger.info(phone.id)
             phone.user = user
             phone.save()
+            logger.info('saved userphone')
             request.user.delete()
+            logger.info('deleted request user')
             request.auth.user = user
             request.auth.save()
             logger.info('updated user')
