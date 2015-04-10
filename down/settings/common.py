@@ -75,7 +75,7 @@ PASSWORD_HASHERS = ('django.contrib.auth.hashers.SHA1PasswordHasher',)
 # Logging
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'formatters': {
         'verbose': {
             'format': ('File "%(pathname)s", line %(lineno)s, in %(funcName)s\n' +
