@@ -143,11 +143,13 @@ class SocialAccountLogin(APIView):
             phone.user = user
             phone.save()
             logger.info('saved userphone')
-            request.user.delete()
-            logger.info('deleted request user')
+            logger.info('request auth:')
+            logger.info(request.auth)
             request.auth.user = user
             request.auth.save()
             logger.info('updated user')
+            request.user.delete()
+            logger.info('deleted request user')
 
             serializer = UserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
