@@ -113,63 +113,41 @@ class SocialAccountLogin(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        import logging
-        logger = logging.getLogger('console')
         # TODO: Handle when the data is invalid.
         serializer = SocialAccountLoginSerializer(data=request.data)
         serializer.is_valid()
-        logger.info('request data:')
-        logger.info(serializer.data)
 
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
         access_token = serializer.data['access_token']
         profile = self.get_profile(provider, access_token)
-        logger.info('facebook profile:')
-        logger.info(profile)
 
         # Check whether the user has already signed up.
         try:
             user = User.objects.get(email=profile['email'])
-            logger.info('user already signed up')
             
             # Update all of the new user's objects to point to the old user, and
             # delete the new user.
-            logger.info('request user:')
-            logger.info(request.user.id)
             phone = UserPhoneNumber.objects.get(user=request.user)
-            logger.info('got userphone')
-            logger.info(phone.id)
             phone.user = user
             phone.save()
-            logger.info('saved userphone')
-            request_user = request.user
-            logger.info('got the logged in user')
-            logger.info(request_user.id)
-            request_user.delete()
-            logger.info('deleted request user')
-            logger.info('request auth:')
-            logger.info(request.auth)
+            request.user.delete()
             request.auth.user = user
             request.auth.save()
-            logger.info('updated user')
 
             serializer = UserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
-            logger.info('user is new')
             # Update the user.
             request.user.email = profile['email']
             request.user.name = profile['name']
             request.user.image_url = profile['image_url']
             request.user.save()
-            logger.info('updated user')
 
             # Create the user's social account.
             account = SocialAccount(user_id=request.user.id, provider=provider,
                                     uid=profile['id'], profile=profile)
             account.save()
-            logger.info('saved facebook account')
 
             serializer = UserSerializer(request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
