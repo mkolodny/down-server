@@ -33,6 +33,7 @@ from down.apps.auth.filters import UserFilter
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
 from down.apps.friends.models import Friendship
+from down.middleware import LoggingMixin
 
 
 class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
@@ -108,7 +109,7 @@ class UserUsernameDetail(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-class SocialAccountLogin(APIView):
+class SocialAccountLogin(LoggingMixin, APIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
