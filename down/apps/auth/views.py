@@ -33,7 +33,6 @@ from down.apps.auth.filters import UserFilter
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
 from down.apps.friends.models import Friendship
-from down.middleware import LoggingMixin
 
 
 class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
@@ -221,7 +220,7 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             raise ServiceUnavailable('Twilio\'s shitting the bed...')
     
 
-class SessionView(LoggingMixin, APIView):
+class SessionView(APIView):
 
     def post(self, request):
         # TODO: Handle when the data is invalid.
