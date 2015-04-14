@@ -109,7 +109,7 @@ class UserUsernameDetail(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-class SocialAccountLogin(LoggingMixin, APIView):
+class SocialAccountLogin(APIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
@@ -221,7 +221,7 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             raise ServiceUnavailable('Twilio\'s shitting the bed...')
     
 
-class SessionView(APIView):
+class SessionView(LoggingMixin, APIView):
 
     def post(self, request):
         # TODO: Handle when the data is invalid.
