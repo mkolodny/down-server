@@ -42,6 +42,7 @@ class SocialAccountLoginSerializer(serializers.Serializer):
 
 
 class UserSerializer(GeoModelSerializer):
+    authtoken = serializers.ReadOnlyField(required=False)
     firebase_token = serializers.ReadOnlyField(required=False)
 
     class Meta:
