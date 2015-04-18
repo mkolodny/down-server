@@ -122,35 +122,19 @@ class SocialAccountLogin(APIView):
         access_token = serializer.data['access_token']
         profile = self.get_profile(provider, access_token)
 
-        # Check whether the user has already signed up.
-        try:
-            user = User.objects.get(email=profile['email'])
-            
-            # Update all of the new user's objects to point to the old user, and
-            # delete the new user.
-            phone = UserPhoneNumber.objects.get(user=request.user)
-            phone.user = user
-            phone.save()
-            request.user.delete()
-            request.auth.user = user
-            request.auth.save()
+        # Update the user.
+        request.user.email = profile['email']
+        request.user.name = profile['name']
+        request.user.image_url = profile['image_url']
+        request.user.save()
 
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            # Update the user.
-            request.user.email = profile['email']
-            request.user.name = profile['name']
-            request.user.image_url = profile['image_url']
-            request.user.save()
+        # Create the user's social account.
+        account = SocialAccount(user_id=request.user.id, provider=provider,
+                                uid=profile['id'], profile=profile)
+        account.save()
 
-            # Create the user's social account.
-            account = SocialAccount(user_id=request.user.id, provider=provider,
-                                    uid=profile['id'], profile=profile)
-            account.save()
-
-            serializer = UserSerializer(request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get_profile(self, provider, access_token):
         """

@@ -333,41 +333,6 @@ class SocialAccountTests(APITestCase):
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    @httpretty.activate
-    def test_create_already_exists(self):
-        # Users who've already signed up will have an email, username and
-        # image_url. So mock a user that already has those attributes.
-        facebook_user_id = 1207059
-        image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
-                id=facebook_user_id)
-        user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
-                    image_url=image_url)
-        user.save()
-
-        # Request the user's profile.
-        body = json.dumps({
-            'id': facebook_user_id,
-            'email': user.email,
-            'name': user.name,
-            'image_url': user.image_url,
-        })
-        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
-                               content_type='application/json')
-
-        data = {'access_token': 'asdf123'}
-        response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should delete the old user.
-        with self.assertRaises(User.DoesNotExist):
-            User.objects.get(id=self.user.id)
-
-        # It should update the user's token to point to the old user.
-        Token.objects.get(key=self.token.key, user=user)
-
-        # It should point the old user's phone number to the new user.
-        UserPhoneNumber.objects.get(id=self.phone.id, user=user)
-
     def test_create_not_logged_in(self):
         # Log the user out.
         self.client.credentials()
