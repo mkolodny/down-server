@@ -7,7 +7,7 @@ from down.apps.auth.views import (
     LandingView,
     LinfootFunnelViewSet,
     SessionView,
-    SocialAccountLogin,
+    SocialAccountSync,
     TermsView,
     UserUsernameDetail,
     UserViewSet,
@@ -38,7 +38,7 @@ slashless_router = routers.SimpleRouter(trailing_slash=False)
 slashless_router.registry = router.registry[:]
 
 urlpatterns = patterns('',
-    url(r'^api/social-account/?$', SocialAccountLogin.as_view(),
+    url(r'^api/social-account/?$', SocialAccountSync.as_view(),
         name='social-account-login'),
     url(r'^api/users/username/(?P<username>\w+)/?$', UserUsernameDetail.as_view(),
         name='user-username-detail'),

@@ -25,7 +25,7 @@ from .serializers import (
     LinfootFunnelSerializer,
     PhoneSerializer,
     SessionSerializer,
-    SocialAccountLoginSerializer,
+    SocialAccountSyncSerializer,
     UserSerializer,
     UserPhoneNumberSerializer,
 )
@@ -108,13 +108,13 @@ class UserUsernameDetail(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-class SocialAccountLogin(APIView):
+class SocialAccountSync(APIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         # TODO: Handle when the data is invalid.
-        serializer = SocialAccountLoginSerializer(data=request.data)
+        serializer = SocialAccountSyncSerializer(data=request.data)
         serializer.is_valid()
 
         # Request the user's profile from the selected provider.

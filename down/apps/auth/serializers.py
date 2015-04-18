@@ -36,7 +36,7 @@ class SessionSerializer(serializers.Serializer):
     code = serializers.IntegerField()
 
 
-class SocialAccountLoginSerializer(serializers.Serializer):
+class SocialAccountSyncSerializer(serializers.Serializer):
     access_token = serializers.CharField()
     provider = serializers.IntegerField(default=SocialAccount.FACEBOOK)
 
