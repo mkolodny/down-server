@@ -221,6 +221,9 @@ class InvitationTests(APITestCase):
                       datetime=timezone.now(), place=self.place,
                       description='bars!!!!')
         self.event.save()
+        self.invitation = Invitation(event=self.event, from_user=self.user1,
+                                     to_user=self.user1)
+        self.invitation.save()
 
         # Save urls.
         self.list_url = reverse('invitation-list')
@@ -254,14 +257,61 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_create_not_event_creator(self):
-        # Make the not-logged-in user the event creator.
-        self.event.creator = self.user2
-        self.event.save()
+    def test_create_not_logged_in_user(self):
+        # Log the second user in.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token '+token.key)
+
+        # Invite the second user.
+        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                event=self.event)
+        invitation.save()
 
         data = {
             'from_user': self.user1.id,
-            'to_user': self.user1.id,
+            'to_user': self.user2.id,
+            'event': self.event.id,
+        }
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_create_as_creator_not_invited(self, mock_send):
+        # Delete the logged in user's invitation.
+        self.invitation.delete()
+
+        data = {
+            'from_user': self.user1.id,
+            'to_user': self.user2.id,
+            'event': self.event.id,
+            'accepted': True,
+        }
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the invitation.
+        invitation = Invitation.objects.get(**data)
+
+        # It should return the invitation.
+        serializer = InvitationSerializer(invitation)
+        json_invitation = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitation)
+
+    def test_create_not_invited(self):
+        # Log the second user in.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token '+token.key)
+
+        # Mock a third user.
+        user = User(name='Marie Curie', email='mcurie@gmail.com',
+                    username='mcurie')
+        user.save()
+
+        data = {
+            'from_user': self.user2.id,
+            'to_user': user.id,
             'event': self.event.id,
         }
         response = self.client.post(self.list_url, data)

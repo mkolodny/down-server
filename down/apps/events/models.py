@@ -53,6 +53,9 @@ class Invitation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     previously_accepted = models.BooleanField(default=False)
 
+    class Meta:
+        unique_together = ('to_user', 'event')
+
 @receiver(post_save, sender=Invitation)
 def send_new_invitation_notification(sender, instance, created, **kwargs):
     """

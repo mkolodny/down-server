@@ -3,6 +3,30 @@ from rest_framework import permissions
 from .models import Event, Invitation
 
 
+class InviterWasInvited(permissions.BasePermission):
+    """
+    Global permission to only allow users who were invited to an event to
+    invite other people.
+    """
+
+    def has_permission(self, request, view):
+        event_id = request.data.get('event')
+
+        try:
+            Invitation.objects.get(event_id=event_id, to_user=request.user)
+            return True
+        except Invitation.DoesNotExist:
+            try:
+                # Event creators can invite people even if their own invitation
+                # to the event hasn't been saved yet.
+                event = Event.objects.get(id=event_id)
+                return event.creator_id == request.user.id
+            except Event.DoesNotExist:
+                # Since the event should exist, we want to return a 400
+                # response. So let the user pass this round of validation.
+                return True
+
+
 class WasInvited(permissions.BasePermission):
     """
     Object-level permission to only allow users who were invited to an event to
@@ -17,20 +41,16 @@ class WasInvited(permissions.BasePermission):
             return False
 
 
-class IsEventCreatorOrUpdateOnly(permissions.BasePermission):
+class IsFromUser(permissions.BasePermission):
     """
-    Global permission to only allow the user who created an event to invite
-    users to the event.
+    Global permission to only allow the logged in user to be the
+    `from_user` when creating an invitation.
     """
 
     def has_permission(self, request, view):
         # This permission is only focused on creating an event.
-        if request.method == 'PUT':
+        if request.method != 'POST':
             return True
 
-        try:
-            event = Event.objects.get(id=request.data.get('event'))
-            return event.creator_id == request.user.id
-        except Event.DoesNotExist:
-            # Pass off validation to the view.
-            return True
+        from_user_id = request.data.get('from_user')
+        return request.user.id == from_user_id
