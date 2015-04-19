@@ -48,7 +48,8 @@ class EventTests(APITestCase):
                            datetime=timezone.now(), place=self.place,
                            description='bars!!!!')
         self.event.save()
-        self.invitation = Invitation(to_user=self.user, event=self.event)
+        self.invitation = Invitation(from_user=self.user, to_user=self.user,
+                                     event=self.event)
         self.invitation.save()
 
         # Save urls.
@@ -139,9 +140,11 @@ class EventTests(APITestCase):
         apns_device2.save()
 
         # Mock the friends being down for the event.
-        invitation = Invitation(to_user=friend, event=self.event, accepted=True)
+        invitation = Invitation(from_user=self.user, to_user=friend,
+                                event=self.event, accepted=True)
         invitation.save()
-        invitation = Invitation(to_user=friend1, event=self.event, accepted=True)
+        invitation = Invitation(from_user=self.user, to_user=friend1,
+                                event=self.event, accepted=True)
         invitation.save()
 
         # Clear any previous notifications
@@ -228,6 +231,7 @@ class InvitationTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create(self, mock_send):
         data = {
+            'from_user': self.user1.id,
             'to_user': self.user2.id,
             'event': self.event.id,
             'accepted': True,
@@ -256,6 +260,7 @@ class InvitationTests(APITestCase):
         self.event.save()
 
         data = {
+            'from_user': self.user1.id,
             'to_user': self.user1.id,
             'event': self.event.id,
         }
@@ -269,6 +274,7 @@ class InvitationTests(APITestCase):
             Event.objects.get(id=event_id)
 
         data = {
+            'from_user': self.user1.id,
             'to_user': self.user1.id,
             'event': event_id,
         }
@@ -278,12 +284,13 @@ class InvitationTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_update(self, mock_send):
         # Mock an invitation.
-        invitation = Invitation(to_user=self.user2, event=self.event,
-                                accepted=False)
+        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                event=self.event, accepted=False)
         invitation.save()
 
         url = reverse('invitation-detail', kwargs={'pk': invitation.id})
         data = {
+            'from_user': invitation.from_user_id,
             'to_user': invitation.to_user_id,
             'event': invitation.event.id,
             'accepted': False,

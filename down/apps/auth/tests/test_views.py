@@ -60,7 +60,8 @@ class UserTests(APITestCase):
         # Mock an event that the user's invited to.
         self.event = Event(title='bars?!?!?!', creator=self.friend)
         self.event.save()
-        self.invitation = Invitation(to_user=self.user, event=self.event)
+        self.invitation = Invitation(from_user=self.user, to_user=self.user,
+                                     event=self.event)
         self.invitation.save()
 
         # Mock the users' phone numbers.

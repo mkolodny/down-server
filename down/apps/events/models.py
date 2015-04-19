@@ -23,7 +23,8 @@ class Event(models.Model):
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    members = models.ManyToManyField(User, through='Invitation')
+    members = models.ManyToManyField(User, through='Invitation',
+                                     through_fields=('event', 'from_user'))
 
     def get_relevant_member_devices(self, except_user):
         """
@@ -45,7 +46,8 @@ class Event(models.Model):
 
 
 class Invitation(models.Model):
-    to_user = models.ForeignKey(User)
+    from_user = models.ForeignKey(User, related_name='related_from_user+')
+    to_user = models.ForeignKey(User, related_name='related_to_user+')
     event = models.ForeignKey(Event)
     accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

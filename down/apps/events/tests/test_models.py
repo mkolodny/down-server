@@ -82,7 +82,8 @@ class InvitationTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_create_notify(self, mock_send):
         # Invite the user.
-        invitation = Invitation(to_user=self.user, event=self.event)
+        invitation = Invitation(from_user=self.user, to_user=self.user,
+                                event=self.event)
         invitation.save()
 
         # It should notify the user that they were invited to an event.
@@ -104,7 +105,8 @@ class InvitationTests(APITestCase):
         self.user.save()
 
         # Invite the user.
-        invitation = Invitation(to_user=self.user, event=self.event)
+        invitation = Invitation(from_user=self.user, to_user=self.user,
+                                event=self.event)
         invitation.save()
 
         # It should init the Twilio client with the proper params.
@@ -162,12 +164,13 @@ class InvitationTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_accept_notify(self, mock_send):
         # Say that friend1 is down for the event.
-        invitation = Invitation(to_user=self.friend1, event=self.event,
-                                accepted=True)
+        invitation = Invitation(from_user=self.user, to_user=self.friend1,
+                                event=self.event, accepted=True)
         invitation.save()
 
         # Invite the user.
-        invitation = Invitation(to_user=self.user, event=self.event)
+        invitation = Invitation(from_user=self.user, to_user=self.user,
+                                event=self.event)
         invitation.save()
 
         # The user accepts the invtation.
@@ -187,12 +190,13 @@ class InvitationTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_accept_notify_creator_accepted(self, mock_send):
         # Say that friend1 is also down for the event.
-        invitation = Invitation(to_user=self.friend1, event=self.event,
-                                accepted=True)
+        invitation = Invitation(from_user=self.user, to_user=self.friend1,
+                                event=self.event, accepted=True)
         invitation.save()
 
         # Invite the user.
-        invitation = Invitation(to_user=self.user, event=self.event)
+        invitation = Invitation(from_user=self.user, to_user=self.user,
+                                event=self.event)
         invitation.save()
 
         # The user accepts the invtation.
@@ -213,7 +217,8 @@ class InvitationTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_accept_already_accepted(self, mock_send):
         # Invite the user.
-        invitation = Invitation(to_user=self.user, event=self.event)
+        invitation = Invitation(from_user=self.user, to_user=self.user,
+                                event=self.event)
         invitation.save()
 
         # The user accepts the invitation.
@@ -244,7 +249,8 @@ class InvitationTests(APITestCase):
         data = {self.user.id: True}
 
         # Invite the user
-        invitation = Invitation(to_user=self.user, event=self.event)
+        invitation = Invitation(from_user=self.user, to_user=self.user,
+                                event=self.event)
         invitation.save()
 
         self.mock_patch.assert_called_once_with(url, json.dumps(data))
