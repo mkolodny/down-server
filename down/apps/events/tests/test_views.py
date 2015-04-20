@@ -171,7 +171,8 @@ class EventTests(APITestCase):
             activity = self.event.title
         message = '{name} to {activity}: {text}'.format(
                 name=friend1.name, activity=activity, text=data['text'])
-        mock_send.assert_called_once_with(registration_ids=tokens, alert=message)
+        extra= {'type': 'chat_message', 'event_id': self.event.id}
+        mock_send.assert_called_once_with(registration_ids=tokens, alert=message, extra=extra)
 
     def test_create_message_not_invited(self):
         # Uninvite the logged in user.
