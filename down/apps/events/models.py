@@ -81,6 +81,8 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
                                                          activity=event.title)
         devices = APNSDevice.objects.filter(user=to_user)
         devices.send_message(message)
+        extra = {'message': message}
+        devices.send_message(None, extra=extra)
     else:
         # The user doesn't have the app installed, so text them the invitation.
         if event.datetime and event.place:
@@ -153,6 +155,9 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
 
     # TODO: Catch exception if sending the message fails.
     devices.send_message(message)
+
+    extra = {'message': message}
+    devices.send_message(None, extra=extra)
 
     # Mark the user has having notified their friends.
     invitation.previously_accepted = True

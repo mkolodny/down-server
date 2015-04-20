@@ -37,3 +37,5 @@ def send_new_friendship_notification(sender, instance, created, **kwargs):
 
     devices = APNSDevice.objects.filter(user_id=friendship.friend.id)
     devices.send_message(message)
+    extra = {'message': message}
+    devices.send_message(None, extra=extra)
