@@ -91,7 +91,10 @@ class InvitationTests(APITestCase):
         message = '{name} is down for {activity}'.format(
                 name=self.event.creator.name,
                 activity=self.event.title)
-        mock_send.assert_called_once_with(registration_ids=[token], alert=message)
+
+        mock_send.assert_any_call(registration_ids=[token], alert=message)
+        extra = {'message': message}
+        mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
 
     @mock.patch('down.apps.events.models.TwilioRestClient')
     def mock_twilio(self, expected_message, mock_TwilioRestClient):
@@ -185,7 +188,9 @@ class InvitationTests(APITestCase):
             self.apns_device2.registration_id,
             self.apns_device3.registration_id,
         ]
-        mock_send.assert_called_with(registration_ids=tokens, alert=message)
+        mock_send.assert_any_call(registration_ids=tokens, alert=message)
+        extra = {'message': message}
+        mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_accept_notify_creator_accepted(self, mock_send):
@@ -212,7 +217,9 @@ class InvitationTests(APITestCase):
             self.apns_device2.registration_id,
             self.apns_device3.registration_id,
         ]
-        mock_send.assert_called_with(registration_ids=tokens, alert=message)
+        mock_send.assert_any_call(registration_ids=tokens, alert=message)
+        extra = {'message': message}
+        mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_accept_already_accepted(self, mock_send):

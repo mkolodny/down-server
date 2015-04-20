@@ -50,7 +50,10 @@ class FriendTests(APITestCase):
         # It should notify the friend that they were added by the user
         token = self.friend_apns_device.registration_id
         message = '{name} added you as a friend!'.format(name=self.user.name)
-        mock_send.assert_called_once_with(registration_ids=[token], alert=message)
+
+        mock_send.assert_any_call(registration_ids=[token], alert=message)
+        extra = {'message': message}
+        mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_friendship_create_notify_added_back(self, mock_send): 
@@ -67,5 +70,7 @@ class FriendTests(APITestCase):
         # but with a different message!!!
         token = self.user_apns_device.registration_id
         message = '{name} added you back!'.format(name=self.friend.name)
-        mock_send.assert_called_with(registration_ids=[token], alert=message)
+        mock_send.assert_any_call(registration_ids=[token], alert=message)
+        extra = {'message': message}
+        mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
 
