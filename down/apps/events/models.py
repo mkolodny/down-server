@@ -53,12 +53,12 @@ class Invitation(models.Model):
     NO_RESPONSE = 0
     ACCEPTED = 1
     DECLINED = 2
-    STATUS_TYPES = (
+    STATUS_CHOICES = (
         (NO_RESPONSE, 'no response'),
         (ACCEPTED, 'accepted'),
         (DECLINED, 'declined'),
     )
-    status = models.SmallIntegerField(choices=STATUS_TYPES,
+    status = models.SmallIntegerField(choices=STATUS_CHOICES,
                                       default=NO_RESPONSE)
     created_at = models.DateTimeField(auto_now_add=True)
     previously_accepted = models.BooleanField(default=False)
