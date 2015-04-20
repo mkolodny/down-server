@@ -44,6 +44,7 @@ class EventSerializer(serializers.ModelSerializer):
                                    read_only=True)
     place = PlaceSerializer(required=False)
     datetime = UnixEpochDateField(required=False)
+    last_updated = UnixEpochDateField(required=False)
 
     class Meta:
         model = Event
