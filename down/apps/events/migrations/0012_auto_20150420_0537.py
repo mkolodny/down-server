@@ -4,15 +4,6 @@ from __future__ import unicode_literals
 from django.db import models, migrations
 
 
-def accepted_to_status(apps, schema_editor):
-    Invitation = apps.get_model('events', 'Invitation')
-    for invitation in Invitation.objects.all():
-        if invitation.accepted:
-            invitation.status = 1
-        else:
-            invitation.status = 0
-        invitation.save()
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -25,10 +16,5 @@ class Migration(migrations.Migration):
             name='status',
             field=models.SmallIntegerField(default=0, choices=[(0, 'no response'), (1, 'accepted'), (2, 'declined')]),
             preserve_default=True,
-        ),
-        migrations.RunPython(accepted_to_status),
-        migrations.RemoveField(
-            model_name='invitation',
-            name='accepted',
         ),
     ]
