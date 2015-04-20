@@ -8,9 +8,9 @@ def accepted_to_status(apps, schema_editor):
     Invitation = apps.get_model('events', 'Invitation')
     for invitation in Invitation.objects.all():
         if invitation.accepted:
-            invitation.status = Invitation.ACCEPTED
+            invitation.status = 1
         else:
-            invitation.status = Invitation.NO_RESPONSE
+            invitation.status = 0
         invitation.save()
 
 class Migration(migrations.Migration):
