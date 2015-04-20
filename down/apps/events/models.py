@@ -61,7 +61,7 @@ class Invitation(models.Model):
     status = models.SmallIntegerField(choices=STATUS_CHOICES,
                                       default=NO_RESPONSE)
     created_at = models.DateTimeField(auto_now_add=True)
-    previously_accepted = models.BooleanField(default=False)
+    last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('to_user', 'event')
@@ -155,8 +155,8 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     if invitation.status != Invitation.ACCEPTED:
         return
     # Only send a notification once per accepted event.
-    if invitation.previously_accepted:
-        return
+    #if invitation.previously_accepted:
+    #    return
 
     message = '{name} is also down for {activity}'.format(
             name=user.name,
@@ -170,5 +170,5 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     devices.send_message(None, extra=extra)
 
     # Mark the user has having notified their friends.
-    invitation.previously_accepted = True
-    invitation.save()
+    #invitation.previously_accepted = True
+    #invitation.save()
