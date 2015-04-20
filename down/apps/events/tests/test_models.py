@@ -165,7 +165,7 @@ class InvitationTests(APITestCase):
     def test_post_invitation_accept_notify(self, mock_send):
         # Say that friend1 is down for the event.
         invitation = Invitation(from_user=self.user, to_user=self.friend1,
-                                event=self.event, accepted=True)
+                                event=self.event, status=Invitation.ACCEPTED)
         invitation.save()
 
         # Invite the user.
@@ -174,7 +174,7 @@ class InvitationTests(APITestCase):
         invitation.save()
 
         # The user accepts the invtation.
-        invitation.accepted = True
+        invitation.status = Invitation.ACCEPTED
         invitation.save()
 
         # It should notify the invited users.
@@ -191,7 +191,7 @@ class InvitationTests(APITestCase):
     def test_post_invitation_accept_notify_creator_accepted(self, mock_send):
         # Say that friend1 is also down for the event.
         invitation = Invitation(from_user=self.user, to_user=self.friend1,
-                                event=self.event, accepted=True)
+                                event=self.event, status=Invitation.ACCEPTED)
         invitation.save()
 
         # Invite the user.
@@ -200,7 +200,7 @@ class InvitationTests(APITestCase):
         invitation.save()
 
         # The user accepts the invtation.
-        invitation.accepted = True
+        invitation.status = Invitation.ACCEPTED
         invitation.save()
 
         # It should notify the users who are already down for the event, as well

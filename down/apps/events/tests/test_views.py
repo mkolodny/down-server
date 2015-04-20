@@ -141,10 +141,10 @@ class EventTests(APITestCase):
 
         # Mock the friends being down for the event.
         invitation = Invitation(from_user=self.user, to_user=friend,
-                                event=self.event, accepted=True)
+                                event=self.event, status=Invitation.ACCEPTED)
         invitation.save()
         invitation = Invitation(from_user=self.user, to_user=friend1,
-                                event=self.event, accepted=True)
+                                event=self.event, status=Invitation.ACCEPTED)
         invitation.save()
 
         # Clear any previous notifications
@@ -238,7 +238,7 @@ class InvitationTests(APITestCase):
             'from_user': self.user1.id,
             'to_user': self.user2.id,
             'event': self.event.id,
-            'accepted': True,
+            'status': Invitation.ACCEPTED,
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -286,7 +286,7 @@ class InvitationTests(APITestCase):
             'from_user': self.user1.id,
             'to_user': self.user2.id,
             'event': self.event.id,
-            'accepted': True,
+            'status': Invitation.ACCEPTED,
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -336,7 +336,7 @@ class InvitationTests(APITestCase):
     def test_update(self, mock_send):
         # Mock an invitation.
         invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                event=self.event, accepted=False)
+                                event=self.event, status=Invitation.DECLINED)
         invitation.save()
 
         url = reverse('invitation-detail', kwargs={'pk': invitation.id})
@@ -344,7 +344,7 @@ class InvitationTests(APITestCase):
             'from_user': invitation.from_user_id,
             'to_user': invitation.to_user_id,
             'event': invitation.event.id,
-            'accepted': False,
+            'status': Invitation.DECLINED,
         }
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)

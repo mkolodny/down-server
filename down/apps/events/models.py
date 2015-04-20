@@ -35,7 +35,8 @@ class Event(models.Model):
         """
         # Exclude this user's accepted invitation.
         member_invitations = Invitation.objects.filter(
-                accepted=True, event=self).exclude(to_user=except_user)
+                status=Invitation.ACCEPTED,
+                event=self).exclude(to_user=except_user)
         member_ids = [
             invitation.to_user_id for invitation in member_invitations]
         # Notify the creator even if they haven't accepted the invitation.
@@ -49,7 +50,16 @@ class Invitation(models.Model):
     from_user = models.ForeignKey(User, related_name='related_from_user+')
     to_user = models.ForeignKey(User, related_name='related_to_user+')
     event = models.ForeignKey(Event)
-    accepted = models.BooleanField(default=False)
+    NO_RESPONSE = 0
+    ACCEPTED = 1
+    DECLINED = 2
+    STATUS_TYPES = (
+        (NO_RESPONSE, 'no response'),
+        (ACCEPTED, 'accepted'),
+        (DECLINED, 'declined'),
+    )
+    status = models.SmallIntegerField(choices=STATUS_TYPES,
+                                      default=NO_RESPONSE)
     created_at = models.DateTimeField(auto_now_add=True)
     previously_accepted = models.BooleanField(default=False)
 
@@ -140,7 +150,7 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     event = invitation.event
 
     # Only notify other users if the user accepted the invitation.
-    if not invitation.accepted:
+    if invitation.status != Invitation.ACCEPTED:
         return
     # Only send a notification once per accepted event.
     if invitation.previously_accepted:
