@@ -22,6 +22,7 @@ class User(AbstractBaseUser):
     friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False,
                                      related_name='related_friends+')
+    last_updated = models.DateTimeField(auto_now=True)
 
     # Use name for the username field, since `self.username` might not be set.
     USERNAME_FIELD = 'email'

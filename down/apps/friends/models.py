@@ -13,6 +13,7 @@ class Friendship(models.Model):
     friend = models.ForeignKey(User, related_name='friend+')
     since = models.DateTimeField(auto_now_add=True)
     acknowledged = models.BooleanField(default=False)
+    last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('user', 'friend')

@@ -25,6 +25,7 @@ class Event(models.Model):
     description = models.TextField(null=True, blank=True)
     members = models.ManyToManyField(User, through='Invitation',
                                      through_fields=('event', 'from_user'))
+    last_updated = models.DateTimeField(auto_now=True)
 
     def get_relevant_member_devices(self, except_user):
         """

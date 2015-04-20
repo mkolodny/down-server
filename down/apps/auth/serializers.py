@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
+from phonenumber_field import phonenumber
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework_gis.serializers import GeoModelSerializer
+from down.apps.utils.serializers import UnixEpochDateField
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
-from phonenumber_field import phonenumber
 
 
 class AuthCodeSerializer(serializers.ModelSerializer):
@@ -44,6 +45,7 @@ class SocialAccountSyncSerializer(serializers.Serializer):
 class UserSerializer(GeoModelSerializer):
     authtoken = serializers.ReadOnlyField(required=False)
     firebase_token = serializers.ReadOnlyField(required=False)
+    last_updated = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = User
