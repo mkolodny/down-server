@@ -26,7 +26,10 @@ from down.apps.friends.models import Friendship
 
 class UserTests(APITestCase):
 
-    def setUp(self):
+    # We have to mock the function that sends push notifications, since adding
+    # mock friends will send push notifications.
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def setUp(self, mock_send):
         self.patcher = mock.patch('requests.patch')
         self.mock_patch = self.patcher.start()
 

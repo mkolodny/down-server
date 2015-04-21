@@ -8,6 +8,7 @@ from push_notifications.models import APNSDevice
 import requests
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import User, UserPhoneNumber
+from down.apps.notifications.utils import notify_users
 
 
 class Place(models.Model):
@@ -27,19 +28,17 @@ class Event(models.Model):
                                      through_fields=('event', 'from_user'))
     last_updated = models.DateTimeField(auto_now=True)
 
-    def get_relevant_member_devices(self, except_user):
+    def get_member_devices(self, except_user, notify_statuses):
         """
-        Get all members who have accepted their invitation, except the
-        `except_user`.
+        Get all members who have accepted their invitation, or haven't responded
+        yet, except the `current_user`.
 
         Get the creator whether or not they've accepted the invitation.
         """
-        # Exclude this user's accepted invitation.
-        member_invitations = Invitation.objects.filter(
-                status=Invitation.ACCEPTED,
-                event=self).exclude(to_user=except_user)
-        member_ids = [
-            invitation.to_user_id for invitation in member_invitations]
+        invitations = Invitation.objects.filter(status__in=notify_statuses,
+                                                event=self)
+        invitations = invitations.exclude(to_user=except_user)
+        member_ids = [invitation.to_user_id for invitation in invitations]
         # Notify the creator even if they haven't accepted the invitation.
         member_ids.append(self.creator_id)
 
@@ -63,9 +62,17 @@ class Invitation(models.Model):
                                       default=NO_RESPONSE)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
+    previously_accepted = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('to_user', 'event')
+
+    def save(self, *args, **kwargs):
+        super(Invitation, self).save(*args, **kwargs)
+
+        if self.status == self.ACCEPTED and not self.previously_accepted:
+            self.previously_accepted = True
+            self.save()
 
 @receiver(post_save, sender=Invitation)
 def send_new_invitation_notification(sender, instance, created, **kwargs):
@@ -117,10 +124,10 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
             message = ('{name} is down for {activity}'
                        '\n--\nSent from Down (http://down.life/app)').format(
                        name=creator.name, activity=event.title)
+
         phone = unicode(UserPhoneNumber.objects.get(user=to_user).phone)
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
-                               body=message)
+        client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=message)
 
 @receiver(post_save, sender=Invitation)
 def add_user_to_firebase_members_list(sender, instance, created, **kwargs):
@@ -152,24 +159,32 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     user = invitation.to_user
     event = invitation.event
 
-    # Only notify other users if the user accepted the invitation.
-    if invitation.status != Invitation.ACCEPTED:
+    if invitation.status == Invitation.NO_RESPONSE:
         return
-    # Only send a notification once per accepted event.
-    #if invitation.previously_accepted:
-    #    return
+    elif invitation.status == Invitation.DECLINED:
+        # Only notify the event creator.
+        message = '{name} isn\'t down for {activity}'.format(
+                name=user.name,
+                activity=event.title)
+        notify_users([event.creator_id], message)
 
+    # The user is down.
     message = '{name} is also down for {activity}'.format(
             name=user.name,
             activity=event.title)
-    devices = event.get_relevant_member_devices(user)
 
+    if invitation.previously_accepted:
+        # Only send users other than the creator a notification if the user has
+        # already accepted the event.
+        notify_users([event.creator_id], message)
+        return
+
+    # Get all other members who have accepted their invitation, or haven't responded
+    # yet, except the `current_user`. Get the creator whether or not they've
+    # accepted the invitation.
+    notify_statuses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
+    devices = event.get_member_devices(user, notify_statuses)
     # TODO: Catch exception if sending the message fails.
     devices.send_message(message)
-
     extra = {'message': message}
     devices.send_message(None, extra=extra)
-
-    # Mark the user has having notified their friends.
-    #invitation.previously_accepted = True
-    #invitation.save()

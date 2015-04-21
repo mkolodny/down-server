@@ -73,4 +73,3 @@ class FriendTests(APITestCase):
         mock_send.assert_any_call(registration_ids=[token], alert=message)
         extra = {'message': message}
         mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
-

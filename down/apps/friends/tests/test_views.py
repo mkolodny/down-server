@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from django.core.urlresolvers import reverse
+import mock
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
@@ -11,7 +12,10 @@ from down.apps.friends.serializers import FriendshipSerializer
 
 class FriendshipTests(APITestCase):
 
-    def setUp(self):
+    # We have to mock the function that sends push notifications, since 
+    # adding users as friends will send push notifications.
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def setUp(self, mock_send):
         # Mock two users.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                           username='tdog', image_url='http://imgur.com/tdog')
@@ -44,7 +48,10 @@ class FriendshipTests(APITestCase):
                 friend=self.user.id)
         self.friend_url = reverse('friendship-friend')
 
-    def test_create(self):
+    # We have to mock the function that sends push notifications, since 
+    # adding users as friends will send push notifications.
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_create(self, mock_send):
         # Delete the mocked friendship.
         self.friendship.delete()
 

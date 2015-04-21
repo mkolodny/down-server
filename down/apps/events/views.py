@@ -46,10 +46,12 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             message = '{name} to {activity}: {text}'.format(
                     name=request.user.name, activity=activity,
                     text=serializer.data['text'])
-            devices = event.get_relevant_member_devices(request.user)
+            notify_statuses = [Invitation.ACCEPTED]
+            devices = event.get_member_devices(request.user, notify_statuses)
             # TODO: Catch exception if sending the message fails.
             devices.send_message(message)
-            extra={'type': 'chat_message', 
+            extra = {
+                'type': 'chat_message', 
                 'event_id': event.id,
                 'message': message
             }

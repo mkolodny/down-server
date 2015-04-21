@@ -17,7 +17,10 @@ from down.apps.events.serializers import EventSerializer, InvitationSerializer
 
 class EventTests(APITestCase):
 
-    def setUp(self):
+    # We have to mock the function that sends push notifications, since 
+    # inviting people to events will send push notifications.
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def setUp(self, mock_send):
         self.patcher = mock.patch('requests.patch')
         self.mock_patch = self.patcher.start()
 
@@ -187,7 +190,10 @@ class EventTests(APITestCase):
 
 class InvitationTests(APITestCase):
 
-    def setUp(self):
+    # We have to mock the function that sends push notifications, since 
+    # inviting people to events will send push notifications.
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def setUp(self, mock_send):
         self.patcher = mock.patch('requests.patch')
         self.mock_patch = self.patcher.start()
 
