@@ -23,7 +23,6 @@ class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
     members = models.ManyToManyField(User, through='Invitation',
                                      through_fields=('event', 'from_user'))
     last_updated = models.DateTimeField(auto_now=True)

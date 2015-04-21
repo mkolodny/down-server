@@ -48,8 +48,7 @@ class EventTests(APITestCase):
 
         # Mock an event.
         self.event = Event(title='bars?!?!!', creator=self.user,
-                           datetime=timezone.now(), place=self.place,
-                           description='bars!!!!')
+                           datetime=timezone.now(), place=self.place)
         self.event.save()
         self.invitation = Invitation(from_user=self.user, to_user=self.user,
                                      event=self.event)
@@ -74,7 +73,6 @@ class EventTests(APITestCase):
             'place': {
                 'name': 'Atlantic-Barclays Station',
             },
-            'description': 'To the sewers!',
         }
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -227,8 +225,7 @@ class InvitationTests(APITestCase):
 
         # Mock an event
         self.event = Event(title='bars?!?!!', creator=self.user1,
-                      datetime=timezone.now(), place=self.place,
-                      description='bars!!!!')
+                           datetime=timezone.now(), place=self.place)
         self.event.save()
         self.invitation = Invitation(event=self.event, from_user=self.user1,
                                      to_user=self.user1)

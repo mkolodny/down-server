@@ -57,8 +57,7 @@ class InvitationTests(APITestCase):
                            geo='POINT(40.6898319 -73.9904645)')
         self.place.save()
         self.event = Event(title='bars?!?!?!', creator=self.friend1,
-                           datetime=timezone.now(), place=self.place,
-                           description='bars?!?!?!')
+                           datetime=timezone.now(), place=self.place)
         self.event.save()
 
 
