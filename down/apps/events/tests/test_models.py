@@ -197,12 +197,12 @@ class InvitationTests(APITestCase):
 
         # Say that friend2 hasn't responded yet.
         invitation = Invitation(from_user=self.user, to_user=self.friend2,
-                                event=self.event, status=Invitation.NO_RESPONSE)
+                                event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
         # Say that friend3 is not down for the event.
         invitation = Invitation(from_user=self.user, to_user=self.friend3,
-                                event=self.event, status=Invitation.DECLINED)
+                                event=self.event, response=Invitation.DECLINED)
         invitation.save()
 
         # Invite the user.
@@ -211,7 +211,7 @@ class InvitationTests(APITestCase):
         invitation.save()
 
         # The user accepts the invtation.
-        invitation.status = Invitation.ACCEPTED
+        invitation.response = Invitation.ACCEPTED
         invitation.save()
 
         # It should notify the invited users who are either down, or haven't
@@ -243,16 +243,16 @@ class InvitationTests(APITestCase):
         invitation.save()
 
         # The user accepts the invitation then declines the invitation.
-        invitation.status = Invitation.ACCEPTED
+        invitation.response = Invitation.ACCEPTED
         invitation.save()
-        invitation.status = Invitation.DECLINED
+        invitation.response = Invitation.DECLINED
         invitation.save()
 
         # Clear the mock's apns call count.
         mock_send.reset_mock()
 
         # The user accepts the invitation again.
-        invitation.status = Invitation.ACCEPTED
+        invitation.response = Invitation.ACCEPTED
         invitation.save()
 
         # It should only notify the event creator.
@@ -285,7 +285,7 @@ class InvitationTests(APITestCase):
         mock_send.reset_mock()
 
         # The user declines the invitation.
-        invitation.status = Invitation.DECLINED
+        invitation.response = Invitation.DECLINED
         invitation.save()
 
         # It should only notify the event creator.

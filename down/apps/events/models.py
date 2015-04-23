@@ -27,14 +27,14 @@ class Event(models.Model):
                                      through_fields=('event', 'from_user'))
     last_updated = models.DateTimeField(auto_now=True)
 
-    def get_member_devices(self, except_user, notify_statuses):
+    def get_member_devices(self, except_user, notify_responses):
         """
         Get all members who have accepted their invitation, or haven't responded
         yet, except the `current_user`.
 
         Get the creator whether or not they've accepted the invitation.
         """
-        invitations = Invitation.objects.filter(status__in=notify_statuses,
+        invitations = Invitation.objects.filter(response__in=notify_responses,
                                                 event=self)
         invitations = invitations.exclude(to_user=except_user)
         member_ids = [invitation.to_user_id for invitation in invitations]
@@ -52,12 +52,12 @@ class Invitation(models.Model):
     NO_RESPONSE = 0
     ACCEPTED = 1
     DECLINED = 2
-    STATUS_CHOICES = (
+    RESPONSE_CHOICES = (
         (NO_RESPONSE, 'no response'),
         (ACCEPTED, 'accepted'),
         (DECLINED, 'declined'),
     )
-    status = models.SmallIntegerField(choices=STATUS_CHOICES,
+    response = models.SmallIntegerField(choices=RESPONSE_CHOICES,
                                       default=NO_RESPONSE)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
@@ -69,7 +69,7 @@ class Invitation(models.Model):
     def save(self, *args, **kwargs):
         super(Invitation, self).save(*args, **kwargs)
 
-        if self.status == self.ACCEPTED and not self.previously_accepted:
+        if self.response == self.ACCEPTED and not self.previously_accepted:
             self.previously_accepted = True
             self.save()
 
@@ -158,9 +158,9 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     user = invitation.to_user
     event = invitation.event
 
-    if invitation.status == Invitation.NO_RESPONSE:
+    if invitation.response == Invitation.NO_RESPONSE:
         return
-    elif invitation.status == Invitation.DECLINED:
+    elif invitation.response == Invitation.DECLINED:
         # Only notify the event creator.
         message = '{name} isn\'t down for {activity}'.format(
                 name=user.name,
@@ -181,8 +181,8 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     # Get all other members who have accepted their invitation, or haven't responded
     # yet, except the `current_user`. Get the creator whether or not they've
     # accepted the invitation.
-    notify_statuses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
-    devices = event.get_member_devices(user, notify_statuses)
+    notify_responses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
+    devices = event.get_member_devices(user, notify_responses)
     # TODO: Catch exception if sending the message fails.
     devices.send_message(message)
     extra = {'message': message}

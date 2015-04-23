@@ -46,8 +46,8 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             message = '{name} to {activity}: {text}'.format(
                     name=request.user.name, activity=activity,
                     text=serializer.data['text'])
-            notify_statuses = [Invitation.ACCEPTED]
-            devices = event.get_member_devices(request.user, notify_statuses)
+            notify_responses = [Invitation.ACCEPTED]
+            devices = event.get_member_devices(request.user, notify_responses)
             # TODO: Catch exception if sending the message fails.
             devices.send_message(message)
             extra = {
