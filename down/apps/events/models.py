@@ -24,7 +24,7 @@ class Event(models.Model):
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
     members = models.ManyToManyField(User, through='Invitation',
-                                     through_fields=('event', 'from_user'))
+                                     through_fields=('event', 'to_user'))
     last_updated = models.DateTimeField(auto_now=True)
 
     def get_member_devices(self, except_user, notify_responses):
@@ -58,7 +58,7 @@ class Invitation(models.Model):
         (DECLINED, 'declined'),
     )
     response = models.SmallIntegerField(choices=RESPONSE_CHOICES,
-                                      default=NO_RESPONSE)
+                                        default=NO_RESPONSE)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
     previously_accepted = models.BooleanField(default=False)
