@@ -161,6 +161,7 @@ class FriendshipTests(APITestCase):
         with self.assertRaises(Friendship.DoesNotExist):
             Friendship.objects.get(id=self.friendship.id)
 
+    """
     def test_acknowledge_added_me(self):
         data = {
             'id': self.friendship.id,
@@ -182,3 +183,4 @@ class FriendshipTests(APITestCase):
 
         response = self.client.put(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    """

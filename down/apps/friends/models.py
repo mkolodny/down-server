@@ -10,7 +10,6 @@ class Friendship(models.Model):
     user = models.ForeignKey(User, related_name='user+')
     friend = models.ForeignKey(User, related_name='friend+')
     since = models.DateTimeField(auto_now_add=True)
-    acknowledged = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

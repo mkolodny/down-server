@@ -6,7 +6,7 @@ from .models import Friendship
 
 class FriendshipSerializer(serializers.ModelSerializer):
     since = UnixEpochDateField(read_only=True)
-    last_updated = UnixEpochDateField(read_only=True)
+    updated_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Friendship
