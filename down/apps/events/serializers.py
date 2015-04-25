@@ -9,7 +9,7 @@ from .models import Event, Invitation, Place
 
 class InvitationSerializer(serializers.ModelSerializer):
     created_at = UnixEpochDateField(read_only=True)
-    last_updated = UnixEpochDateField(read_only=True)
+    updated_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
@@ -23,11 +23,11 @@ class PlaceSerializer(GeoModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     created_at = UnixEpochDateField(read_only=True)
+    updated_at = UnixEpochDateField(read_only=True)
     members = InvitationSerializer(source='invitation_set', many=True,
                                    read_only=True)
     place = PlaceSerializer(required=False)
     datetime = UnixEpochDateField(required=False)
-    last_updated = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Event

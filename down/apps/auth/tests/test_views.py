@@ -316,10 +316,7 @@ class SocialAccountTests(APITestCase):
         self.assertEqual(httpretty.last_request().querystring, params)
 
         # It should return the user.
-        self.user.email = email
-        self.user.name = name
-        self.user.image_url = image_url
-        serializer = UserSerializer(self.user)
+        serializer = UserSerializer(user)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 

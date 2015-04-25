@@ -7,13 +7,11 @@ from down.apps.auth.models import User
 
 
 class Friendship(models.Model):
-    # TODO: Figure out why the only one friend is getting a new many-to-many friend
-    # when saving a friendship.
     user = models.ForeignKey(User, related_name='user+')
     friend = models.ForeignKey(User, related_name='friend+')
     since = models.DateTimeField(auto_now_add=True)
     acknowledged = models.BooleanField(default=False)
-    last_updated = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('user', 'friend')
@@ -35,8 +33,14 @@ def send_new_friendship_notification(sender, instance, created, **kwargs):
     else:
         message = '{name} added you as a friend!'.format(name=friendship.user.name)
 
-
     devices = APNSDevice.objects.filter(user_id=friendship.friend.id)
     devices.send_message(message)
     extra = {'message': message}
     devices.send_message(None, extra=extra)
+
+
+"""
+class FacebookFriendship(models.Model):
+    user = models.ForeignKey(User, related_name='user+')
+    friend = models.ForeignKey(User, related_name='friend+')
+"""
