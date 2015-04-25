@@ -45,7 +45,7 @@ class SocialAccountSyncSerializer(serializers.Serializer):
 class UserSerializer(GeoModelSerializer):
     authtoken = serializers.ReadOnlyField(required=False)
     firebase_token = serializers.ReadOnlyField(required=False)
-    last_updated = UnixEpochDateField(read_only=True)
+    updated_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = User

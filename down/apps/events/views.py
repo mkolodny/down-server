@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
+from rest_framework.filters import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from down.apps.auth.models import User
+from .filters import EventFilter
 from .models import Event, Invitation
 from .permissions import InviterWasInvited, IsFromUser, WasInvited
 from .serializers import (
@@ -16,6 +18,8 @@ from .serializers import (
 class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                    mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
+    #filter_backends = (DjangoFilterBackend,)
+    #filter_class = EventFilter
     permission_classes = (IsAuthenticated, WasInvited)
     queryset = Event.objects.all()
     serializer_class = EventSerializer

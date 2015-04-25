@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from datetime import datetime
 from urllib import urlencode
 import uuid
 from django.conf import settings
@@ -6,6 +7,7 @@ from django.contrib import auth
 from django.shortcuts import render
 from django.views.generic.base import RedirectView, TemplateView
 from firebase_token_generator import create_token
+import pytz
 import requests
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import TokenAuthentication
@@ -86,6 +88,14 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     @detail_route(methods=['get'])
     def invited_events(self, request, pk=None):
         invitations = Invitation.objects.filter(to_user=request.user)
+
+        # Check whether we only want the latest invited events.
+        min_updated_at = request.query_params.get('min_updated_at')
+        if min_updated_at:
+            dt = datetime.utcfromtimestamp(int(min_updated_at))
+            dt = dt.replace(tzinfo=pytz.utc)
+            invitations = invitations.filter(updated_at__gte=dt)
+
         event_ids = [invitation.event_id for invitation in invitations]
         events = Event.objects.filter(id__in=event_ids)
         events.prefetch_related('place')
