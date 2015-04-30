@@ -99,9 +99,9 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
         message = '{name} is down for {activity}'.format(name=creator.name,
                                                          activity=event.title)
         devices = APNSDevice.objects.filter(user=to_user)
-        devices.send_message(message)
+        devices.send_message(message, badge=1)
         extra = {'message': message}
-        devices.send_message(None, extra=extra)
+        devices.send_message(None, badge=1, extra=extra)
     else:
         # The user doesn't have the app installed, so text them the invitation.
         if event.datetime and event.place:
@@ -129,7 +129,6 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
         phone = unicode(UserPhoneNumber.objects.get(user=to_user).phone)
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
         client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=message)
-
 
 
 @receiver(post_save, sender=Invitation)
