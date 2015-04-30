@@ -100,9 +100,9 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
         message = '{name} is down for {activity}'.format(name=creator.name,
                                                          activity=event.title)
         devices = APNSDevice.objects.filter(user=to_user)
-        devices.send_message(message, badge=1)
+        devices.send_message(message)
         extra = {'message': message}
-        devices.send_message(None, badge=1, extra=extra)
+        devices.send_message(None, extra=extra)
     else:
         # The user doesn't have the app installed, so text them the invitation.
         if event.datetime and event.place:
