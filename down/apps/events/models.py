@@ -30,7 +30,7 @@ class Event(models.Model):
     def get_member_devices(self, except_user, notify_responses):
         """
         Get all members who have accepted their invitation, or haven't responded
-        yet, except the `current_user`.
+        yet, except the `except_user`.
 
         Get the creator whether or not they've accepted the invitation.
         """
@@ -38,8 +38,9 @@ class Event(models.Model):
                                                 event=self)
         invitations = invitations.exclude(to_user=except_user)
         member_ids = [invitation.to_user_id for invitation in invitations]
+
         # Notify the creator even if they haven't accepted the invitation.
-        member_ids.append(self.creator_id)
+        #member_ids.append(self.creator_id)
 
         # This filter operation will only return unique devices.
         return APNSDevice.objects.filter(user_id__in=member_ids)

@@ -28,13 +28,13 @@ class InvitationTests(APITestCase):
         self.user.save()
         self.user_phone = UserPhoneNumber(user=self.user, phone='+14388843460')
         self.user_phone.save()
-        registration_id1 = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+        registration_id0 = ('0ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                             '10df230567037dcc4')
-        device_id1 = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.apns_device1 = APNSDevice(registration_id=registration_id1,
-                                       device_id=device_id1, name='iPhone, 8.2',
+        device_id0 = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.apns_device0 = APNSDevice(registration_id=registration_id0,
+                                       device_id=device_id0, name='iPhone, 8.2',
                                        user=self.user)
-        self.apns_device1.save()
+        self.apns_device0.save()
 
         # Mock the user's friend.
         self.friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
@@ -44,13 +44,13 @@ class InvitationTests(APITestCase):
         self.friendship.save()
         self.friendship = Friendship(user=self.friend1, friend=self.user)
         self.friendship.save()
-        registration_id2 = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+        registration_id1 = ('1ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '20df230567037dcc4')
-        device_id2 = 'E622E2F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.apns_device2 = APNSDevice(registration_id=registration_id2,
-                                       device_id=device_id2, name='iPhone, 8.2',
+        device_id1 = 'E622E2F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.apns_device1 = APNSDevice(registration_id=registration_id1,
+                                       device_id=device_id1, name='iPhone, 8.2',
                                        user=self.friend1)
-        self.apns_device2.save()
+        self.apns_device1.save()
 
         # Mock an event that the user's invited to.
         self.place = Place(name='Founder House',
@@ -59,6 +59,7 @@ class InvitationTests(APITestCase):
         self.event = Event(title='bars?!?!?!', creator=self.friend1,
                            datetime=timezone.now(), place=self.place)
         self.event.save()
+
 
 
     def tearDown(self):
@@ -77,7 +78,7 @@ class InvitationTests(APITestCase):
         invitation.save()
 
         # It should notify the user that they were invited to an event.
-        token = self.apns_device1.registration_id
+        token = self.apns_device0.registration_id
         message = '{name} is down for {activity}'.format(
                 name=self.event.creator.name,
                 activity=self.event.title)
@@ -167,13 +168,13 @@ class InvitationTests(APITestCase):
         self.friendship.save()
         self.friendship = Friendship(user=self.friend2, friend=self.user)
         self.friendship.save()
-        registration_id3 = ('4ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+        registration_id2 = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '20df230567037dcc4')
-        device_id3 = 'E622E2F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.apns_device3 = APNSDevice(registration_id=registration_id3,
-                                      device_id=device_id3, name='iPhone, 8.2',
+        device_id2 = 'E622E2F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.apns_device2 = APNSDevice(registration_id=registration_id2,
+                                      device_id=device_id2, name='iPhone, 8.2',
                                       user=self.friend2)
-        self.apns_device3.save()
+        self.apns_device2.save()
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_accept_notify(self, mock_send):
@@ -188,26 +189,31 @@ class InvitationTests(APITestCase):
         self.friendship.save()
         self.friendship = Friendship(user=self.friend3, friend=self.user)
         self.friendship.save()
-        registration_id4 = ('5ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+        registration_id3 = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                             '20df230567037dcc4')
-        device_id4 = 'E622E2F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.apns_device4 = APNSDevice(registration_id=registration_id4,
-                                      device_id=device_id4, name='iPhone, 8.2',
+        device_id3 = 'E622E2F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.apns_device3 = APNSDevice(registration_id=registration_id3,
+                                      device_id=device_id3, name='iPhone, 8.2',
                                       user=self.friend3)
-        self.apns_device4.save()
+        self.apns_device3.save()
+
+        # Invite the creator to the event they created
+        self.invitation = Invitation(from_user=self.friend1, to_user=self.friend1,
+                                event=self.event, response=Invitation.ACCEPTED)
+        self.invitation.save()
 
         # Say that friend2 hasn't responded yet.
-        invitation = Invitation(from_user=self.user, to_user=self.friend2,
+        invitation = Invitation(from_user=self.friend1, to_user=self.friend2,
                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
         # Say that friend3 is not down for the event.
-        invitation = Invitation(from_user=self.user, to_user=self.friend3,
+        invitation = Invitation(from_user=self.friend1, to_user=self.friend3,
                                 event=self.event, response=Invitation.DECLINED)
         invitation.save()
 
         # Invite the user.
-        invitation = Invitation(from_user=self.user, to_user=self.user,
+        invitation = Invitation(from_user=self.friend1, to_user=self.user,
                                 event=self.event)
         invitation.save()
 
@@ -224,12 +230,13 @@ class InvitationTests(APITestCase):
                 name=self.user.name,
                 activity=self.event.title)
         tokens = [
-            self.apns_device2.registration_id, # friend1
-            self.apns_device3.registration_id, # friend2
+            self.apns_device1.registration_id, # friend1
+            self.apns_device2.registration_id, # friend2
         ]
         mock_send.assert_any_call(registration_ids=tokens, alert=message)
         extra = {'message': message}
         mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
+
 
         self.assertEqual(mock_send.call_count, 2)
 
