@@ -72,6 +72,7 @@ class EventTests(APITestCase):
             'datetime': int(time.mktime(timezone.now().timetuple())),
             'place': {
                 'name': 'Atlantic-Barclays Station',
+                'geo': 'POINT(40.685339 -73.979361)',
             },
         }
         response = self.client.post(self.list_url, data, format='json')
