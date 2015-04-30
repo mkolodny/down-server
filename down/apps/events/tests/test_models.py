@@ -72,7 +72,7 @@ class InvitationTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_create_notify(self, mock_send):
         # Invite the user.
-        invitation = Invitation(from_user=self.user, to_user=self.user,
+        invitation = Invitation(from_user=self.friend1, to_user=self.user,
                                 event=self.event)
         invitation.save()
 
@@ -85,6 +85,7 @@ class InvitationTests(APITestCase):
         mock_send.assert_any_call(registration_ids=[token], alert=message)
         extra = {'message': message}
         mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
+        self.assertEqual(mock_send.call_count, 2)
 
     @mock.patch('down.apps.events.models.TwilioRestClient')
     def mock_twilio(self, expected_message, mock_TwilioRestClient):
@@ -210,6 +211,9 @@ class InvitationTests(APITestCase):
                                 event=self.event)
         invitation.save()
 
+        # Clear the mock's call count
+        mock_send.reset_mock()
+
         # The user accepts the invtation.
         invitation.response = Invitation.ACCEPTED
         invitation.save()
@@ -227,44 +231,7 @@ class InvitationTests(APITestCase):
         extra = {'message': message}
         mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_post_invitation_accept_previously_accepted(self, mock_send):
-        # Mock another friend.
-        self.mock_friend2()
-
-        # Invite the friend.
-        invitation = Invitation(from_user=self.user, to_user=self.friend2,
-                                event=self.event)
-        invitation.save()
-
-        # Invite the user.
-        invitation = Invitation(from_user=self.user, to_user=self.user,
-                                event=self.event)
-        invitation.save()
-
-        # The user accepts the invitation then declines the invitation.
-        invitation.response = Invitation.ACCEPTED
-        invitation.save()
-        invitation.response = Invitation.DECLINED
-        invitation.save()
-
-        # Clear the mock's apns call count.
-        mock_send.reset_mock()
-
-        # The user accepts the invitation again.
-        invitation.response = Invitation.ACCEPTED
-        invitation.save()
-
-        # It should only notify the event creator.
-        message = '{name} is also down for {activity}'.format(
-                name=self.user.name,
-                activity=self.event.title)
-        tokens = [
-            self.apns_device2.registration_id, # friend1
-        ]
-        mock_send.assert_any_call(registration_ids=tokens, alert=message)
-        extra = {'message': message}
-        mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
+        self.assertEqual(mock_send.call_count, 2)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_decline(self, mock_send):
