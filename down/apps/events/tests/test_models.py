@@ -234,6 +234,28 @@ class InvitationTests(APITestCase):
         self.assertEqual(mock_send.call_count, 2)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_post_invitation_creator_accept_no_notify(self, mock_send):
+        # Mock another friend.
+        self.mock_friend2()
+
+        # Say that friend2 hasn't responded yet.
+        invitation = Invitation(from_user=self.friend1, to_user=self.friend2,
+                                event=self.event, response=Invitation.NO_RESPONSE)
+        invitation.save()
+
+        # Clear the mock's call count
+        mock_send.reset_mock()
+
+        # Invite the user, accepted by default.
+        invitation = Invitation(from_user=self.friend1, to_user=self.friend1,
+                                event=self.event, response=Invitation.ACCEPTED)
+        invitation.save()
+
+        # we should not notify anyone that the creator of the event
+        # is down (as this happens by default)
+        self.assertEqual(mock_send.call_count, 0)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_decline(self, mock_send):
         # Mock another friend.
         self.mock_friend2()
@@ -268,7 +290,7 @@ class InvitationTests(APITestCase):
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_send_invite_update_firebase_members_list(self, mock_send):
-        # TODO add integration test to ensure we get the correct reponse 
+        # TODO add integration test to ensure we get the correct response 
         # back from the firebase server
         # Invite the user
         invitation = Invitation(from_user=self.user, to_user=self.user,

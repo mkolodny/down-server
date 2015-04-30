@@ -168,6 +168,9 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     user = invitation.to_user
     event = invitation.event
 
+    if invitation.to_user_id == event.creator_id:
+        return
+
     if invitation.response == Invitation.NO_RESPONSE:
         return
     elif invitation.response == Invitation.DECLINED:
