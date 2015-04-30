@@ -72,7 +72,7 @@ class InvitationTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_create_notify(self, mock_send):
         # Invite the user.
-        invitation = Invitation(from_user=self.user, to_user=self.user,
+        invitation = Invitation(from_user=self.friend1, to_user=self.user,
                                 event=self.event)
         invitation.save()
 
@@ -85,6 +85,7 @@ class InvitationTests(APITestCase):
         mock_send.assert_any_call(registration_ids=[token], alert=message)
         extra = {'message': message}
         mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
+        self.assertEqual(mock_send.call_count, 2)
 
     @mock.patch('down.apps.events.models.TwilioRestClient')
     def mock_twilio(self, expected_message, mock_TwilioRestClient):
@@ -210,6 +211,9 @@ class InvitationTests(APITestCase):
                                 event=self.event)
         invitation.save()
 
+        # Clear the mock's call count
+        mock_send.reset_mock()
+
         # The user accepts the invtation.
         invitation.response = Invitation.ACCEPTED
         invitation.save()
@@ -227,44 +231,29 @@ class InvitationTests(APITestCase):
         extra = {'message': message}
         mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
 
+        self.assertEqual(mock_send.call_count, 2)
+
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_post_invitation_accept_previously_accepted(self, mock_send):
+    def test_post_invitation_creator_accept_no_notify(self, mock_send):
         # Mock another friend.
         self.mock_friend2()
 
-        # Invite the friend.
-        invitation = Invitation(from_user=self.user, to_user=self.friend2,
-                                event=self.event)
+        # Say that friend2 hasn't responded yet.
+        invitation = Invitation(from_user=self.friend1, to_user=self.friend2,
+                                event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
-        # Invite the user.
-        invitation = Invitation(from_user=self.user, to_user=self.user,
-                                event=self.event)
-        invitation.save()
-
-        # The user accepts the invitation then declines the invitation.
-        invitation.response = Invitation.ACCEPTED
-        invitation.save()
-        invitation.response = Invitation.DECLINED
-        invitation.save()
-
-        # Clear the mock's apns call count.
+        # Clear the mock's call count
         mock_send.reset_mock()
 
-        # The user accepts the invitation again.
-        invitation.response = Invitation.ACCEPTED
+        # Invite the user, accepted by default.
+        invitation = Invitation(from_user=self.friend1, to_user=self.friend1,
+                                event=self.event, response=Invitation.ACCEPTED)
         invitation.save()
 
-        # It should only notify the event creator.
-        message = '{name} is also down for {activity}'.format(
-                name=self.user.name,
-                activity=self.event.title)
-        tokens = [
-            self.apns_device2.registration_id, # friend1
-        ]
-        mock_send.assert_any_call(registration_ids=tokens, alert=message)
-        extra = {'message': message}
-        mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
+        # we should not notify anyone that the creator of the event
+        # is down (as this happens by default)
+        self.assertEqual(mock_send.call_count, 0)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_decline(self, mock_send):
@@ -301,7 +290,7 @@ class InvitationTests(APITestCase):
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_send_invite_update_firebase_members_list(self, mock_send):
-        # TODO add integration test to ensure we get the correct reponse 
+        # TODO add integration test to ensure we get the correct response 
         # back from the firebase server
         # Invite the user
         invitation = Invitation(from_user=self.user, to_user=self.user,

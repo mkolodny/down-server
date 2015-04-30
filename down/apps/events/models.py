@@ -71,7 +71,7 @@ class Invitation(models.Model):
 
         if self.response == self.ACCEPTED and not self.previously_accepted:
             self.previously_accepted = True
-            self.save()
+            self.save(update_fields=['previously_accepted'])
 
 @receiver(post_save, sender=Invitation)
 def send_new_invitation_notification(sender, instance, created, **kwargs):
@@ -92,7 +92,9 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
 
     to_user = invitation.to_user
     creator = event.creator
-    if to_user.username:
+
+    # if the user was added from contacts there won't be a username
+    if to_user.username: 
         # The user has the app installed, so send them a push notification.
         message = '{name} is down for {activity}'.format(name=creator.name,
                                                          activity=event.title)
@@ -128,6 +130,8 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
         client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=message)
 
+
+
 @receiver(post_save, sender=Invitation)
 def add_user_to_firebase_members_list(sender, instance, created, **kwargs):
     """
@@ -154,9 +158,18 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     Send a push notification to users who are already down for the event when
     a user accepts the invitation.
     """
+
+    if kwargs['update_fields'] == frozenset(['previously_accepted']):
+        # if we're only updating the previously_accepted field, don't
+        # send anything to anyone. Shhhhhhh
+        return
+
     invitation = instance
     user = invitation.to_user
     event = invitation.event
+
+    if invitation.to_user_id == event.creator_id:
+        return
 
     if invitation.response == Invitation.NO_RESPONSE:
         return
@@ -166,17 +179,11 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
                 name=user.name,
                 activity=event.title)
         notify_users([event.creator_id], message)
-
-    # The user is down.
-    message = '{name} is also down for {activity}'.format(
-            name=user.name,
-            activity=event.title)
-
-    if invitation.previously_accepted:
-        # Only send users other than the creator a notification if the user has
-        # already accepted the event.
-        notify_users([event.creator_id], message)
-        return
+    elif invitation.response == Invitation.ACCEPTED:
+        # The user is down.
+        message = '{name} is also down for {activity}'.format(
+                name=user.name,
+                activity=event.title)
 
     # Get all other members who have accepted their invitation, or haven't responded
     # yet, except the `current_user`. Get the creator whether or not they've
