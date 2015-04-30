@@ -581,6 +581,7 @@ class UserPhoneNumberViewSetTests(APITestCase):
         # Save URLs.
         self.list_url = reverse('userphone-list')
         self.phones_url = reverse('userphone-phones')
+        self.contact_url = reverse('userphone-contact')
 
     def test_query_by_phones(self):
         data = {'phones': [unicode(self.user_phone.phone)]}
@@ -612,6 +613,39 @@ class UserPhoneNumberViewSetTests(APITestCase):
 
         # It should create a new user.
         self.assertEqual(User.objects.count(), num_users+1)
+
+    def test_create_for_contact(self):
+        data = {
+            'phone': '+19178699626',
+            'name': 'Dickface Killah',
+        }
+        response = self.client.post(self.contact_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create a userphone with the given number.
+        UserPhoneNumber.objects.get(phone=data['phone'])
+
+        # It should create a new user with the POSTed name.
+        User.objects.get(name=data['name'])
+
+    def test_create_for_contact_user_exists(self):
+        # Create a user with a name and phone.
+        user = User(name='Maya Tinder')
+        user.save()
+        user_phone = UserPhoneNumber(user=user, phone='+19178699626')
+        user_phone.save()
+
+        data = {
+            'phone': unicode(user_phone.phone),
+            'name': user.name,
+        }
+        response = self.client.post(self.contact_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the userphone.
+        serializer = UserPhoneNumberSerializer(user_phone)
+        json_user_phone = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user_phone)
 
 
 class TermsTests(APITestCase):

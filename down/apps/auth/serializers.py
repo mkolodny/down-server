@@ -73,3 +73,8 @@ class UserPhoneNumberSerializer(serializers.ModelSerializer):
         userphone.save()
 
         return userphone
+
+
+class ContactSerializer(serializers.Serializer):
+    phone = PhoneNumberField()
+    name = serializers.CharField()

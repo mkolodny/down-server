@@ -4,6 +4,7 @@ from urllib import urlencode
 import uuid
 from django.conf import settings
 from django.contrib import auth
+from django.db import IntegrityError
 from django.shortcuts import render
 from django.views.generic.base import RedirectView, TemplateView
 from firebase_token_generator import create_token
@@ -24,6 +25,7 @@ from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumbe
 from .permissions import IsCurrentUserOrReadOnly
 from .serializers import (
     AuthCodeSerializer,
+    ContactSerializer,
     LinfootFunnelSerializer,
     PhoneSerializer,
     SessionSerializer,
@@ -287,6 +289,31 @@ class UserPhoneNumberViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         serializer = UserPhoneNumberSerializer(user_phones, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @list_route(methods=['post'])
+    def contact(self, request):
+        """
+        Create a userphone, and a user with the given name.
+        """
+        serializer = ContactSerializer(data=request.data)
+        serializer.is_valid()
+
+        # Create a user with the given name
+        user = User(name=serializer.data['name'])
+        user.save()
+
+        # Create a userphone for the new user.
+        try:
+            phone = serializer.data['phone']
+            user_phone = UserPhoneNumber.objects.get(phone=phone)
+            status_code = status.HTTP_200_OK
+        except UserPhoneNumber.DoesNotExist:
+            user_phone = UserPhoneNumber(user=user, phone=phone)
+            user_phone.save()
+            status_code = status.HTTP_201_CREATED
+
+        serializer = UserPhoneNumberSerializer(user_phone)
+        return Response(serializer.data, status=status_code)
 
 
 class TermsView(TemplateView):
