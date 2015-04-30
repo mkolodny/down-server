@@ -1,18 +1,7 @@
 from __future__ import unicode_literals
-from django_filters import Filter, FilterSet
+from django_filters import FilterSet
 from .models import User
-
-
-# TODO: Move this filter somewhere for general purpose.
-class ListFilter(Filter):
-
-    def filter(self, qs, value):
-        if not value:
-            return qs
-
-        self.lookup_type = 'in'
-        values = value.split(',')
-        return super(ListFilter, self).filter(qs, values)
+from down.apps.utils.filters import ListFilter
 
 
 class UserFilter(FilterSet):

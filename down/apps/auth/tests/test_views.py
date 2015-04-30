@@ -1,15 +1,18 @@
 from __future__ import unicode_literals
 from binascii import a2b_hex
+from datetime import datetime, timedelta
 import json
 import mock
 from urllib import urlencode
 from django.conf import settings
 from django.core.urlresolvers import reverse
 import httpretty
+import pytz
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
+import time
 from twilio import TwilioRestException
 from down.apps.auth.models import (
     AuthCode,
@@ -183,6 +186,34 @@ class UserTests(APITestCase):
 
         # It should return a list of the user's invitations.
         serializer = EventSerializer([self.event], many=True)
+        json_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_events)
+
+    @mock.patch('django.db.models.fields.timezone.now')
+    def test_invited_events_min_updated_at(self, mock_now):
+        # Set the event to having been updated a significant amount later than
+        # the first event. Since `auto_now` sets the value of `updated_at` using
+        # `timezone.now()`, mock `timezone.now()` to return the time one minute
+        # after the current time.
+        dt = datetime.now().replace(tzinfo=pytz.utc) + timedelta(minutes=1)
+        mock_now.return_value = dt
+
+        # Mock another event that the user's invited to.
+        event = Event(title='rat fishing', creator=self.friend)
+        event.save()
+        invitation = Invitation(from_user=self.friend, to_user=self.user,
+                                event=event)
+        invitation.save()
+
+        url = reverse('user-invited-events', kwargs={'pk': self.user.id})
+        updated_at = int(time.mktime(event.updated_at.timetuple()))
+        url += '?min_updated_at=' + unicode(updated_at)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the user's invitations that have been updated
+        # since `min_updated_at`.
+        serializer = EventSerializer([event], many=True)
         json_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_events)
 
@@ -550,6 +581,7 @@ class UserPhoneNumberViewSetTests(APITestCase):
         # Save URLs.
         self.list_url = reverse('userphone-list')
         self.phones_url = reverse('userphone-phones')
+        self.contact_url = reverse('userphone-contact')
 
     def test_query_by_phones(self):
         data = {'phones': [unicode(self.user_phone.phone)]}
@@ -581,6 +613,39 @@ class UserPhoneNumberViewSetTests(APITestCase):
 
         # It should create a new user.
         self.assertEqual(User.objects.count(), num_users+1)
+
+    def test_create_for_contact(self):
+        data = {
+            'phone': '+19178699626',
+            'name': 'Dickface Killah',
+        }
+        response = self.client.post(self.contact_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create a userphone with the given number.
+        UserPhoneNumber.objects.get(phone=data['phone'])
+
+        # It should create a new user with the POSTed name.
+        User.objects.get(name=data['name'])
+
+    def test_create_for_contact_user_exists(self):
+        # Create a user with a name and phone.
+        user = User(name='Maya Tinder')
+        user.save()
+        user_phone = UserPhoneNumber(user=user, phone='+19178699626')
+        user_phone.save()
+
+        data = {
+            'phone': unicode(user_phone.phone),
+            'name': user.name,
+        }
+        response = self.client.post(self.contact_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the userphone.
+        serializer = UserPhoneNumberSerializer(user_phone)
+        json_user_phone = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user_phone)
 
 
 class TermsTests(APITestCase):
