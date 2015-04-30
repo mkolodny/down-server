@@ -151,11 +151,6 @@ class EventTests(APITestCase):
         # Clear any previous notifications
         mock_send.reset_mock()
 
-        # Set the user's friend to be the logged in user.
-        token = Token(user=friend1)
-        token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
-
         data = {'text': 'So down!'}
         response = self.client.post(self.create_message_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -163,15 +158,15 @@ class EventTests(APITestCase):
         # It should notify the user and the first friend that their friend
         # commented on the event.
         tokens = [
-            self.apns_device.registration_id,
             apns_device1.registration_id,
+            apns_device2.registration_id,
         ]
         if len(self.event.title) > 25:
             activity = self.event.title[:25] + '...'
         else:
             activity = self.event.title
         message = '{name} to {activity}: {text}'.format(
-                name=friend1.name, activity=activity, text=data['text'])
+                name=self.user.name, activity=activity, text=data['text'])
         mock_send.assert_any_call(registration_ids=tokens, alert=message)
 
         extra= {'type': 'chat_message', 'event_id': self.event.id, 'message': message}
