@@ -44,6 +44,9 @@ class EventSerializer(serializers.ModelSerializer):
         # TODO: Test when the event doesn't have a place.
         event_has_place = validated_data.has_key('place')
         if event_has_place:
+            import logging
+            logger = logging.getLogger('console')
+            logger.info(validated_data.get('place'))
             place = Place(**validated_data.pop('place'))
             place.save()
 
