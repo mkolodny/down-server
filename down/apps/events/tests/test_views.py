@@ -256,7 +256,8 @@ class InvitationTests(APITestCase):
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_bulk_create(self, mock_send):
-        response = self.client.post(self.list_url, [self.data])
+        data = {'invitations': [self.data]}
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the invitation.

@@ -73,7 +73,9 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
     serializer_class = InvitationSerializer
 
     def get_serializer(self, *args, **kwargs):
-        if isinstance(kwargs.get('data'), list):
+        data = kwargs.get('data')
+        if 'invitations' in data:
+            kwargs['data'] = data['invitations']
             kwargs['many'] = True
 
         return super(InvitationViewSet, self).get_serializer(*args, **kwargs)

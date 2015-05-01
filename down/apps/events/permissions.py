@@ -10,7 +10,7 @@ class InviterWasInvited(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        if type(request.data) == list:
+        if request.data.has_key('invitations'):
             return True
 
         event_id = request.data.get('event')
@@ -55,7 +55,7 @@ class IsFromUser(permissions.BasePermission):
         if request.method != 'POST':
             return True
 
-        if type(request.data) == list:
+        if request.data.has_key('invitations'):
             return True
 
         from_user_id = request.data.get('from_user')
