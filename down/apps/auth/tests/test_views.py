@@ -80,7 +80,7 @@ class UserTests(APITestCase):
         self.detail_url = reverse('user-detail', kwargs={'pk': self.user.id})
         self.list_url = reverse('user-list')
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
-        self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
+        self.friends_url = 'http://graph.facebook.com/v2.2/me/friends'
 
     def tearDown(self):
         self.patcher.stop()
@@ -279,7 +279,7 @@ class SocialAccountTests(APITestCase):
     
     def setUp(self):
         self.url = reverse('social-account-login')
-        self.profile_url = 'https://graph.facebook.com/v2.2/me'
+        self.profile_url = 'http://graph.facebook.com/v2.2/me'
 
         # Mock the user.
         self.user = User()
@@ -306,7 +306,7 @@ class SocialAccountTests(APITestCase):
         facebook_user_id = 1207059
         email = 'aturing@gmail.com'
         name = 'Alan Tdog Turing'
-        image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
+        image_url = 'http://graph.facebook.com/v2.2/{id}/picture'.format(
                 id=facebook_user_id)
         hometown = 'Paddington, London'
 

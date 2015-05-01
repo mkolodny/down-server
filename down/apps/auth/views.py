@@ -60,18 +60,11 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         """
         Get a list of the user's facebook friends.
         """
-        import logging
-        logger = logging.getLogger('console')
-        logger.info(1)
         # Ask Facebook for the user's Facebook friends who are using Down.
         user_facebook_account = SocialAccount.objects.get(user=request.user)
-        logger.info(2)
         params = {'access_token': user_facebook_account.profile['access_token']}
-        logger.info(3)
-        url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
-        logger.info(4)
+        url = 'http://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
         r = requests.get(url)
-        logger.info(5)
         if r.status_code != status.HTTP_200_OK:
             raise ServiceUnavailable(r.content)
         try:
@@ -85,19 +78,13 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
         # Use the list of the user's Facebook friends to create a queryset of the
         # user's friends on Down.
-        logger.info(6)
         facebook_friend_ids = [
             facebook_friend['id'] for facebook_friend in facebook_friends
         ]
-        logger.info(7)
         social_accounts = SocialAccount.objects.filter(uid__in=facebook_friend_ids)
-        logger.info(8)
         friend_ids = [account.user_id for account in social_accounts]
-        logger.info(9)
         friends = User.objects.filter(id__in=friend_ids)
-        logger.info(10)
         serializer = UserSerializer(friends, many=True)
-        logger.info(11)
         return Response(serializer.data)
 
     @detail_route(methods=['get'])
@@ -179,13 +166,13 @@ class SocialAccountSync(APIView):
         Return a dictionary with the user's Facebook profile.
         """
         params = {'access_token': access_token}
-        url = 'https://graph.facebook.com/v2.2/me?' + urlencode(params)
+        url = 'http://graph.facebook.com/v2.2/me?' + urlencode(params)
         r = requests.get(url)
         if r.status_code != 200:
             raise ServiceUnavailable(r.content)
         # TODO: Handle bad data.
         profile = r.json()
-        profile['image_url'] = ('https://graph.facebook.com/v2.2/{id}/'
+        profile['image_url'] = ('http://graph.facebook.com/v2.2/{id}/'
                                 'picture').format(id=profile['id'])
         return profile
 
