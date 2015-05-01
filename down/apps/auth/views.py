@@ -106,6 +106,9 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
     @list_route(methods=['get'])
     def me(self, request):
+        import logging
+        logger = logging.getLogger('console')
+        logger.info(request.version)
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 

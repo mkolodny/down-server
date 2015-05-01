@@ -105,6 +105,12 @@ LOGGING = {
     }
 }
 
+# API
+REST_FRAMEWORK = {
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning',
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+}
+
 # Facebook
 FACEBOOK_APP_ID = os.environ['FACEBOOK_APP_ID']
 FACEBOOK_APP_SECRET = os.environ['FACEBOOK_APP_SECRET']
