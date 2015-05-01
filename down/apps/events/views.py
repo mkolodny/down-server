@@ -18,8 +18,6 @@ from .serializers import (
 class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                    mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
-    #filter_backends = (DjangoFilterBackend,)
-    #filter_class = EventFilter
     permission_classes = (IsAuthenticated, WasInvited)
     queryset = Event.objects.all()
     serializer_class = EventSerializer
@@ -73,3 +71,9 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
     permission_classes = (IsAuthenticated, IsFromUser, InviterWasInvited)
     queryset = Invitation.objects.all()
     serializer_class = InvitationSerializer
+
+    def get_serializer(self, *args, **kwargs):
+        if isinstance(kwargs.get('data'), list):
+            kwargs['many'] = True
+
+        return super(InvitationViewSet, self).get_serializer(*args, **kwargs)

@@ -230,27 +230,42 @@ class InvitationTests(APITestCase):
         # Save urls.
         self.list_url = reverse('invitation-list')
 
-    def tearDown(self):
-        self.patcher.stop()
-
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_create(self, mock_send):
-        data = {
+        # Save POST data.
+        self.data = {
             'from_user': self.user1.id,
             'to_user': self.user2.id,
             'event': self.event.id,
             'response': Invitation.ACCEPTED,
         }
-        response = self.client.post(self.list_url, data)
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_create(self, mock_send):
+        response = self.client.post(self.list_url, self.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the invitation.
-        invitation = Invitation.objects.get(**data)
+        invitation = Invitation.objects.get(**self.data)
 
         # It should return the invitation.
         serializer = InvitationSerializer(invitation)
         json_invitation = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitation)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_bulk_create(self, mock_send):
+        response = self.client.post(self.list_url, [self.data])
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the invitation.
+        invitation = Invitation.objects.get(**self.data)
+
+        # It should return the invitations.
+        serializer = InvitationSerializer([invitation], many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
 
     def test_create_not_logged_in(self):
         # Don't include the user's credentials in the request.

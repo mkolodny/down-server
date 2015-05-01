@@ -7,12 +7,31 @@ from down.apps.utils.serializers import UnixEpochDateField
 from .models import Event, Invitation, Place
 
 
+class InvitationListSerializer(serializers.ListSerializer):
+
+    def create(self, validated_data):
+        # Get the ids of invitations that have been created for this event so
+        # far.
+        event = validated_data[0]['event']
+        invitations = Invitation.objects.filter(event=event)
+        existing_invitation_ids = list(invitations.values_list('id', flat=True))
+
+        # Bulk create the new invitations.
+        invitations = [Invitation(**obj) for obj in validated_data]
+        Invitation.objects.bulk_create(invitations)
+
+        # Return only the new invitations.
+        new_invitations = Invitation.objects.filter(event=event)
+        return new_invitations.exclude(id__in=existing_invitation_ids)
+
+
 class InvitationSerializer(serializers.ModelSerializer):
     created_at = UnixEpochDateField(read_only=True)
     updated_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
+        list_serializer_class = InvitationListSerializer
 
 
 class PlaceSerializer(GeoModelSerializer):
