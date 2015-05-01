@@ -22,7 +22,11 @@ class InvitationListSerializer(serializers.ListSerializer):
 
         # Return only the new invitations.
         new_invitations = Invitation.objects.filter(event=event)
-        return new_invitations.exclude(id__in=existing_invitation_ids)
+        new_invitations =  new_invitations.exclude(id__in=existing_invitation_ids)
+        import logging
+        logger = logging.getLogger('console')
+        logger.info(new_invitations)
+        return new_invitations
 
 
 class InvitationSerializer(serializers.ModelSerializer):
