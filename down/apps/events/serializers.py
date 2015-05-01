@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from rest_framework import serializers
+from rest_framework.renderers import JSONRenderer
 from rest_framework_gis.serializers import GeoModelSerializer
 from down.apps.auth.models import User
 from down.apps.auth.serializers import UserSerializer
@@ -25,7 +26,9 @@ class InvitationListSerializer(serializers.ListSerializer):
         new_invitations =  new_invitations.exclude(id__in=existing_invitation_ids)
         import logging
         logger = logging.getLogger('console')
-        logger.info(new_invitations)
+        serializer = InvitationSerializer(new_invitations, many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        logger.info(json_invitations)
         return new_invitations
 
 
