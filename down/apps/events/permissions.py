@@ -10,8 +10,13 @@ class InviterWasInvited(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
+        import logging
+        logger = logging.getLogger('console')
+        logger.info('InviterWasInvited')
+        logger.info(request.data)
         if request.data.has_key('invitations'):
             return True
+        logger.info('got through')
 
         event_id = request.data.get('event')
 
@@ -37,6 +42,10 @@ class WasInvited(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
+        import logging
+        logger = logging.getLogger('console')
+        logger.info('WasInvited')
+        logger.info(request.data)
         try:
             Invitation.objects.get(event=obj, to_user=request.user)
             return True
@@ -51,12 +60,17 @@ class IsFromUser(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
+        import logging
+        logger = logging.getLogger('console')
+        logger.info('IsFromUser')
+        logger.info(request.data)
         # This permission is only focused on creating an event.
         if request.method != 'POST':
             return True
 
         if request.data.has_key('invitations'):
             return True
+        logger.info('got through')
 
         from_user_id = request.data.get('from_user')
         return request.user.id == from_user_id
