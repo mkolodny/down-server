@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
 from .exceptions import ServiceUnavailable
-from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
+from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
 from .permissions import IsCurrentUserOrReadOnly
 from .serializers import (
     AuthCodeSerializer,
@@ -31,7 +31,7 @@ from .serializers import (
     SessionSerializer,
     SocialAccountSyncSerializer,
     UserSerializer,
-    UserPhoneNumberSerializer,
+    UserPhoneSerializer,
 )
 from down.apps.auth.filters import UserFilter
 from down.apps.events.models import Event, Invitation
@@ -237,16 +237,16 @@ class SessionView(APIView):
         # Get or create the user
         try:
             phone = serializer.data['phone']
-            user_number = UserPhoneNumber.objects.get(phone=phone)
+            user_number = UserPhone.objects.get(phone=phone)
             # User exists
             user = user_number.user
-        except UserPhoneNumber.DoesNotExist:
+        except UserPhone.DoesNotExist:
             # User doesn't already exist, so create a blank new user and phone
             # number.
             user = User()
             user.save()
 
-            user_number = UserPhoneNumber(user=user, phone=serializer.data['phone'])
+            user_number = UserPhone(user=user, phone=serializer.data['phone'])
             user_number.save()
 
         token, created = Token.objects.get_or_create(user=user)
@@ -264,11 +264,11 @@ class SessionView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class UserPhoneNumberViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
-    queryset = UserPhoneNumber.objects.all()
-    serializer_class = UserPhoneNumberSerializer
+    queryset = UserPhone.objects.all()
+    serializer_class = UserPhoneSerializer
 
     @list_route(methods=['post'])
     def phones(self, request):
@@ -284,10 +284,10 @@ class UserPhoneNumberViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         # Filter user phone numbers using the phone number data.
         phones = serializer.data['phones']
-        user_phones = UserPhoneNumber.objects.filter(phone__in=phones)
+        user_phones = UserPhone.objects.filter(phone__in=phones)
         user_phones.prefetch_related('user')
 
-        serializer = UserPhoneNumberSerializer(user_phones, many=True)
+        serializer = UserPhoneSerializer(user_phones, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @list_route(methods=['post'])
@@ -305,14 +305,14 @@ class UserPhoneNumberViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         # Create a userphone for the new user.
         try:
             phone = serializer.data['phone']
-            user_phone = UserPhoneNumber.objects.get(phone=phone)
+            user_phone = UserPhone.objects.get(phone=phone)
             status_code = status.HTTP_200_OK
-        except UserPhoneNumber.DoesNotExist:
-            user_phone = UserPhoneNumber(user=user, phone=phone)
+        except UserPhone.DoesNotExist:
+            user_phone = UserPhone(user=user, phone=phone)
             user_phone.save()
             status_code = status.HTTP_201_CREATED
 
-        serializer = UserPhoneNumberSerializer(user_phone)
+        serializer = UserPhoneSerializer(user_phone)
         return Response(serializer.data, status=status_code)
 
 

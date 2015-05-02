@@ -11,7 +11,7 @@ from down.apps.auth.views import (
     TermsView,
     UserUsernameDetail,
     UserViewSet,
-    UserPhoneNumberViewSet,
+    UserPhoneViewSet,
 )
 from down.apps.events.views import EventViewSet, InvitationViewSet
 from down.apps.friends.views import FriendshipViewSet
@@ -28,7 +28,7 @@ router.register(r'events', EventViewSet)
 router.register(r'friendships', FriendshipViewSet)
 router.register(r'invitations', InvitationViewSet)
 router.register(r'phonenumbers', LinfootFunnelViewSet, base_name='phonenumbers')
-router.register(r'userphones', UserPhoneNumberViewSet, base_name='userphone')
+router.register(r'userphones', UserPhoneViewSet, base_name='userphone')
 router.register(r'users', UserViewSet)
 # Prints the (url, viewset, base_name) for each route.
 #for route in router.registry:

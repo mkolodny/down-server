@@ -38,7 +38,7 @@ class AuthCode(models.Model):
     phone = PhoneNumberField(unique=True)
 
 
-class UserPhoneNumber(models.Model):
+class UserPhone(models.Model):
     user = models.ForeignKey(User)
     phone = PhoneNumberField(unique=True)
 

@@ -7,7 +7,7 @@ import json
 from push_notifications.models import APNSDevice
 import requests
 from twilio.rest import TwilioRestClient
-from down.apps.auth.models import User, UserPhoneNumber
+from down.apps.auth.models import User, UserPhone
 from down.apps.notifications.utils import notify_users
 
 
@@ -127,7 +127,7 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
                        '\n--\nSent from Down (http://down.life/app)').format(
                        name=creator.name, activity=event.title)
 
-        phone = unicode(UserPhoneNumber.objects.get(user=to_user).phone)
+        phone = unicode(UserPhone.objects.get(user=to_user).phone)
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
         client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=message)
 

@@ -8,7 +8,7 @@ import requests
 import string
 from push_notifications.models import APNSDevice
 from rest_framework.test import APITestCase
-from down.apps.auth.models import User, UserPhoneNumber
+from down.apps.auth.models import User, UserPhone
 from down.apps.events.models import Event, Invitation, Place
 from down.apps.friends.models import Friendship
 
@@ -26,7 +26,7 @@ class InvitationTests(APITestCase):
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                          username='tdog', image_url='http://imgur.com/tdog')
         self.user.save()
-        self.user_phone = UserPhoneNumber(user=self.user, phone='+14388843460')
+        self.user_phone = UserPhone(user=self.user, phone='+14388843460')
         self.user_phone.save()
         registration_id0 = ('0ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                             '10df230567037dcc4')

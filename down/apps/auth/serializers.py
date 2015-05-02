@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework_gis.serializers import GeoModelSerializer
 from down.apps.utils.serializers import UnixEpochDateField
-from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhoneNumber
+from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
 
 
 class AuthCodeSerializer(serializers.ModelSerializer):
@@ -56,12 +56,12 @@ class PhoneSerializer(serializers.Serializer):
     phones = serializers.ListField(child=PhoneNumberField())
 
 
-class UserPhoneNumberSerializer(serializers.ModelSerializer):
+class UserPhoneSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     phone = PhoneNumberField()
 
     class Meta:
-        model = UserPhoneNumber
+        model = UserPhone
 
     def create(self, validated_data):
         # Create a new empty user.
@@ -69,7 +69,7 @@ class UserPhoneNumberSerializer(serializers.ModelSerializer):
         user.save()
 
         # Create a user phone with the new user.
-        userphone = UserPhoneNumber(user=user, phone=validated_data['phone'])
+        userphone = UserPhone(user=user, phone=validated_data['phone'])
         userphone.save()
 
         return userphone

@@ -19,9 +19,9 @@ from down.apps.auth.models import (
     LinfootFunnel,
     SocialAccount,
     User,
-    UserPhoneNumber,
+    UserPhone,
 )
-from down.apps.auth.serializers import UserSerializer, UserPhoneNumberSerializer
+from down.apps.auth.serializers import UserSerializer, UserPhoneSerializer
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import EventSerializer
 from down.apps.friends.models import Friendship
@@ -71,9 +71,9 @@ class UserTests(APITestCase):
         self.invitation.save()
 
         # Mock the users' phone numbers.
-        self.friend_phone = UserPhoneNumber(user=self.friend, phone='+12036227310')
+        self.friend_phone = UserPhone(user=self.friend, phone='+12036227310')
         self.friend_phone.save()
-        self.user_phone = UserPhoneNumber(user=self.user, phone='+14388843460')
+        self.user_phone = UserPhone(user=self.user, phone='+14388843460')
         self.user_phone.save()
 
         # Save the user urls.
@@ -284,7 +284,7 @@ class SocialAccountTests(APITestCase):
         # Mock the user.
         self.user = User()
         self.user.save()
-        self.phone = UserPhoneNumber(user=self.user, phone='+12036227310')
+        self.phone = UserPhone(user=self.user, phone='+12036227310')
         self.phone.save()
 
         # Mock the user's friend.
@@ -479,7 +479,7 @@ class SessionTests(APITestCase):
         user = User.objects.get()
 
         # Make sure the phone number was created
-        UserPhoneNumber.objects.get(user=user, phone=auth.phone)
+        UserPhone.objects.get(user=user, phone=auth.phone)
 
         # Get the token, which should've been created
         token = Token.objects.get(user=user)
@@ -517,7 +517,7 @@ class SessionTests(APITestCase):
         mock_user = User()
         mock_user.save()
 
-        mock_user_number = UserPhoneNumber(user=mock_user, phone=phone_number)
+        mock_user_number = UserPhone(user=mock_user, phone=phone_number)
         mock_user_number.save()
 
         # User has already logged in, so mock their token
@@ -556,7 +556,7 @@ class SessionTests(APITestCase):
         AuthCode.objects.get(id=self.auth.id)
 
 
-class UserPhoneNumberViewSetTests(APITestCase):
+class UserPhoneViewSetTests(APITestCase):
 
     def setUp(self):
         # Mock two users.
@@ -568,9 +568,9 @@ class UserPhoneNumberViewSetTests(APITestCase):
         self.friend.save()
 
         # Mock the users' phone numbers.
-        self.friend_phone = UserPhoneNumber(user=self.friend, phone='+12036227310')
+        self.friend_phone = UserPhone(user=self.friend, phone='+12036227310')
         self.friend_phone.save()
-        self.user_phone = UserPhoneNumber(user=self.user, phone='+14388843460')
+        self.user_phone = UserPhone(user=self.user, phone='+14388843460')
         self.user_phone.save()
 
         # Authorize the requests with the user's token.
@@ -589,7 +589,7 @@ class UserPhoneNumberViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list with the user.
-        serializer = UserPhoneNumberSerializer([self.user_phone], many=True)
+        serializer = UserPhoneSerializer([self.user_phone], many=True)
         json_user_phones = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phones)
 
@@ -609,7 +609,7 @@ class UserPhoneNumberViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create a userphone with the given number.
-        UserPhoneNumber.objects.get(**data)
+        UserPhone.objects.get(**data)
 
         # It should create a new user.
         self.assertEqual(User.objects.count(), num_users+1)
@@ -623,7 +623,7 @@ class UserPhoneNumberViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create a userphone with the given number.
-        UserPhoneNumber.objects.get(phone=data['phone'])
+        UserPhone.objects.get(phone=data['phone'])
 
         # It should create a new user with the POSTed name.
         User.objects.get(name=data['name'])
@@ -632,7 +632,7 @@ class UserPhoneNumberViewSetTests(APITestCase):
         # Create a user with a name and phone.
         user = User(name='Maya Tinder')
         user.save()
-        user_phone = UserPhoneNumber(user=user, phone='+19178699626')
+        user_phone = UserPhone(user=user, phone='+19178699626')
         user_phone.save()
 
         data = {
@@ -643,7 +643,7 @@ class UserPhoneNumberViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the userphone.
-        serializer = UserPhoneNumberSerializer(user_phone)
+        serializer = UserPhoneSerializer(user_phone)
         json_user_phone = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phone)
 

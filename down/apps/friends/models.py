@@ -18,7 +18,7 @@ class Friendship(models.Model):
 @receiver(post_save, sender=Friendship)
 def send_new_friendship_notification(sender, instance, created, **kwargs):
     """
-    Send a push notification to the user who was added as a friend
+    Send a push notification to the user who was added as a friend.
     """
 
     if not created:
