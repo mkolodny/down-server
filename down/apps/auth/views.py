@@ -63,7 +63,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         # Ask Facebook for the user's Facebook friends who are using Down.
         user_facebook_account = SocialAccount.objects.get(user=request.user)
         params = {'access_token': user_facebook_account.profile['access_token']}
-        url = 'http://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
+        url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
         r = requests.get(url)
         if r.status_code != status.HTTP_200_OK:
             raise ServiceUnavailable(r.content)
@@ -166,13 +166,13 @@ class SocialAccountSync(APIView):
         Return a dictionary with the user's Facebook profile.
         """
         params = {'access_token': access_token}
-        url = 'http://graph.facebook.com/v2.2/me?' + urlencode(params)
+        url = 'https://graph.facebook.com/v2.2/me?' + urlencode(params)
         r = requests.get(url)
         if r.status_code != 200:
             raise ServiceUnavailable(r.content)
         # TODO: Handle bad data.
         profile = r.json()
-        profile['image_url'] = ('http://graph.facebook.com/v2.2/{id}/'
+        profile['image_url'] = ('https://graph.facebook.com/v2.2/{id}/'
                                 'picture').format(id=profile['id'])
         return profile
 
