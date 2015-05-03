@@ -5,7 +5,7 @@ from django.db import models, migrations
 
 
 def clear_tokens(apps, schema_editor):
-    Token = apps.get_model('authtoken', 'Token')
+    Token = apps.get_model('rest_framework.authtoken', 'Token')
     Token.objects.all().delete()
 
 def clear_users(apps, schema_editor):
