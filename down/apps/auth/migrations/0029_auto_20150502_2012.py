@@ -4,6 +4,10 @@ from __future__ import unicode_literals
 from django.db import models, migrations
 
 
+def clear_tokens(apps, schema_editor):
+    Token = apps.get_model('authtoken', 'Token')
+    Token.objects.all().delete()
+
 def clear_users(apps, schema_editor):
     User = apps.get_model('down_auth', 'User')
     User.objects.all().delete()
@@ -26,9 +30,11 @@ class Migration(migrations.Migration):
         ('down_auth', '0028_auto_20150425_1509'),
         ('events', '0022_auto_20150502_2012'),
         ('friends', '0012_auto_20150502_2006'),
+        ('notifications', '0001_initial'),
     ]
 
     operations = [
+        migrations.RunPython(clear_tokens),
         migrations.RunPython(clear_users),
         migrations.RunPython(clear_auth_codes),
         migrations.RunPython(clear_user_phones),
