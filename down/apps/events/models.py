@@ -97,7 +97,7 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
     # if the user was added from contacts there won't be a username
     if to_user.username: 
         # The user has the app installed, so send them a push notification.
-        message = '{name} is down for {activity}'.format(name=creator.name,
+        message = '{name} invited you to {activity}'.format(name=creator.name,
                                                          activity=event.title)
         devices = APNSDevice.objects.filter(user=to_user)
         devices.send_message(message)
@@ -107,23 +107,23 @@ def send_new_invitation_notification(sender, instance, created, **kwargs):
         # The user doesn't have the app installed, so text them the invitation.
         if event.datetime and event.place:
             event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-            message = ('{name} is down for {activity} at {place} on {date}'
+            message = ('{name} invited you to {activity} at {place} on {date}'
                        '\n--\nSent from Down (http://down.life/app)').format(
                        name=creator.name, activity=event.title,
                        place=event.place.name, date=event_date)
         elif event.place:
-            message = ('{name} is down for {activity} at {place}'
+            message = ('{name} invited you to {activity} at {place}'
                        '\n--\nSent from Down (http://down.life/app)').format(
                        name=creator.name, activity=event.title,
                        place=event.place.name)
         elif event.datetime:
             event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-            message = ('{name} is down for {activity} on {date}'
+            message = ('{name} invited you to {activity} on {date}'
                        '\n--\nSent from Down (http://down.life/app)').format(
                        name=creator.name, activity=event.title,
                        date=event_date)
         else:
-            message = ('{name} is down for {activity}'
+            message = ('{name} invited you to {activity}'
                        '\n--\nSent from Down (http://down.life/app)').format(
                        name=creator.name, activity=event.title)
 

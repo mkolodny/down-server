@@ -79,7 +79,7 @@ class InvitationTests(APITestCase):
 
         # It should notify the user that they were invited to an event.
         token = self.apns_device0.registration_id
-        message = '{name} is down for {activity}'.format(
+        message = '{name} invited you to {activity}'.format(
                 name=self.event.creator.name,
                 activity=self.event.title)
 
@@ -116,7 +116,7 @@ class InvitationTests(APITestCase):
 
     def test_post_create_text_message_full(self):
         event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-        message = ('{name} is down for {activity} at {place} on {date}'
+        message = ('{name} invited you to {activity} at {place} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=self.friend1.name, activity=self.event.title,
                    place=self.place.name, date=event_date)
@@ -127,7 +127,7 @@ class InvitationTests(APITestCase):
         self.event.datetime = None
         self.event.save()
 
-        message = ('{name} is down for {activity} at {place}'
+        message = ('{name} invited you to {activity} at {place}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=self.friend1.name, activity=self.event.title,
                    place=self.place.name)
@@ -139,7 +139,7 @@ class InvitationTests(APITestCase):
         self.event.save()
 
         event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-        message = ('{name} is down for {activity} on {date}'
+        message = ('{name} invited you to {activity} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=self.friend1.name, activity=self.event.title,
                    date=event_date)
@@ -151,7 +151,7 @@ class InvitationTests(APITestCase):
         self.event.datetime = None
         self.event.save()
 
-        message = ('{name} is down for {activity}'
+        message = ('{name} invited you to {activity}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=self.friend1.name, activity=self.event.title)
         self.mock_twilio(message)
