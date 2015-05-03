@@ -278,24 +278,16 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         We're using POST here mainly because the list of phone numbers may not
         be able to fit in the query parameters of a GET request.
         """
-        import logging
-        logger = logging.getLogger('console')
         # TODO: Handle when the data is invalid.
-        logger.info('request.data')
-        logger.info(request.data)
         serializer = PhoneSerializer(data=request.data)
         serializer.is_valid()
 
         # Filter user phone numbers using the phone number data.
         phones = serializer.data['phones']
-        logger.info('phones')
-        logger.info(phones)
         user_phones = UserPhone.objects.filter(phone__in=phones)
         user_phones.prefetch_related('user')
 
         serializer = UserPhoneSerializer(user_phones, many=True)
-        logger.info('serializer.data')
-        logger.info(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @list_route(methods=['post'])
