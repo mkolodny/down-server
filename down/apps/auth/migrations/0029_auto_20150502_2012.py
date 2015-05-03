@@ -5,7 +5,7 @@ from django.db import models, migrations
 
 
 def clear_tokens(apps, schema_editor):
-    Token = apps.get_model('rest_framework.authtoken', 'Token')
+    Token = apps.get_model('authtoken', 'Token')
     Token.objects.all().delete()
 
 def clear_users(apps, schema_editor):
@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
         ('events', '0022_auto_20150502_2012'),
         ('friends', '0012_auto_20150502_2006'),
         ('notifications', '0001_initial'),
-        ('rest_framework.authtoken', '0001_initial'),
+        ('authtoken', '0001_initial'),
     ]
 
     operations = [
