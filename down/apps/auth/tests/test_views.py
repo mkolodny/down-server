@@ -584,12 +584,23 @@ class UserPhoneViewSetTests(APITestCase):
         self.contact_url = reverse('userphone-contact')
 
     def test_query_by_phones(self):
-        data = {'phones': [unicode(self.user_phone.phone)]}
+        # Mock a third user.
+        friend = User(email='blee@gmail.com', name='Bruce Lee',
+                      username='blee', image_url='http://imgur.com/blee')
+        friend.save()
+        friend_phone = UserPhone(user=friend, phone='+19176227310')
+        friend_phone.save()
+
+        data = {'phones': [
+            unicode(self.user_phone.phone),
+            unicode(friend_phone.phone),
+        ]}
         response = self.client.post(self.phones_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return a list with the user.
-        serializer = UserPhoneSerializer([self.user_phone], many=True)
+        # It should return a list with the userphones.
+        userphones = [self.user_phone, friend_phone]
+        serializer = UserPhoneSerializer(userphones, many=True)
         json_user_phones = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phones)
 
