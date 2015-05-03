@@ -11,6 +11,7 @@ def clear_apns_devices(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('push_notifications', '0001_initial'),
     ]
 
     operations = [

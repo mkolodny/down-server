@@ -31,6 +31,7 @@ class Migration(migrations.Migration):
         ('events', '0022_auto_20150502_2012'),
         ('friends', '0012_auto_20150502_2006'),
         ('notifications', '0001_initial'),
+        ('rest_framework.authtoken', '0001_initial'),
     ]
 
     operations = [
