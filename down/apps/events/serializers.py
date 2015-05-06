@@ -17,6 +17,8 @@ class InvitationListSerializer(serializers.ListSerializer):
         import logging
         import time
         logger = logging.getLogger('console')
+        time1 = time.time()
+        logger.info('In create at: {}'.format(time1))
         # Save the new invitations.
         invitations = [Invitation(**obj) for obj in validated_data]
         time1 = time.time()

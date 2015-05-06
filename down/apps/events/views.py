@@ -73,6 +73,11 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
     serializer_class = InvitationSerializer
 
     def get_serializer(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger('console')
+        import time
+        time1 = time.time()
+        logger.info('In get_serializer at: {}'.format(time1))
         data = kwargs.get('data')
         if 'invitations' in data:
             kwargs['data'] = data['invitations']
