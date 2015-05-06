@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
+import json
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
-import json
 from push_notifications.models import APNSDevice
 import requests
 from twilio.rest import TwilioRestClient
@@ -39,11 +39,100 @@ class Event(models.Model):
         invitations = invitations.exclude(to_user=except_user)
         member_ids = [invitation.to_user_id for invitation in invitations]
 
-        # Notify the creator even if they haven't accepted the invitation.
-        #member_ids.append(self.creator_id)
-
         # This filter operation will only return unique devices.
         return APNSDevice.objects.filter(user_id__in=member_ids)
+
+
+class InvitationManager(models.Manager):
+
+    def get_queryset(self):
+        return InvitationQuerySet(self.model)
+
+
+class InvitationQuerySet(models.query.QuerySet):
+
+    def send(self):
+        """
+        Send push notifications / SMS notifying people that they were invited to
+        an event. All of the invitations must be from the same user, for the same
+        event.
+        """
+        if self.count() == 0:
+            return
+
+        # Get the first invitation to use to grab the user sending the invitations,
+        # and the event.
+        first_invitation = self.first()
+        from_user = first_invitation.from_user
+        event = first_invitation.event
+
+        # Make sure that all of the invitations are from the same user, for the
+        # same event.
+        assert all((invitation.from_user_id == from_user.id) for invitation in self)
+        assert all((invitation.event_id == event.id) for invitation in self)
+
+        # Add the users to the Firebase members list.
+        url = ('{firebase_url}/events/members/{event_id}/.json?auth='
+               '{firebase_secret}').format(
+                firebase_url=settings.FIREBASE_URL, event_id=event.id,
+                firebase_secret=settings.FIREBASE_SECRET)
+        for invitation in self:
+            json_data = json.dumps({invitation.to_user_id: True})
+            requests.patch(url, json_data)
+
+        # Don't notify the user who is sending the invitations.
+        invitations = [invitation for invitation in self
+                       if invitation.to_user_id != from_user.id]
+
+        # Create lists of users with usernames, and without them. If a user was
+        # added from contacts, they won't have a username.
+        #if to_user.username: 
+        # Send users with devices push notifications.
+        message = '{name} invited you to {activity}'.format(name=from_user.name,
+                                                            activity=event.title)
+        user_ids = [invitation.to_user_id for invitation in invitations]
+        devices = APNSDevice.objects.filter(user_id__in=user_ids)
+        devices.send_message(message)
+
+        # Text message everyone else their invitation.
+        message = get_invite_sms(from_user, event)
+        device_user_ids = [device.user_id for device in devices]
+        sms_user_ids = [invitation.to_user_id for invitation in invitations
+                        if invitation.to_user_id not in device_user_ids]
+        userphones = UserPhone.objects.filter(user_id__in=sms_user_ids)
+        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
+        for userphone in userphones:
+            phone = unicode(userphone.phone)
+            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
+                                   body=message)
+
+def get_invite_sms(from_user, event):
+    """
+    Return the message to SMS to invite the `from_user` to `event`.
+    """
+    if event.datetime:
+        event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
+
+    if event.datetime and event.place:
+        message = ('{name} invited you to {activity} at {place} on {date}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=from_user.name, activity=event.title,
+                   place=event.place.name, date=event_date)
+    elif event.place:
+        message = ('{name} invited you to {activity} at {place}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=from_user.name, activity=event.title,
+                   place=event.place.name)
+    elif event.datetime:
+        message = ('{name} invited you to {activity} on {date}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=from_user.name, activity=event.title,
+                   date=event_date)
+    else:
+        message = ('{name} invited you to {activity}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=from_user.name, activity=event.title)
+    return message
 
 
 class Invitation(models.Model):
@@ -64,6 +153,8 @@ class Invitation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     previously_accepted = models.BooleanField(default=False)
 
+    objects = InvitationManager()
+
     class Meta:
         unique_together = ('to_user', 'event')
 
@@ -74,83 +165,6 @@ class Invitation(models.Model):
             self.previously_accepted = True
             self.save(update_fields=['previously_accepted'])
 
-@receiver(post_save, sender=Invitation)
-def send_new_invitation_notification(sender, instance, created, **kwargs):
-    """
-    Notify users who receive an invite to an event. If the user has the app
-    installed, send them a push notification. Otherwise, text them the
-    invitation.
-    """
-    if not created:
-        return
-
-    invitation = instance
-    event = invitation.event
-    
-    # Don't notify the creator that they created an event.
-    if invitation.to_user_id == event.creator_id:
-        return
-
-    to_user = invitation.to_user
-    creator = event.creator
-
-    # if the user was added from contacts there won't be a username
-    if to_user.username: 
-        # The user has the app installed, so send them a push notification.
-        message = '{name} invited you to {activity}'.format(name=creator.name,
-                                                         activity=event.title)
-        devices = APNSDevice.objects.filter(user=to_user)
-        devices.send_message(message)
-        extra = {'message': message}
-        devices.send_message(None, extra=extra)
-    else:
-        # The user doesn't have the app installed, so text them the invitation.
-        if event.datetime and event.place:
-            event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-            message = ('{name} invited you to {activity} at {place} on {date}'
-                       '\n--\nSent from Down (http://down.life/app)').format(
-                       name=creator.name, activity=event.title,
-                       place=event.place.name, date=event_date)
-        elif event.place:
-            message = ('{name} invited you to {activity} at {place}'
-                       '\n--\nSent from Down (http://down.life/app)').format(
-                       name=creator.name, activity=event.title,
-                       place=event.place.name)
-        elif event.datetime:
-            event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-            message = ('{name} invited you to {activity} on {date}'
-                       '\n--\nSent from Down (http://down.life/app)').format(
-                       name=creator.name, activity=event.title,
-                       date=event_date)
-        else:
-            message = ('{name} invited you to {activity}'
-                       '\n--\nSent from Down (http://down.life/app)').format(
-                       name=creator.name, activity=event.title)
-
-        phone = unicode(UserPhone.objects.get(user=to_user).phone)
-        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=message)
-
-
-@receiver(post_save, sender=Invitation)
-def add_user_to_firebase_members_list(sender, instance, created, **kwargs):
-    """
-    Update the firebase members list table with the new user so that the firebase
-    security rules will allow them to read and write messages to the event chat
-    """
-    if not created:
-        return
-
-    invitation = instance
-
-    url = ('{firebase_url}/events/members/{event_id}/.json?auth='
-           '{firebase_secret}').format(
-            firebase_url = settings.FIREBASE_URL,
-            event_id = invitation.event_id,
-            firebase_secret = settings.FIREBASE_SECRET)
-    data = {invitation.to_user_id: True}
-    requests.patch(url, json.dumps(data))
-
 
 @receiver(post_save, sender=Invitation)
 def send_invitation_accept_notification(sender, instance, created, **kwargs):
@@ -158,7 +172,6 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     Send a push notification to users who are already down for the event when
     a user accepts the invitation.
     """
-
     if kwargs['update_fields'] == frozenset(['previously_accepted']):
         # if we're only updating the previously_accepted field, don't
         # send anything to anyone. Shhhhhhh
@@ -167,8 +180,7 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     invitation = instance
     user = invitation.to_user
     event = invitation.event
-
-    if invitation.to_user_id == event.creator_id:
+    if user.id == event.creator_id:
         return
 
     if invitation.response == Invitation.NO_RESPONSE:
@@ -190,7 +202,4 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     # accepted the invitation.
     notify_responses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
     devices = event.get_member_devices(user, notify_responses)
-    # TODO: Catch exception if sending the message fails.
     devices.send_message(message)
-    extra = {'message': message}
-    devices.send_message(None, extra=extra)

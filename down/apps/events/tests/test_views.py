@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
+import json
 import time
 from django.utils import timezone
 from django.conf import settings
 from django.core.urlresolvers import reverse
+import httpretty
 import mock
 from push_notifications.models import APNSDevice
 from rest_framework import status
@@ -10,7 +12,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from twilio import TwilioRestException
-from down.apps.auth.models import User
+from down.apps.auth.models import User, UserPhone
 from down.apps.events.models import Event, Invitation, Place
 from down.apps.events.serializers import EventSerializer, InvitationSerializer
 
@@ -198,21 +200,34 @@ class InvitationTests(APITestCase):
         self.user2 = User(email='jclarke@gmail.com', name='Joan Clarke',
                           username='jcke')
         self.user2.save()
+        self.user3 = User(name='Bruce Lee') # SMS users don't have a username.
+        self.user3.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user1)
         self.token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
-        # Mock the user-to-be-invited's device
+        # Mock the users with usernames' devices.
+        registration_id = ('1ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.user1_device = APNSDevice(registration_id=registration_id,
+                                       device_id=device_id, name='iPhone, 8.2',
+                                       user=self.user1)
+        self.user1_device.save()
+
         registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '10df230567037dcc4')
         device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.apns_device = APNSDevice(registration_id=registration_id,
-                                      device_id=device_id,
-                                      name='iPhone, 8.2',
-                                      user=self.user2)
-        self.apns_device.save()
+        self.user2_device = APNSDevice(registration_id=registration_id,
+                                       device_id=device_id, name='iPhone, 8.2',
+                                       user=self.user2)
+        self.user2_device.save()
+
+        # Mock the user without a username's user phone.
+        self.user3_phone = UserPhone(user=self.user3, phone='+12036227310')
+        self.user3_phone.save()
 
         # Mock a place.
         self.place = Place(name='Founder House',
@@ -231,16 +246,31 @@ class InvitationTests(APITestCase):
         self.list_url = reverse('invitation-list')
 
         # Save POST data.
-        self.data = {
-            'from_user': self.user1.id,
-            'to_user': self.user2.id,
-            'event': self.event.id,
-            'response': Invitation.ACCEPTED,
-        }
+        self.post_data = [
+            {
+                'from_user': self.user1.id,
+                'to_user': self.user1.id,
+                'event': self.event.id,
+                'response': Invitation.ACCEPTED,
+            },
+            {
+                'from_user': self.user1.id,
+                'to_user': self.user2.id,
+                'event': self.event.id,
+                'response': Invitation.NO_RESPONSE,
+            },
+            {
+                'from_user': self.user1.id,
+                'to_user': self.user3.id,
+                'event': self.event.id,
+                'response': Invitation.NO_RESPONSE,
+            },
+        ]
 
     def tearDown(self):
         self.patcher.stop()
 
+    """
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create(self, mock_send):
         response = self.client.post(self.list_url, self.data)
@@ -253,18 +283,67 @@ class InvitationTests(APITestCase):
         serializer = InvitationSerializer(invitation)
         json_invitation = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitation)
+    """
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_bulk_create(self, mock_send):
-        data = {'invitations': [self.data]}
+    @mock.patch('down.apps.events.models.TwilioRestClient')
+    @mock.patch('down.apps.events.models.get_invite_sms')
+    @mock.patch('down.apps.events.models.requests')
+    def test_bulk_create(self, mock_requests, mock_get_message, mock_twilio,
+                         mock_apns):
+        # Delete the user's invitation to mock the client.
+        self.invitation.delete()
+
+        # Mock the getting the invitation message.
+        mock_message = 'Barack Obama invited you to ball hard'
+        mock_get_message.return_value = mock_message
+
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        data = {'invitations': self.post_data}
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should create the invitation.
-        invitation = Invitation.objects.get(**self.data)
+        # It should create the invitations.
+        invitations = Invitation.objects.filter(from_user=self.user1,
+                                                event=self.event)
+        self.assertEqual(invitations.count(), len(self.post_data))
+
+        # It should send push notifications to users with devices.
+        token = self.user2_device.registration_id
+        message = '{name} invited you to {activity}'.format(
+                name=self.user1.name,
+                activity=self.event.title)
+        mock_apns.assert_any_call(registration_ids=[token], alert=message)
+
+        # It should use the mock to get the SMS invite message.
+        mock_get_message.assert_called_with(self.user1, self.event)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.user3_phone.phone)
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=mock_message)
+
+        # It should add the users to the firebase members list.
+        self.assertEqual(mock_requests.patch.call_count, len(self.post_data))
+        url = ('{firebase_url}/events/members/{event_id}/.json'
+               '?auth={firebase_secret}').format(
+                firebase_url=settings.FIREBASE_URL,
+                event_id=self.event.id,
+                firebase_secret=settings.FIREBASE_SECRET)
+        for invite in self.post_data:
+            json_data = json.dumps({invite['to_user']: True})
+            mock_requests.patch.assert_any_call(url, json_data)
 
         # It should return the invitations.
-        serializer = InvitationSerializer([invitation], many=True)
+        serializer = InvitationSerializer(invitations, many=True)
         json_invitations = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitations)
 

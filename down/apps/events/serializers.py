@@ -13,8 +13,10 @@ class InvitationListSerializer(serializers.ListSerializer):
     def create(self, validated_data):
         # Save the new invitations.
         invitations = [Invitation(**obj) for obj in validated_data]
-        for invitation in invitations:
-            invitation.save()
+        Invitation.objects.bulk_create(invitations)
+        to_user_ids = [invitation.to_user_id for invitation in invitations]
+        invitations = Invitation.objects.filter(to_user_id__in=to_user_ids)
+        invitations.send()
         return invitations
 
 

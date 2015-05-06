@@ -9,7 +9,7 @@ import string
 from push_notifications.models import APNSDevice
 from rest_framework.test import APITestCase
 from down.apps.auth.models import User, UserPhone
-from down.apps.events.models import Event, Invitation, Place
+from down.apps.events.models import Event, Invitation, Place, get_invite_sms
 from down.apps.friends.models import Friendship
 
 
@@ -65,96 +65,51 @@ class InvitationTests(APITestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    def mock_friend(self, name, username):
-        """
-        Mock the user's friend.
-        """
-    
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_post_create_notify(self, mock_send):
-        # Invite the user.
-        invitation = Invitation(from_user=self.friend1, to_user=self.user,
-                                event=self.event)
-        invitation.save()
-
-        # It should notify the user that they were invited to an event.
-        token = self.apns_device0.registration_id
-        message = '{name} invited you to {activity}'.format(
-                name=self.event.creator.name,
-                activity=self.event.title)
-
-        mock_send.assert_any_call(registration_ids=[token], alert=message)
-        extra = {'message': message}
-        mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
-        self.assertEqual(mock_send.call_count, 2)
-
-    @mock.patch('down.apps.events.models.TwilioRestClient')
-    def mock_twilio(self, expected_message, mock_TwilioRestClient):
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_TwilioRestClient.return_value = mock_client
-
-        # Since we'll text users who don't have a username, delete the user's
-        # username.
-        self.user.username = None
-        self.user.save()
-
-        # Invite the user.
-        invitation = Invitation(from_user=self.user, to_user=self.user,
-                                event=self.event)
-        invitation.save()
-
-        # It should init the Twilio client with the proper params.
-        mock_TwilioRestClient.assert_called_with(settings.TWILIO_ACCOUNT,
-                                                 settings.TWILIO_TOKEN)
-
-        # It should text the user the auth code.
-        phone = unicode(self.user_phone.phone)
-        mock_client.messages.create.assert_called_with(to=phone, 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=expected_message)
-
-    def test_post_create_text_message_full(self):
+    def test_invite_sms_full(self):
         event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-        message = ('{name} invited you to {activity} at {place} on {date}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=self.friend1.name, activity=self.event.title,
-                   place=self.place.name, date=event_date)
-        self.mock_twilio(message)
+        expected_message = ('{name} invited you to {activity} at {place} on {date}'
+                            '\n--\nSent from Down (http://down.life/app)').format(
+                            name=self.friend1.name, activity=self.event.title,
+                            place=self.place.name, date=event_date)
+        message = get_invite_sms(self.friend1, self.event)
+        self.assertEqual(message, expected_message)
 
-    def test_post_create_text_message_no_date(self):
+    def test_invite_sms_no_date(self):
         # Remove the event's date.
         self.event.datetime = None
         self.event.save()
 
-        message = ('{name} invited you to {activity} at {place}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=self.friend1.name, activity=self.event.title,
-                   place=self.place.name)
-        self.mock_twilio(message)
+        expected_message = ('{name} invited you to {activity} at {place}'
+                            '\n--\nSent from Down (http://down.life/app)').format(
+                            name=self.friend1.name, activity=self.event.title,
+                            place=self.place.name)
+        message = get_invite_sms(self.friend1, self.event)
+        self.assertEqual(message, expected_message)
 
-    def test_post_create_text_message_no_place(self):
+    def test_invite_sms_no_place(self):
         # Remove the event's place.
         self.event.place = None
         self.event.save()
 
         event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-        message = ('{name} invited you to {activity} on {date}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=self.friend1.name, activity=self.event.title,
-                   date=event_date)
-        self.mock_twilio(message)
+        expected_message = ('{name} invited you to {activity} on {date}'
+                            '\n--\nSent from Down (http://down.life/app)').format(
+                            name=self.friend1.name, activity=self.event.title,
+                            date=event_date)
+        message = get_invite_sms(self.friend1, self.event)
+        self.assertEqual(message, expected_message)
 
-    def test_post_create_text_message_no_place_or_date(self):
+    def test_invite_sms_no_place_or_date(self):
         # Remove the event's place and date.
         self.event.place = None
         self.event.datetime = None
         self.event.save()
 
-        message = ('{name} invited you to {activity}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=self.friend1.name, activity=self.event.title)
-        self.mock_twilio(message)
+        expected_message = ('{name} invited you to {activity}'
+                            '\n--\nSent from Down (http://down.life/app)').format(
+                            name=self.friend1.name, activity=self.event.title)
+        message = get_invite_sms(self.friend1, self.event)
+        self.assertEqual(message, expected_message)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def mock_friend2(self, mock_send):
@@ -233,12 +188,7 @@ class InvitationTests(APITestCase):
             self.apns_device1.registration_id, # friend1
             self.apns_device2.registration_id, # friend2
         ]
-        mock_send.assert_any_call(registration_ids=tokens, alert=message)
-        extra = {'message': message}
-        mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
-
-
-        self.assertEqual(mock_send.call_count, 2)
+        mock_send.assert_called_with(registration_ids=tokens, alert=message)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_post_invitation_creator_accept_no_notify(self, mock_send):
@@ -291,24 +241,4 @@ class InvitationTests(APITestCase):
         tokens = [
             self.apns_device2.registration_id, # friend1
         ]
-        mock_send.assert_any_call(registration_ids=tokens, alert=message)
-        extra = {'message': message}
-        mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
-
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_send_invite_update_firebase_members_list(self, mock_send):
-        # TODO add integration test to ensure we get the correct response 
-        # back from the firebase server
-        # Invite the user
-        invitation = Invitation(from_user=self.user, to_user=self.user,
-                                event=self.event)
-        invitation.save()
-
-        # We should have pushed an update to firebase adding the user to the 
-        # table of event members for this event
-        url = '{firebase_url}/events/members/{event_id}/.json?auth={firebase_secret}'.format(
-                firebase_url = settings.FIREBASE_URL,
-                event_id = self.event.id,
-                firebase_secret = settings.FIREBASE_SECRET)
-        data = {self.user.id: True}
-        self.mock_patch.assert_called_once_with(url, json.dumps(data))
+        mock_send.assert_called_with(registration_ids=tokens, alert=message)
