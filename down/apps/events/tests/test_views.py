@@ -416,6 +416,7 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    """
     def test_create_event_doesnt_exist(self):
         # Make sure the event doesn't exist.
         event_id = 0
@@ -429,6 +430,7 @@ class InvitationTests(APITestCase):
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    """
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_update(self, mock_send):

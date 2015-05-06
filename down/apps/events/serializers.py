@@ -1,18 +1,19 @@
 from __future__ import unicode_literals
 from rest_framework import serializers
 from rest_framework.renderers import JSONRenderer
-from rest_framework.serializers import PrimaryKeyRelatedField
 from rest_framework_gis.serializers import GeoModelSerializer
+from .models import Event, Invitation, Place
 from down.apps.auth.models import User
 from down.apps.auth.serializers import UserSerializer
-from down.apps.utils.serializers import UnixEpochDateField
-from .models import Event, Invitation, Place
+from down.apps.utils.serializers import (
+    PkOnlyPrimaryKeyRelatedField,
+    UnixEpochDateField,
+)
 
 
 class InvitationListSerializer(serializers.ListSerializer):
 
     def create(self, validated_data):
-        #print validated_data[0]['event'].title
         # Save the new invitations.
         invitations = [Invitation(**obj) for obj in validated_data]
         Invitation.objects.bulk_create(invitations)
@@ -23,8 +24,28 @@ class InvitationListSerializer(serializers.ListSerializer):
         invitations.send()
         return invitations
 
+    def run_validation(self, data=None):
+        """
+        We override the default `run_validation`, because the validation
+        performed by validators and the `.validate()` method should
+        be coerced into an error dictionary with a 'non_fields_error' key.
+        """
+        (is_empty_value, data) = self.validate_empty_values(data)
+        if is_empty_value:
+            return data
+
+        value = self.to_internal_value(data)
+        self.run_validators(value)
+        value = self.validate(value)
+        assert value is not None, '.validate() should return the validated data'
+
+        return value
+
 
 class InvitationSerializer(serializers.ModelSerializer):
+    event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
+    from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
+    to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
     created_at = UnixEpochDateField(read_only=True)
     updated_at = UnixEpochDateField(read_only=True)
 
