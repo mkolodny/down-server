@@ -14,28 +14,14 @@ from down.apps.utils.serializers import (
 class InvitationListSerializer(serializers.ListSerializer):
 
     def create(self, validated_data):
-        import logging
-        import time
-        logger = logging.getLogger('console')
-        time1 = time.time()
-        logger.info('In create at: {}'.format(time1))
         # Save the new invitations.
         invitations = [Invitation(**obj) for obj in validated_data]
-        time1 = time.time()
         Invitation.objects.bulk_create(invitations)
-        time2 = time.time()
-        logger.info('Time to bulk create: {}'.format(time2-time1))
         to_user_ids = [invitation.to_user_id for invitation in invitations]
         event_id = invitations[0].event_id
-        time1 = time.time()
         invitations = Invitation.objects.filter(event_id=event_id,
                                                 to_user_id__in=to_user_ids)
-        time2 = time.time()
-        logger.info('Time to fetch invitations: {}'.format(time2-time1))
-        time1 = time.time()
         invitations.send()
-        time2 = time.time()
-        logger.info('Time to send invitations: {}'.format(time2-time1))
         return invitations
 
 
