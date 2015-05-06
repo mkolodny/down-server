@@ -238,52 +238,36 @@ class InvitationTests(APITestCase):
         self.event = Event(title='bars?!?!!', creator=self.user1,
                            datetime=timezone.now(), place=self.place)
         self.event.save()
-        self.invitation = Invitation(event=self.event, from_user=self.user1,
-                                     to_user=self.user1)
-        self.invitation.save()
 
         # Save urls.
         self.list_url = reverse('invitation-list')
 
         # Save POST data.
-        self.post_data = [
-            {
-                'from_user': self.user1.id,
-                'to_user': self.user1.id,
-                'event': self.event.id,
-                'response': Invitation.ACCEPTED,
-            },
-            {
-                'from_user': self.user1.id,
-                'to_user': self.user2.id,
-                'event': self.event.id,
-                'response': Invitation.NO_RESPONSE,
-            },
-            {
-                'from_user': self.user1.id,
-                'to_user': self.user3.id,
-                'event': self.event.id,
-                'response': Invitation.NO_RESPONSE,
-            },
-        ]
+        self.post_data = {
+            'invitations': [
+                {
+                    'from_user': self.user1.id,
+                    'to_user': self.user1.id,
+                    'event': self.event.id,
+                    'response': Invitation.ACCEPTED,
+                },
+                {
+                    'from_user': self.user1.id,
+                    'to_user': self.user2.id,
+                    'event': self.event.id,
+                    'response': Invitation.NO_RESPONSE,
+                },
+                {
+                    'from_user': self.user1.id,
+                    'to_user': self.user3.id,
+                    'event': self.event.id,
+                    'response': Invitation.NO_RESPONSE,
+                },
+            ],
+        }
 
     def tearDown(self):
         self.patcher.stop()
-
-    """
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_create(self, mock_send):
-        response = self.client.post(self.list_url, self.data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # It should create the invitation.
-        invitation = Invitation.objects.get(**self.data)
-
-        # It should return the invitation.
-        serializer = InvitationSerializer(invitation)
-        json_invitation = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitation)
-    """
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     @mock.patch('down.apps.events.models.TwilioRestClient')
@@ -291,9 +275,6 @@ class InvitationTests(APITestCase):
     @mock.patch('down.apps.events.models.requests')
     def test_bulk_create(self, mock_requests, mock_get_message, mock_twilio,
                          mock_apns):
-        # Delete the user's invitation to mock the client.
-        self.invitation.delete()
-
         # Mock the getting the invitation message.
         mock_message = 'Barack Obama invited you to ball hard'
         mock_get_message.return_value = mock_message
@@ -302,14 +283,14 @@ class InvitationTests(APITestCase):
         mock_client = mock.MagicMock()
         mock_twilio.return_value = mock_client
 
-        data = {'invitations': self.post_data}
-        response = self.client.post(self.list_url, data)
+        response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the invitations.
         invitations = Invitation.objects.filter(from_user=self.user1,
                                                 event=self.event)
-        self.assertEqual(invitations.count(), len(self.post_data))
+        self.assertEqual(invitations.count(),
+                         len(self.post_data['invitations']))
 
         # It should send push notifications to users with devices.
         token = self.user2_device.registration_id
@@ -339,7 +320,7 @@ class InvitationTests(APITestCase):
                 firebase_secret=settings.FIREBASE_SECRET)
         json_invitations = json.dumps({
             invite['to_user']: True
-            for invite in self.post_data
+            for invite in self.post_data['invitations']
             if invite['to_user'] != invite['from_user']
         })
         mock_requests.patch.assert_called_with(url, json_invitations)
@@ -349,14 +330,14 @@ class InvitationTests(APITestCase):
         json_invitations = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitations)
 
-    def test_create_not_logged_in(self):
+    def test_bulk_create_not_logged_in(self):
         # Don't include the user's credentials in the request.
         self.client.credentials()
 
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_create_not_logged_in_user(self):
+    def test_bulk_create_not_logged_in_user(self):
         # Log the second user in.
         token = Token(user=self.user2)
         token.save()
@@ -367,70 +348,80 @@ class InvitationTests(APITestCase):
                                 event=self.event)
         invitation.save()
 
-        data = {
-            'from_user': self.user1.id,
-            'to_user': self.user2.id,
-            'event': self.event.id,
-        }
-        response = self.client.post(self.list_url, data)
+        response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_create_as_creator_not_invited(self, mock_send):
-        # Delete the logged in user's invitation.
-        self.invitation.delete()
-
-        data = {
-            'from_user': self.user1.id,
-            'to_user': self.user2.id,
-            'event': self.event.id,
-            'response': Invitation.ACCEPTED,
-        }
-        response = self.client.post(self.list_url, data)
+    def test_bulk_create_as_creator_not_invited(self, mock_send):
+        response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should create the invitation.
-        invitation = Invitation.objects.get(**data)
+        # It should create the invitations.
+        invitations = Invitation.objects.filter(from_user=self.user1,
+                                                event=self.event)
+        self.assertEqual(invitations.count(),
+                         len(self.post_data['invitations']))
 
-        # It should return the invitation.
-        serializer = InvitationSerializer(invitation)
-        json_invitation = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitation)
+        # It should return the invitations.
+        serializer = InvitationSerializer(invitations, many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
 
-    def test_create_not_invited(self):
+    def test_bulk_create_not_invited(self):
         # Log the second user in.
         token = Token(user=self.user2)
         token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token '+token.key)
 
-        # Mock a third user.
-        user = User(name='Marie Curie', email='mcurie@gmail.com',
-                    username='mcurie')
-        user.save()
-
         data = {
-            'from_user': self.user2.id,
-            'to_user': user.id,
-            'event': self.event.id,
+            'invitations': [
+                {
+                    'from_user': self.user2.id,
+                    'to_user': self.user3.id,
+                    'event': self.event.id,
+                },
+            ],
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    """
-    def test_create_event_doesnt_exist(self):
+    def test_bulk_create_event_doesnt_exist(self):
         # Make sure the event doesn't exist.
         event_id = 0
         with self.assertRaises(Event.DoesNotExist):
             Event.objects.get(id=event_id)
 
         data = {
-            'from_user': self.user1.id,
-            'to_user': self.user1.id,
-            'event': event_id,
+            'invitations': [
+                {
+                    'from_user': self.user1.id,
+                    'to_user': self.user1.id,
+                    'event': event_id,
+                }, 
+            ],
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    """
+
+    def test_bulk_create_mixed_events(self):
+        # Append an invitation with a different event id.
+        self.post_data['invitations'].append({
+            'from_user': self.user1.id,
+            'to_user': self.user1.id,
+            'event': 0,
+        })
+        response = self.client.post(self.list_url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_bulk_create_mixed_from_user(self):
+        # Give the last invitation a different from_user id.
+        self.post_data['invitations'][-1] = {
+            'from_user': self.user2.id,
+            'to_user': self.user3.id,
+            'event': self.event.id,
+        }
+        response = self.client.post(self.list_url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_update(self, mock_send):

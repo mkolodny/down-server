@@ -10,12 +10,18 @@ class InviterWasInvited(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        if request.data.has_key('invitations'):
+        # This permission is only focused on creating an event.
+        if request.method != 'POST':
             return True
 
-        event_id = request.data.get('event')
+        # We're only allowing bulk creating invitations right now.
+        if not request.data.has_key('invitations'):
+            return False
 
         try:
+            invitations = request.data['invitations']
+            # TODO: Handle when no invitations are sent.
+            event_id = invitations[0]['event']
             Invitation.objects.get(event_id=event_id, to_user=request.user)
             return True
         except Invitation.DoesNotExist:
@@ -55,8 +61,11 @@ class IsFromUser(permissions.BasePermission):
         if request.method != 'POST':
             return True
 
-        if request.data.has_key('invitations'):
-            return True
+        # We're only allowing bulk creating invitations right now.
+        if not request.data.has_key('invitations'):
+            return False
 
-        from_user_id = request.data.get('from_user')
+        invitations = request.data['invitations']
+        # TODO: Handle when no invitations are sent.
+        from_user_id = invitations[0]['from_user']
         return request.user.id == from_user_id
