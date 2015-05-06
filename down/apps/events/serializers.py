@@ -15,7 +15,9 @@ class InvitationListSerializer(serializers.ListSerializer):
         invitations = [Invitation(**obj) for obj in validated_data]
         Invitation.objects.bulk_create(invitations)
         to_user_ids = [invitation.to_user_id for invitation in invitations]
-        invitations = Invitation.objects.filter(to_user_id__in=to_user_ids)
+        event_id = invitations[0].event_id
+        invitations = Invitation.objects.filter(event_id=event_id,
+                                                to_user_id__in=to_user_ids)
         invitations.send()
         return invitations
 
