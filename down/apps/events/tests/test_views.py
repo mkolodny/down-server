@@ -297,7 +297,8 @@ class InvitationTests(APITestCase):
         message = '{name} invited you to {activity}'.format(
                 name=self.user1.name,
                 activity=self.event.title)
-        mock_apns.assert_any_call(registration_ids=[token], alert=message)
+        mock_apns.assert_any_call(registration_ids=[token], alert=message,
+                                  badge=1)
 
         # It should use the mock to get the SMS invite message.
         mock_get_message.assert_called_with(self.user1, self.event)

@@ -91,7 +91,7 @@ class InvitationQuerySet(models.query.QuerySet):
                                                             activity=event.title)
         user_ids = [invitation.to_user_id for invitation in invitations]
         devices = APNSDevice.objects.filter(user_id__in=user_ids)
-        devices.send_message(message)
+        devices.send_message(message, badge=1)
 
         # Text message everyone else their invitation.
         message = get_invite_sms(from_user, event)
