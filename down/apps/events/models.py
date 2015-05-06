@@ -71,22 +71,21 @@ class InvitationQuerySet(models.query.QuerySet):
         assert all((invitation.from_user_id == from_user.id) for invitation in self)
         assert all((invitation.event_id == event.id) for invitation in self)
 
+        # Don't notify the user who is sending the invitations.
+        invitations = [invitation for invitation in self
+                       if invitation.to_user_id != from_user.id]
+
         # Add the users to the Firebase members list.
         url = ('{firebase_url}/events/members/{event_id}/.json?auth='
                '{firebase_secret}').format(
                 firebase_url=settings.FIREBASE_URL, event_id=event.id,
                 firebase_secret=settings.FIREBASE_SECRET)
-        for invitation in self:
-            json_data = json.dumps({invitation.to_user_id: True})
-            requests.patch(url, json_data)
+        json_invitations = json.dumps({
+            invitation.to_user_id: True
+            for invitation in invitations
+        })
+        requests.patch(url, json_invitations)
 
-        # Don't notify the user who is sending the invitations.
-        invitations = [invitation for invitation in self
-                       if invitation.to_user_id != from_user.id]
-
-        # Create lists of users with usernames, and without them. If a user was
-        # added from contacts, they won't have a username.
-        #if to_user.username: 
         # Send users with devices push notifications.
         message = '{name} invited you to {activity}'.format(name=from_user.name,
                                                             activity=event.title)

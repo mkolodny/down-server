@@ -332,15 +332,17 @@ class InvitationTests(APITestCase):
                                                        body=mock_message)
 
         # It should add the users to the firebase members list.
-        self.assertEqual(mock_requests.patch.call_count, len(self.post_data))
         url = ('{firebase_url}/events/members/{event_id}/.json'
                '?auth={firebase_secret}').format(
                 firebase_url=settings.FIREBASE_URL,
                 event_id=self.event.id,
                 firebase_secret=settings.FIREBASE_SECRET)
-        for invite in self.post_data:
-            json_data = json.dumps({invite['to_user']: True})
-            mock_requests.patch.assert_any_call(url, json_data)
+        json_invitations = json.dumps({
+            invite['to_user']: True
+            for invite in self.post_data
+            if invite['to_user'] != invite['from_user']
+        })
+        mock_requests.patch.assert_called_with(url, json_invitations)
 
         # It should return the invitations.
         serializer = InvitationSerializer(invitations, many=True)

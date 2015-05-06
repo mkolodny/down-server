@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from rest_framework import serializers
 from rest_framework.renderers import JSONRenderer
+from rest_framework.serializers import PrimaryKeyRelatedField
 from rest_framework_gis.serializers import GeoModelSerializer
 from down.apps.auth.models import User
 from down.apps.auth.serializers import UserSerializer
@@ -11,6 +12,7 @@ from .models import Event, Invitation, Place
 class InvitationListSerializer(serializers.ListSerializer):
 
     def create(self, validated_data):
+        #print validated_data[0]['event'].title
         # Save the new invitations.
         invitations = [Invitation(**obj) for obj in validated_data]
         Invitation.objects.bulk_create(invitations)
