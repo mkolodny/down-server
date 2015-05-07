@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
+from datetime import timedelta
 import json
+import re
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -9,6 +11,8 @@ import requests
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import User, UserPhone
 from down.apps.notifications.utils import notify_users
+
+EARTHTOOLS_RE = re.compile(r'<offset>(-?\d+)</offset>')
 
 
 class Place(models.Model):
@@ -42,6 +46,52 @@ class Event(models.Model):
         # This filter operation will only return unique devices.
         return APNSDevice.objects.filter(user_id__in=member_ids)
 
+
+def get_invite_sms(from_user, event):
+    """
+    Return the message to SMS to invite the `from_user` to `event`.
+    """
+    if event.place:
+        place = event.place
+
+    if event.datetime and event.place:
+        event_dt = get_offset_dt(event.datetime, place.geo)
+        event_date = event_dt.strftime('%A, %b. %-d @ %-I:%M %p')
+        message = ('{name} invited you to {activity} at {place} on {date}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=from_user.name, activity=event.title, place=place.name,
+                   date=event_date)
+    elif event.place:
+        message = ('{name} invited you to {activity} at {place}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=from_user.name, activity=event.title, place=place.name)
+    elif event.datetime:
+        event_dt = get_offset_dt(event.datetime, from_user.location)
+        event_date = event_dt.strftime('%A, %b. %-d @ %-I:%M %p')
+        message = ('{name} invited you to {activity} on {date}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=from_user.name, activity=event.title, date=event_date)
+    else:
+        message = ('{name} invited you to {activity}'
+                   '\n--\nSent from Down (http://down.life/app)').format(
+                   name=from_user.name, activity=event.title)
+    return message
+
+def get_offset_dt(dt, point):
+    """
+    Return a datetime offset based on the timezone where `point` lays.
+    """
+    coords = point.coords
+    url = 'http://www.earthtools.org/timezone/{lat}/{long}'.format(
+            lat=coords[0], long=coords[1])
+    r = requests.get(url)
+    match = EARTHTOOLS_RE.search(r.content)
+    if not match:
+        # Return the original, non-offset datetime.
+        return dt
+    offset = match.group(1)
+    offset_dt = dt + timedelta(hours=int(offset))
+    return offset_dt
 
 class InvitationManager(models.Manager):
 
@@ -104,34 +154,6 @@ class InvitationQuerySet(models.query.QuerySet):
             phone = unicode(userphone.phone)
             client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
                                    body=message)
-
-def get_invite_sms(from_user, event):
-    """
-    Return the message to SMS to invite the `from_user` to `event`.
-    """
-    if event.datetime:
-        event_date = event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
-
-    if event.datetime and event.place:
-        message = ('{name} invited you to {activity} at {place} on {date}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=from_user.name, activity=event.title,
-                   place=event.place.name, date=event_date)
-    elif event.place:
-        message = ('{name} invited you to {activity} at {place}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=from_user.name, activity=event.title,
-                   place=event.place.name)
-    elif event.datetime:
-        message = ('{name} invited you to {activity} on {date}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=from_user.name, activity=event.title,
-                   date=event_date)
-    else:
-        message = ('{name} invited you to {activity}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=from_user.name, activity=event.title)
-    return message
 
 
 class Invitation(models.Model):

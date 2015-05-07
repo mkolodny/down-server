@@ -1,15 +1,25 @@
 from __future__ import unicode_literals
-from django.conf import settings
-from django.utils import timezone
+from datetime import datetime, timedelta
 import json
 import mock
+import pytz
 import random
 import requests
 import string
+from django.conf import settings
+from django.utils import timezone
+import httpretty
 from push_notifications.models import APNSDevice
+from rest_framework import status
 from rest_framework.test import APITestCase
 from down.apps.auth.models import User, UserPhone
-from down.apps.events.models import Event, Invitation, Place, get_invite_sms
+from down.apps.events.models import (
+    Event,
+    Invitation,
+    Place,
+    get_invite_sms,
+    get_offset_dt,
+)
 from down.apps.friends.models import Friendship
 
 
@@ -38,7 +48,8 @@ class InvitationTests(APITestCase):
 
         # Mock the user's friend.
         self.friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
-                            username='jcke', image_url='http://imgur.com/jcke')
+                            username='jcke', image_url='http://imgur.com/jcke',
+                            location='POINT(40.7027217 -73.9891945)')
         self.friend1.save()
         self.friendship = Friendship(user=self.user, friend=self.friend1)
         self.friendship.save()
@@ -60,19 +71,31 @@ class InvitationTests(APITestCase):
                            datetime=timezone.now(), place=self.place)
         self.event.save()
 
-
+        # Save URLs.
+        coords = self.place.geo.coords
+        self.tz_url = 'http://www.earthtools.org/timezone/{lat}/{long}'.format(
+                lat=coords[0], long=coords[1])
 
     def tearDown(self):
         self.patcher.stop()
 
-    def test_invite_sms_full(self):
-        event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
+    @mock.patch('down.apps.events.models.get_offset_dt')
+    def test_invite_sms_full(self, mock_get_offset_dt):
+        # Mock the timezone aware datetime.
+        dt = datetime(2015, 5, 7, 10, 30, tzinfo=pytz.UTC)
+        mock_get_offset_dt.return_value = dt
+
+        # TODO: event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p %Z')
+        event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p')
         expected_message = ('{name} invited you to {activity} at {place} on {date}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title,
                             place=self.place.name, date=event_date)
         message = get_invite_sms(self.friend1, self.event)
         self.assertEqual(message, expected_message)
+
+        # It should call the mock the the right args.
+        mock_get_offset_dt.assert_called_with(self.event.datetime, self.place.geo)
 
     def test_invite_sms_no_date(self):
         # Remove the event's date.
@@ -86,18 +109,28 @@ class InvitationTests(APITestCase):
         message = get_invite_sms(self.friend1, self.event)
         self.assertEqual(message, expected_message)
 
-    def test_invite_sms_no_place(self):
+    @mock.patch('down.apps.events.models.get_offset_dt')
+    def test_invite_sms_no_place(self, mock_get_offset_dt):
         # Remove the event's place.
         self.event.place = None
         self.event.save()
 
-        event_date = self.event.datetime.strftime('%A, %b. %-d @ %-I:%M %p')
+        # Mock the timezone aware datetime.
+        dt = datetime(2015, 5, 7, 10, 30, tzinfo=pytz.UTC)
+        mock_get_offset_dt.return_value = dt
+
+        # TODO: event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p %Z')
+        event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p')
         expected_message = ('{name} invited you to {activity} on {date}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title,
                             date=event_date)
         message = get_invite_sms(self.friend1, self.event)
         self.assertEqual(message, expected_message)
+
+        # It should call the mock the the right args.
+        mock_get_offset_dt.assert_called_with(self.event.datetime,
+                                             self.friend1.location)
 
     def test_invite_sms_no_place_or_date(self):
         # Remove the event's place and date.
@@ -110,6 +143,43 @@ class InvitationTests(APITestCase):
                             name=self.friend1.name, activity=self.event.title)
         message = get_invite_sms(self.friend1, self.event)
         self.assertEqual(message, expected_message)
+
+    @httpretty.activate
+    def test_get_offset_dt(self):
+        # Mock the Earth Tools response.
+        body = '''
+        <?xml version="1.0" encoding="ISO-8859-1" ?>
+        <timezone xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://www.earthtools.org/timezone.xsd">
+            <version>1.1</version>
+            <location>
+                <latitude>40.6898319</latitude>
+                <longitude>-73.9904645</longitude>
+            </location>
+            <offset>-5</offset>
+            <suffix>R</suffix>
+            <localtime>4 Dec 2005 12:06:56</localtime>
+            <isotime>2005-12-04 12:06:56 -0500</isotime>
+            <utctime>2005-12-04 17:06:56</utctime>
+            <dst>False</dst>
+        </timezone>           
+        '''
+        httpretty.register_uri(httpretty.GET, self.tz_url, body=body)
+
+        dt = get_offset_dt(self.event.datetime, self.place.geo)
+        expected_dt = self.event.datetime + timedelta(hours=-5)
+        self.assertEqual(dt, expected_dt)
+
+    @httpretty.activate
+    def test_get_offset_dt_bad_request(self):
+        httpretty.register_uri(httpretty.GET, self.tz_url,
+                               status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        dt = get_offset_dt(self.event.datetime, self.place.geo)
+        # It should return the original datetime.
+        # TODO: Send emails to admins alerting us about the problem.
+        expected_dt = self.event.datetime
+        self.assertEqual(dt, expected_dt)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def mock_friend2(self, mock_send):

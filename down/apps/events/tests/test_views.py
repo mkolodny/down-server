@@ -353,7 +353,11 @@ class InvitationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_bulk_create_as_creator_not_invited(self, mock_send):
+    @mock.patch('down.apps.events.models.get_invite_sms')
+    def test_bulk_create_as_creator_not_invited(self, mock_sms, mock_send):
+        # Mock the sms message.
+        mock_sms.return_value = '<user> invited you to <event>'
+
         response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
