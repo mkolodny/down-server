@@ -10,7 +10,6 @@ from push_notifications.models import APNSDevice
 import requests
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import User, UserPhone
-from down.apps.notifications.utils import notify_users
 
 EARTHTOOLS_RE = re.compile(r'<offset>(-?\d+)</offset>')
 
@@ -212,23 +211,21 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     if user.id == event.creator_id:
         return
 
-    if invitation.response == Invitation.NO_RESPONSE:
-        return
-    elif invitation.response == Invitation.DECLINED:
-        # Only notify the event creator.
-        message = '{name} isn\'t down for {activity}'.format(
-                name=user.name,
-                activity=event.title)
-        notify_users([event.creator_id], message)
-    elif invitation.response == Invitation.ACCEPTED:
-        # The user is down.
+    if invitation.response == Invitation.ACCEPTED:
         message = '{name} is also down for {activity}'.format(
                 name=user.name,
                 activity=event.title)
 
-    # Get all other members who have accepted their invitation, or haven't responded
-    # yet, except the `current_user`. Get the creator whether or not they've
-    # accepted the invitation.
-    notify_responses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
-    devices = event.get_member_devices(user, notify_responses)
-    devices.send_message(message)
+        # Get all other members who have accepted their invitation, or haven't
+        # responded yet, except the `current_user`. Get the creator whether or not
+        # they've accepted the invitation.
+        notify_responses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
+        devices = event.get_member_devices(user, notify_responses)
+        devices.send_message(message)
+    elif invitation.response == Invitation.DECLINED:
+        # Only notify the user who invited them.
+        message = '{name} isn\'t down for {activity}'.format(
+                name=user.name,
+                activity=event.title)
+        devices = APNSDevice.objects.filter(user_id=invitation.from_user_id)
+        devices.send_message(message)
