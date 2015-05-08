@@ -428,6 +428,14 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_bulk_create_others_down(self):
+        # Set another user's response other than the user who sent the
+        # invitations to "down".
+        self.post_data['invitations'][1]['response'] = Invitation.ACCEPTED
+
+        response = self.client.post(self.list_url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_update(self, mock_send):
         # Mock an invitation.
