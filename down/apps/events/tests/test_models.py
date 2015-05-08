@@ -81,12 +81,27 @@ class InvitationTests(APITestCase):
 
     @mock.patch('down.apps.events.models.get_offset_dt')
     def test_invite_sms_full(self, mock_get_offset_dt):
-        # Mock the timezone aware datetime.
+        # Mock the timezone offset datetime.
         dt = datetime(2015, 5, 7, 10, 30, tzinfo=pytz.UTC)
         mock_get_offset_dt.return_value = dt
 
-        # TODO: event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p %Z')
         event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p')
+        expected_message = ('{name} invited you to {activity} at {place} on {date}'
+                            '\n--\nSent from Down (http://down.life/app)').format(
+                            name=self.friend1.name, activity=self.event.title,
+                            place=self.place.name, date=event_date)
+        message = get_invite_sms(self.friend1, self.event)
+        self.assertEqual(message, expected_message)
+
+        # It should call the mock the the right args.
+        mock_get_offset_dt.assert_called_with(self.event.datetime, self.place.geo)
+
+    @mock.patch('down.apps.events.models.get_offset_dt')
+    def test_invite_sms_full_bad_offset_request(self, mock_get_offset_dt):
+        # Mock the bad response.
+        mock_get_offset_dt.return_value = None
+
+        event_date = self.event.datetime.strftime('%A, %b. %-d')
         expected_message = ('{name} invited you to {activity} at {place} on {date}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title,
@@ -119,7 +134,6 @@ class InvitationTests(APITestCase):
         dt = datetime(2015, 5, 7, 10, 30, tzinfo=pytz.UTC)
         mock_get_offset_dt.return_value = dt
 
-        # TODO: event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p %Z')
         event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p')
         expected_message = ('{name} invited you to {activity} on {date}'
                             '\n--\nSent from Down (http://down.life/app)').format(
@@ -130,7 +144,28 @@ class InvitationTests(APITestCase):
 
         # It should call the mock the the right args.
         mock_get_offset_dt.assert_called_with(self.event.datetime,
-                                             self.friend1.location)
+                                              self.friend1.location)
+
+    @mock.patch('down.apps.events.models.get_offset_dt')
+    def test_invite_sms_no_place_bad_offset_request(self, mock_get_offset_dt):
+        # Remove the event's place.
+        self.event.place = None
+        self.event.save()
+
+        # Mock the bad response.
+        mock_get_offset_dt.return_value = None
+
+        event_date = self.event.datetime.strftime('%A, %b. %-d')
+        expected_message = ('{name} invited you to {activity} on {date}'
+                            '\n--\nSent from Down (http://down.life/app)').format(
+                            name=self.friend1.name, activity=self.event.title,
+                            date=event_date)
+        message = get_invite_sms(self.friend1, self.event)
+        self.assertEqual(message, expected_message)
+
+        # It should call the mock the the right args.
+        mock_get_offset_dt.assert_called_with(self.event.datetime,
+                                              self.friend1.location)
 
     def test_invite_sms_no_place_or_date(self):
         # Remove the event's place and date.
@@ -177,9 +212,7 @@ class InvitationTests(APITestCase):
 
         dt = get_offset_dt(self.event.datetime, self.place.geo)
         # It should return the original datetime.
-        # TODO: Send emails to admins alerting us about the problem.
-        expected_dt = self.event.datetime
-        self.assertEqual(dt, expected_dt)
+        self.assertEqual(dt, None)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def mock_friend2(self, mock_send):

@@ -55,8 +55,7 @@ def get_invite_sms(from_user, event):
         place = event.place
 
     if event.datetime and event.place:
-        event_dt = get_offset_dt(event.datetime, place.geo)
-        event_date = event_dt.strftime('%A, %b. %-d @ %-I:%M %p')
+        event_date = get_event_date(event, place.geo)
         message = ('{name} invited you to {activity} at {place} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, place=place.name,
@@ -66,8 +65,7 @@ def get_invite_sms(from_user, event):
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, place=place.name)
     elif event.datetime:
-        event_dt = get_offset_dt(event.datetime, from_user.location)
-        event_date = event_dt.strftime('%A, %b. %-d @ %-I:%M %p')
+        event_date = get_event_date(event, from_user.location)
         message = ('{name} invited you to {activity} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, date=event_date)
@@ -76,6 +74,17 @@ def get_invite_sms(from_user, event):
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title)
     return message
+
+def get_event_date(event, point):
+    """
+    Return a date string to include in the text message invitation.
+    """
+    event_dt = get_offset_dt(event.datetime, point)
+    if event_dt:
+        event_date = event_dt.strftime('%A, %b. %-d @ %-I:%M %p')
+    else:
+        event_date = event.datetime.strftime('%A, %b. %-d')
+    return event_date
 
 def get_offset_dt(dt, point):
     """
@@ -87,8 +96,7 @@ def get_offset_dt(dt, point):
     r = requests.get(url)
     match = EARTHTOOLS_RE.search(r.content)
     if not match:
-        # Return the original, non-offset datetime.
-        return dt
+        return None
     offset = match.group(1)
     offset_dt = dt + timedelta(hours=int(offset))
     return offset_dt
