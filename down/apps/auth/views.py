@@ -108,7 +108,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     def me(self, request):
         import logging
         logger = logging.getLogger('console')
-        logger.info(request.META)
+        logger.info(request.version)
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
