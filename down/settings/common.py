@@ -32,6 +32,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+#    'down.middleware.Versioning',
 )
 ROOT_URLCONF = 'down.urls'
 WSGI_APPLICATION = 'down.wsgi.application'
@@ -103,12 +104,6 @@ LOGGING = {
             'level': 'INFO',
         }
     }
-}
-
-# API
-REST_FRAMEWORK = {
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning',
-    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 }
 
 # Facebook
