@@ -376,8 +376,14 @@ class SocialAccountTests(APITestCase):
 class AuthCodeTests(APITestCase):
 
     def setUp(self):
-        self.url = reverse('authcode-list')
+        # Save re-used data.
         self.phone_number = '+12345678910'
+
+        # Save URLs.
+        self.url = reverse('authcode-list')
+
+        # Set the accept header on all requests.
+        self.client.credentials(HTTP_ACCEPT='application/json; version=1.0')
 
     @mock.patch('down.apps.auth.views.TwilioRestClient')
     def test_create(self, mock_TwilioRestClient):
@@ -449,6 +455,13 @@ class AuthCodeTests(APITestCase):
     def test_create_apple_test_user(self):
         response = self.client.post(self.url, {'phone': '+15555555555'})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_no_version(self):
+        # Remove the version number for the accept header.
+        self.client.credentials(HTTP_ACCEPT='application/json;')
+
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class SessionTests(APITestCase):

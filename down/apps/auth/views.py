@@ -182,6 +182,11 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = AuthCodeSerializer
 
     def create(self, request, *args, **kwargs):
+        # Make sure the client has set the API version. This ensures that logins
+        # from a beta version of the app won't work.
+        if not request.version:
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+
         # If the user is the Apple test user, fake a good response.
         if request.data.get('phone') == '+15555555555':
             return Response(status=status.HTTP_201_CREATED)
