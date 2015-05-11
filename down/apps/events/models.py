@@ -208,6 +208,10 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     invitation = instance
     user = invitation.to_user
     event = invitation.event
+    import logging
+    logger = logging.getLogger('console')
+    logger.info(invitation.id)
+    # Don't notify the event creator that they accepted their own invitation.
     if user.id == event.creator_id:
         return
 
