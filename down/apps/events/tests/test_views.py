@@ -322,7 +322,6 @@ class InvitationTests(APITestCase):
         json_invitations = json.dumps({
             invite['to_user']: True
             for invite in self.post_data['invitations']
-            if invite['to_user'] != invite['from_user']
         })
         mock_requests.patch.assert_called_with(url, json_invitations)
 
