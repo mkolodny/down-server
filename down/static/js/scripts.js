@@ -1,47 +1,64 @@
-/*
-    WOW.js - Trigger animations
-*/
-new WOW().init();
-
 $(function() {
-  // Initialize the int'l phone number input.
-  var $phone = $('#phone');
-  $phone.intlTelInput({
-    utilsScript: window.UTILS_SCRIPT,
-    preferredCountries: ['us', 'ca', 'gb']
-  });
+  /*
+   * iOS detection.
+   */
+  if(navigator.userAgent.match(/(iPad|iPhone|iPod)/g)) {
+    $('.download').show();
+  } else {
+    setupPhones();
+  }
+  
+  /*
+   * Phone number input.
+   */
+  function setupPhones() {
+    $('.request-invite').show();
 
-  // Save the user's phone #.
-  $phoneForm = $('#phone-form');
-  $submitError = $('#submit-error');
-  $invalidError = $('#invalid-error');
+    var $phones = $('.enter-phone');
+    $phones.intlTelInput({
+      utilsScript: window.UTILS_SCRIPT,
+      preferredCountries: ['us', 'ca', 'gb']
+    });
 
-  $phoneForm.submit(function(e) {
-    e.preventDefault();
-    $submitError.hide();
-    $invalidError.hide();
+    // Save the user's phone #.
+    $phoneForms = $('.phone-form');
+    $submitError = $('.submit-error');
+    $invalidError = $('.invalid-error');
 
-    if($phone.intlTelInput('isValidNumber')) {
-      var phone = $phone.intlTelInput('getNumber');
+    $phoneForms.submit(function(e) {
+      e.preventDefault();
+      $submitError.hide();
+      $invalidError.hide();
 
-      $.post('/api/phonenumbers', {phone: phone})
-        .done(function() {
-          phoneSaved();
-        })
-        .fail(function(jqXHR, textStatus) {
-          if(jqXHR.status == 400) {
+      var $phoneForm = $(e.delegateTarget);
+      var $phone = $phoneForm.find('.enter-phone');
+      if($phone.intlTelInput('isValidNumber')) {
+        var phone = $phone.intlTelInput('getNumber');
+
+        $.post('/api/phonenumbers', {phone: phone})
+          .done(function() {
             phoneSaved();
-          } else {
-            $submitError.show();
-          }
-        });
-    } else {
-      $invalidError.show();
-    }
-  });
+          })
+          .fail(function(jqXHR, textStatus) {
+            if(jqXHR.status == 400) {
+              phoneSaved();
+            } else {
+              $submitError.show();
+            }
+          });
+      } else {
+        $invalidError.show();
+      }
+    });
+  };
 
   function phoneSaved() {
-    $phoneForm.hide();
-    $('#success').show();
+    $phoneForms.hide();
+    $('.success').show();
   };
+
+  /*
+    Wow
+  */
+  new WOW().init();
 });

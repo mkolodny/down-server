@@ -8,13 +8,14 @@
     <title>Down</title>
 
     <!-- CSS -->
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Sans+Pro:400">
     <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300">
     <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Montserrat:400">
-    
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="{% static 'css/animate.css' %}">
     <link rel="stylesheet" href="{% static 'components/ultimate-flat-social-icons/ultm-css/ultm.css' %}">
+    <link rel="stylesheet" href="{% static 'css/buttons.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="{% static 'css/media-queries.css' %}">
     <link rel="stylesheet" href="{% static 'css/intlTelInput.css' %}">
@@ -51,99 +52,219 @@
     <noscript>
       <img height="1" width="1" alt="" style="display:none" src="https://www.facebook.com/tr?ev=6031287114520&amp;cd[value]=0.00&amp;cd[currency]=USD&amp;noscript=1" />
     </noscript>
-  </head>
-  <body>
-    <!-- Background image -->
-    <img src="{% static 'img/backgrounds/1.jpg' %}" id="bg" alt="Purple Background">
 
-    <!-- WOW -->
-    <script src="{% static 'js/wow.min.js' %}"></script>
-    
-    <div class="wrapper">
-      <!-- Top content -->
-      <div class="top-content">
-        <div class="inner-bg">
-          <div class="container">
-            <div class="row">
-              <div class="col-sm-5 phone wow fadeInLeft">
-                <img src="{% static 'img/iphone-1.png' %}" alt="Down Screenshot">
+    <!-- Int'l phone number input -->
+    <style>
+      .iti-flag {
+        background-image: url("{% static 'img/flags.png' %}");
+      }
+
+      @media only screen and (-webkit-min-device-pixel-ratio: 2),
+      only screen and (min--moz-device-pixel-ratio: 2),
+      only screen and (-o-min-device-pixel-ratio: 2 / 1),
+      only screen and (min-device-pixel-ratio: 2),
+      only screen and (min-resolution: 192dpi),
+      only screen and (min-resolution: 2dppx) {
+        .iti-flag {
+          background-image: url("{% static 'img/flags@2x.png' %}");
+        }
+      }
+    </style>
+    <script>
+      window.UTILS_SCRIPT = '{% static "js/intlTelInputUtils.js" %}';
+    </script>
+  </head>
+
+  <body>
+    <!-- Top content -->
+    <div class="top-content">
+      <div class="inner-bg">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-7 col-sm-push-5 text wow fadeInUp">
+              <div class="logo">
+                <i class="fa fa-hand-o-down fa-5x"></i>
+                <a href="">Down</a>
               </div>
-              <div class="col-sm-7 text wow fadeInUp">
-                <div class="logo">
-                  <i class="fa fa-hand-o-down fa-5x"></i>
-                  <a href="/">
-                    <img src="{% static 'img/logo.png' %}" alt="Down Logo">
+              <h1>What are you down for?</h1>
+              <div class="top-button">
+                <div class="download">
+                  <a class="button-1" href="https://itunes.apple.com/us/app/down-connect-people-around/id969040287?mt=8">
+                    <span class="button-1-left"><i class="fa fa-mobile"></i></span>
+                    <span class="button-1-right">
+                      <span class="button-1-right-top">Download on the</span>
+                      <span class="button-1-right-bottom">App Store</span>
+                    </span>
                   </a>
                 </div>
-                <h1>Connect With The People Around You</h1>
-                <!-- Int'l phone number input -->
-                <style>
-                  .iti-flag {
-                    background-image: url("{% static 'img/flags.png' %}");
-                  }
-
-                  @media only screen and (-webkit-min-device-pixel-ratio: 2),
-                  only screen and (min--moz-device-pixel-ratio: 2),
-                  only screen and (-o-min-device-pixel-ratio: 2 / 1),
-                  only screen and (min-device-pixel-ratio: 2),
-                  only screen and (min-resolution: 192dpi),
-                  only screen and (min-resolution: 2dppx) {
-                    .iti-flag {
-                      background-image: url("{% static 'img/flags@2x.png' %}");
-                    }
-                  }
-                </style>
-                <script>
-                  window.UTILS_SCRIPT = '{% static "js/intlTelInputUtils.js" %}';
-                </script>
-                <form id="phone-form" class="form-inline">
-                  <div id="submit-error" class="alert alert-danger">
-                    Oops, something went wrong. Your invite request has not been
-                    processed.
-                  </div>
-                  <div id="invalid-error" class="alert alert-danger">
-                    Invalid phone number.
-                  </div>
-                  <div class="form-group">
-                    <input type="tel" id="phone" class="form-control">
-                  </div>
-                  <button type="submit" id="submit" class="btn btn-default">
-                    Request Invite
-                  </button>
-                </form>
-                <h2 id="success">
-                  Thanks! You're on the list.
-                </h2>
+                <div class="request-invite">
+                  <form class="phone-form form-inline">
+                    <div class="submit-error alert alert-danger">
+                      Oops, something went wrong. Your invite request has not been
+                      processed.
+                    </div>
+                    <div class="invalid-error alert alert-danger">
+                      Invalid phone number.
+                    </div>
+                    <div class="form-group">
+                      <input type="tel" class="enter-phone form-control">
+                    </div>
+                    <button type="submit" class="submit btn btn-default">
+                      Request Invite
+                    </button>
+                  </form>
+                  <h3 class="success">
+                    Thanks! You're on the list.
+                  </h3>
+                </div>
               </div>
+            </div>
+            <div class="col-sm-5 col-sm-pull-7 phone wow fadeInLeft">
+              <img src="{% static 'img/what-are-you-down-for.png' %}" alt="">
             </div>
           </div>
         </div>
       </div>
-      <div class="push"></div>
     </div>
     
-    <!-- Footer -->
-    <footer class="footer">
+    <!-- Single feature -->
+    <div class="single-feature-container section-container">
       <div class="container">
         <div class="row">
-          <div class="footer-content">
-            <div class="col-xs-7 footer-copyright">
-              &copy; Down 2015.
+          <div class="col-sm-12 single-feature section-description wow fadeIn">
+            <h2>Suggest something</h2>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-12 single-feature-box wow fadeInDown">
+            <img src="{% static 'img/suggest-something.png' %}" alt="">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Single feature -->
+    <div class="single-feature-container section-container section-container-full-bg">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-12 single-feature section-description wow fadeIn">
+            <h2>See who's down</h2>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-12 single-feature-box wow fadeInDown">
+            <img src="{% static 'img/see-whos-down.png' %}" alt="">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Single feature -->
+    <div class="single-feature-container section-container">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-12 single-feature section-description wow fadeIn">
+            <h2>Make it happen</h2>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-12 single-feature-box wow fadeInDown">
+            <img src="{% static 'img/make-it-happen.png' %}" alt="">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Call to action -->
+    <div class="call-to-action-container section-container section-container-full-bg">
+      <div class="container">
+        <div class="download">
+          <div class="row">
+            <div class="col-sm-12 call-to-action section-description wow fadeIn">
+              <h2>Download it now</h2>
             </div>
-            <div class="col-sm-5 footer-social">
-              <a target="_blank" class="ultm ultm-email-1 ultm-32 ultm-square ultm-color-to-gray" href="mailto:contact@down.life"></a>
+          </div>
+          <div class="row">
+            <div class="col-sm-12 call-to-action-button wow fadeInUp">
+              <a class="button-1" href="https://itunes.apple.com/us/app/down-connect-people-around/id969040287?mt=8">
+                 <span class="button-1-left"><i class="fa fa-mobile"></i></span>
+                 <span class="button-1-right">
+                   <span class="button-1-right-top">Download on the</span>
+                   <span class="button-1-right-bottom">App Store</span>
+                 </span>
+               </a>
             </div>
+          </div>
+        </div>
+        <div class="request-invite">
+          <div class="row">
+            <div class="col-sm-12 call-to-action section-description wow fadeIn">
+              <h2>Request an Invite</h2>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-12 call-to-action-button wow fadeInUp">
+              <form class="phone-form form-inline">
+                <div class="submit-error alert alert-danger">
+                  Oops, something went wrong. Your invite request has not been
+                  processed.
+                </div>
+                <div class="invalid-error alert alert-danger">
+                  Invalid phone number.
+                </div>
+                <div class="form-group">
+                  <input type="tel" class="enter-phone form-control">
+                </div>
+                <button type="submit" class="submit btn btn-default">
+                  Request Invite
+                </button>
+              </form>
+              <h3 class="success">
+                Thanks! You're on the list.
+              </h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-7 footer-copyright">
+            &copy; Down
+          </div>
+          <div class="col-sm-5 footer-social">
+            <a class="ultm ultm-facebook ultm-32 ultm-square ultm-color-to-gray" href="https://facebook.com/downlifeapp" target="_blank"></a>
+            <a class="ultm ultm-twitter ultm-32 ultm-square ultm-color-to-gray" href="https://twitter.com/downlifeapp" target="_blank"></a>
+            <a class="ultm ultm-instagram-1 ultm-32 ultm-square ultm-color-to-gray" href="https://instagram.com/down.life/" target="_blank"></a>
+            <a class="ultm ultm-email-1 ultm-32 ultm-square ultm-color-to-gray" href="mailto:contact@down.life" target="_blank"></a>
           </div>
         </div>
       </div>
     </footer>
 
     <!-- Javascript -->
+    <script src="//code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="{% static 'js/jquery.backstretch.min.js' %}"></script>
+    <script src="{% static 'js/wow.min.js' %}"></script>
     <script src="{% static 'js/retina-1.1.0.min.js' %}"></script>
-    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
-    <script src="{% static 'js/intlTelInput.min.js' %}"></script>
     <script src="{% static 'js/scripts.js' %}"></script>
+    <script src="{% static 'js/intlTelInput.min.js' %}"></script>
 
+    <script>
+      $(function() {
+        /*
+          Fullscreen background
+        */
+        var backgroundImg = "{% static 'img/backgrounds/1.jpg' %}";
+        $('.top-content').backstretch(backgroundImg);
+        $('.single-feature-container.section-container-full-bg').backstretch(backgroundImg);
+        $('.call-to-action-container').backstretch(backgroundImg);
+      });
+    </script>
+    
     <!--[if lt IE 10]>
       <script src="{% static 'js/placeholder.js' %}"></script>
     <![endif]-->
