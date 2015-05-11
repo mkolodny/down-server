@@ -128,10 +128,6 @@ class InvitationQuerySet(models.query.QuerySet):
         assert all((invitation.from_user_id == from_user.id) for invitation in self)
         assert all((invitation.event_id == event.id) for invitation in self)
 
-        # Don't notify the user who is sending the invitations.
-        invitations = [invitation for invitation in self
-                       if invitation.to_user_id != from_user.id]
-
         # Add the users to the Firebase members list.
         url = ('{firebase_url}/events/members/{event_id}/.json?auth='
                '{firebase_secret}').format(
@@ -139,9 +135,13 @@ class InvitationQuerySet(models.query.QuerySet):
                 firebase_secret=settings.FIREBASE_SECRET)
         json_invitations = json.dumps({
             invitation.to_user_id: True
-            for invitation in invitations
+            for invitation in self
         })
         requests.patch(url, json_invitations)
+
+        # Don't notify the user who is sending the invitations.
+        invitations = [invitation for invitation in self
+                       if invitation.to_user_id != from_user.id]
 
         # Send users with devices push notifications.
         message = '{name} invited you to {activity}'.format(name=from_user.name,
