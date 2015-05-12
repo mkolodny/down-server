@@ -57,12 +57,6 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             devices = event.get_member_devices(request.user, notify_responses)
             # TODO: Catch exception if sending the message fails.
             devices.send_message(message)
-            extra = {
-                'type': 'chat_message', 
-                'event_id': event.id,
-                'message': message
-            }
-            devices.send_message(None, extra=extra)
 
             return Response(status=status.HTTP_201_CREATED)
         else:
