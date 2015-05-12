@@ -191,60 +191,6 @@ nav a:focus { color: #42bfc2; }
 	margin-right: 20px;
 }
 
-.download {
-  display: none;
-}
-
-
-/***** Enter phone *****/
-
-.enter-phone {
-  height: 50px;
-  padding: 6px 50px;
-  border: none;
-}
-
-.enter-phone::-webkit-input-placeholder { /* WebKit browsers */
-  color: #ccc;
-}
-.enter-phone:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
-  color: #ccc;
-  opacity: 1;
-}
-.enter-phone::-moz-placeholder { /* Mozilla Firefox 19+ */
-  color: #ccc;
-  opacity: 1;
-}
-.enter-phone:-ms-input-placeholder { /* Internet Explorer 10+ */
-  color: #ccc;
-}
-
-.intl-tel-input {
-  color: #333;
-}
-
-.submit {
-  background-color: #6a38ab;
-  border-color: #fff;
-  color: #fff;
-  padding: 14px 39px;
-  text-transform: uppercase;
-}
-.submit:hover {
-  background-color: #fff;
-  color: #6a38ab;
-}
-
-.submit-error,
-.invalid-error,
-.success {
-  display: none;
-}
-
-.request-invite {
-  display: none;
-}
-
 
 /***** Features *****/
 
