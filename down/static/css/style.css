@@ -151,17 +151,17 @@ nav a:focus { color: #42bfc2; }
 	padding-bottom: 40px;
 }
 
-.top-content .logo a {
+#logo-icon {
+  color: #fff;
+}
+
+#logo-text {
 	display: inline-block;
 	width: 207px;
 	height: 74px;
 	margin: 0;
     margin-left: 16px;
 	padding: 0;
-	background: url(../img/logo.png) left center no-repeat;
-    font-size: 76px;
-    color: #fff;
-    text-indent: -9999px;
     vertical-align: top;
 }
 
@@ -300,59 +300,6 @@ nav a:focus { color: #42bfc2; }
 }
 
 
-/***** Faq *****/
-
-.faq-box {
-	padding-top: 30px;
-	text-align: left;
-}
-
-.single-faq {
-	position: relative;
-	min-height: 60px;
-	margin-bottom: 20px;
-	padding: 15px 25px;
-	background: #f6f6f6;
-	border-left: 1px solid #42bfc2;
-	-moz-border-radius: 6px;
-    -webkit-border-radius: 6px;
-    border-radius: 6px;
-}
-
-.single-faq h3 {
-	margin: 0;
-	padding-right: 35px;
-	font-size: 22px;
-    font-weight: 300;
-    line-height: 30px;
-}
-
-.single-faq span {
-	position: absolute;
-	top: 0;
-	right: 0;
-	width: 60px;
-	height: 60px;
-	padding: 23px;
-	font-size: 14px;
-	line-height: 14px;
-	cursor: pointer;
-	z-index: 100;
-}
-.single-faq span i { vertical-align: middle; }
-
-.single-faq .single-faq-text {
-	display: none;
-	margin-top: 10px;
-}
-
-.single-faq p {
-	font-size: 18px;
-    line-height: 32px;
-}
-.single-faq p:last-child { margin: 0; }
-
-
 /***** Call to action *****/
 
 .call-to-action-button {
@@ -363,180 +310,6 @@ nav a:focus { color: #42bfc2; }
 .call-to-action-button .button-1 {
 	margin-right: 20px;
 }
-
-
-/***** Testimonials *****/
-
-.testimonials p {
-	padding: 0;
-}
-
-.testimonial-single {
-	display: inline-block;
-}
-
-.testimonial-single p {
-	display: none;
-}
-
-.testimonial-single-image {
-	display: inline-block;
-	width: 58px;
-	margin: 0 5px 10px 5px;
-}
-
-.testimonial-single-image img {
-	width: 100%;
-	opacity: 0.5;
-	cursor: pointer;
-	-moz-border-radius: 6px;
-    -webkit-border-radius: 6px;
-    border-radius: 6px;
-    -o-transition: all .3s;
-    -moz-transition: all .3s;
-    -webkit-transition: all .3s;
-    -ms-transition: all .3s;
-    transition: all .3s;
-}
-
-.testimonial-active {
-	padding-bottom: 20px;
-}
-
-.testimonial-quote {
-	font-family: Georgia, serif;
-	font-size: 90px;
-	line-height: 70px;
-	color: #ddd;
-}
-
-
-/***** About us *****/
-
-.about-us-box {
-	padding-top: 30px;
-	padding-bottom: 15px;
-}
-
-.about-us-box h3 {
-	font-size: 30px;
-    font-weight: 300;
-    color: #333;
-    line-height: 34px;
-}
-
-.about-us-box p {
-	font-size: 18px;
-    line-height: 32px;
-}
-
-.about-us-box .about-us-photo {
-    width: 180px;
-    height: 180px;
-    margin: 0 auto;
-}
-
-.about-us-box .about-us-photo img {
-	width: 100%;
-	padding: 8px;
-	border: 1px solid #eee;
-	-moz-border-radius: 91px;
-	-webkit-border-radius: 91px;
-	border-radius: 91px;
-}
-
-.about-us-box .about-us-social {
-    margin-top: 5px;
-}
-
-
-/***** Subscription form *****/
-
-.subscribe form {
-    margin-top: 40px;
-    margin-bottom: 20px;
-}
-
-.subscribe form input {
-    width: 362px;
-    height: 52px;
-}
-
-.success-message, .error-message {
-    font-size: 22px;
-    line-height: 36px;
-}
-
-.success-message {
-	margin: 20px 0 10px 0;
-}
-
-.error-message {
-	margin: 10px 0;
-	color: #42bfc2;
-}
-
-
-/***** Contact us *****/
-
-.contact-form, 
-.contact-address {
-	padding-bottom: 20px;
-	text-align: left;
-}
-
-.contact-form h3, 
-.contact-address h3 {
-	padding: 0 0 10px 0;
-	font-size: 30px;
-    font-weight: 300;
-    line-height: 34px;
-}
-
-.contact-form p {
-	margin: 15px 0 0 0;
-	font-size: 18px;
-	line-height: 32px;
-}
-
-.contact-form form {
-	margin: 15px 0 0 0;
-}
-
-.contact-form form input, 
-.contact-form form textarea {
-    width: 95%;
-    height: 52px;
-    margin-bottom: 20px;
-}
-
-.contact-form form textarea {
-	height: 162px;
-}
-
-.contact-form form .contact-error {
-	border-color: #42bfc2;
-}
-
-.contact-address .map {
-	height: 210px;
-	margin: 15px 0 40px 0;
-}
-
-.contact-address p {
-	margin-bottom: 5px;
-	font-size: 18px;
-    line-height: 32px;
-}
-
-.contact-address p i {
-	width: 40px;
-	font-size: 24px;
-	vertical-align: middle;
-}
-
-.contact-address a, .contact-address a:focus { color: #fff; }
-.contact-address a:hover { color: #fff; border-bottom: 1px dotted #fff; }
 
 
 /***** Footer *****/
@@ -564,6 +337,7 @@ footer {
   .inner-bg {
     padding-top: 0;
   }
+
   .button-1 {
     margin-bottom: 40px;
   }
