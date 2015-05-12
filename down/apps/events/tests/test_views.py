@@ -172,9 +172,6 @@ class EventTests(APITestCase):
                 name=self.user.name, activity=activity, text=data['text'])
         mock_send.assert_any_call(registration_ids=tokens, alert=message)
 
-        extra= {'type': 'chat_message', 'event_id': self.event.id, 'message': message}
-        mock_send.assert_any_call(registration_ids=tokens, alert=None, extra=extra)
-
     def test_create_message_not_invited(self):
         # Uninvite the logged in user.
         self.invitation.delete()

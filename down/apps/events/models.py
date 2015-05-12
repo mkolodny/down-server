@@ -206,11 +206,13 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
         return
 
     invitation = instance
-    user = invitation.to_user
-    event = invitation.event
-    import logging
-    logger = logging.getLogger('console')
-    logger.info(invitation.id)
+    # Since we're using PkOnlyPrimaryKeyRelatedFields, `invitation.to_user` and
+    # `invitation.event` are objects with only primary keys. So we need to use
+    # querysets to fetch the full objects.
+    # TODO: Update the tests - move the notification tests to `test_views.py`.
+    user = User.objects.get(id=invitation.to_user_id)
+    event = Event.objects.get(id=invitation.event_id)
+
     # Don't notify the event creator that they accepted their own invitation.
     if user.id == event.creator_id:
         return
