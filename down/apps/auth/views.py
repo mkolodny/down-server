@@ -114,7 +114,7 @@ class UserUsernameDetail(APIView):
 
     def get(self, request, username=None):
         try:
-            User.objects.get(username=username)
+            User.objects.get(username__iexact=username)
             return Response()
         except User.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)

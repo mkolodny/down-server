@@ -1,7 +1,14 @@
 from __future__ import unicode_literals
 from datetime import datetime
-from django_filters import Filter, FilterSet
+from django_filters import Filter, FilterSet, CharFilter
 import pytz
+
+
+class IgnoreCaseCharFilter(CharFilter):
+
+    def filter(self, qs, value):
+        self.lookup_type = 'iexact'
+        return super(IgnoreCaseCharFilter, self).filter(qs, value)
 
 
 class ListFilter(Filter):

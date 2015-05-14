@@ -157,6 +157,19 @@ class UserTests(APITestCase):
         json_users = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_users)
 
+    def test_query_by_username_upper(self):
+        # Username search should be case insensitive.
+        username = self.user.username.upper()
+        url = '{list_url}?username={username}'.format(list_url=self.list_url,
+                                                      username=username)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list with the user.
+        serializer = UserSerializer([self.user], many=True)
+        json_users = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_users)
+
     def test_get_username_unique(self):
         url = reverse('user-username-detail', kwargs={'username': 'tpain'})
         response = self.client.get(url)
@@ -165,6 +178,15 @@ class UserTests(APITestCase):
     def test_get_username_taken(self):
         url = reverse('user-username-detail', kwargs={
             'username': self.user.username,
+        })
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_username_taken_upper(self):
+        # Usernames should be unique regardless of case.
+        username = self.user.username.upper()
+        url = reverse('user-username-detail', kwargs={
+            'username': username,
         })
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
