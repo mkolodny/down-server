@@ -121,34 +121,34 @@ class EventTests(APITestCase):
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create_message(self, mock_send):
         # Mock two of the user's friends.
-        friend = User(name='Michael Jordan', email='mj@gmail.com',
-                      username='mj', image_url='http://imgur.com/mj')
-        friend.save()
+        friend1 = User(name='Michael Jordan', email='mj@gmail.com',
+                       username='mj', image_url='http://imgur.com/mj')
+        friend1.save()
         registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '10df230567037dcc4')
         device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        apns_device1 = APNSDevice(registration_id=registration_id,
+        friend1_device = APNSDevice(registration_id=registration_id,
                                   device_id=device_id, name='iPhone, 8.2',
-                                  user=friend)
-        apns_device1.save()
+                                  user=friend1)
+        friend1_device.save()
 
-        friend1 = User(name='Bruce Lee', email='blee@gmail.com',
+        friend2 = User(name='Bruce Lee', email='blee@gmail.com',
                        username='blee', image_url='http://imgur.com/blee')
-        friend1.save()
+        friend2.save()
         registration_id = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '10df230567037dcc4')
         device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        apns_device2 = APNSDevice(registration_id=registration_id,
-                                  device_id=device_id, name='iPhone, 8.2',
-                                  user=friend1)
-        apns_device2.save()
+        friend2_device = APNSDevice(registration_id=registration_id,
+                                    device_id=device_id, name='iPhone, 8.2',
+                                    user=friend2)
+        friend2_device.save()
 
-        # Mock the friends being down for the event.
-        invitation = Invitation(from_user=self.user, to_user=friend,
-                                event=self.event, response=Invitation.ACCEPTED)
-        invitation.save()
+        # Mock one friend being down, and another friend not having responded yet.
         invitation = Invitation(from_user=self.user, to_user=friend1,
                                 event=self.event, response=Invitation.ACCEPTED)
+        invitation.save()
+        invitation = Invitation(from_user=self.user, to_user=friend2,
+                                event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
         # Clear any previous notifications
@@ -161,8 +161,8 @@ class EventTests(APITestCase):
         # It should notify the user and the first friend that their friend
         # commented on the event.
         tokens = [
-            apns_device1.registration_id,
-            apns_device2.registration_id,
+            friend1_device.registration_id,
+            friend2_device.registration_id,
         ]
         if len(self.event.title) > 25:
             activity = self.event.title[:25] + '...'
