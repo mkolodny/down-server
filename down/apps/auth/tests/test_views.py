@@ -247,6 +247,8 @@ class UserTests(APITestCase):
                 'name': 'Joan Clarke', 
                 'id': self.friend_social.uid,
             }],
+            'paging': {
+            },
         })
         httpretty.register_uri(httpretty.GET, self.friends_url, body=body,
                                content_type='application/json')
@@ -261,6 +263,55 @@ class UserTests(APITestCase):
 
         # It should return a list of the users facebook friends.
         serializer = UserSerializer([self.friend], many=True)
+        json_friends = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_friends)
+
+    @httpretty.activate
+    def test_facebook_friends_next_page(self):
+        # Mock another of the user's friends.
+        friend = User(email='htubman@gmail.com', name='Harriet Tubman',
+                      image_url='http://imgur.com/tubby')
+        friend.save()
+        friendship = Friendship(user=self.user, friend=friend)
+        friendship.save()
+        friend_social = SocialAccount(user=friend,
+                                      provider=SocialAccount.FACEBOOK,
+                                      uid='30101293050283881',
+                                      profile={'access_token': '3234asdf'})
+        friend_social.save()
+
+        # Mock the user having more than 25 friends on Down.
+        next_url = 'https://graph.facebook.com/v2.2/123/friends'
+        body = json.dumps({
+            'data': [{
+                'name': 'Joan Clarke', 
+                'id': self.friend_social.uid,
+            } for i in xrange(25)],
+            'paging': {
+                'next': next_url,
+            },
+        })
+        httpretty.register_uri(httpretty.GET, self.friends_url, body=body,
+                               content_type='application/json')
+
+        # Mock the next url response.
+        body = json.dumps({
+            'data': [{
+                'name': 'Joan Clarke', 
+                'id': friend_social.uid,
+            }],
+            'paging': {
+            }
+        })
+        httpretty.register_uri(httpretty.GET, next_url, body=body,
+                               content_type='application/json')
+        
+        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the users facebook friends.
+        serializer = UserSerializer([self.friend, friend], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 
