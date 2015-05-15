@@ -6,6 +6,7 @@ import pytz
 import random
 import requests
 import string
+import time
 from django.conf import settings
 from django.utils import timezone
 import httpretty
@@ -18,7 +19,7 @@ from down.apps.events.models import (
     Invitation,
     Place,
     get_invite_sms,
-    get_offset_dt,
+    get_local_dt,
 )
 from down.apps.friends.models import Friendship
 
@@ -73,17 +74,18 @@ class InvitationTests(APITestCase):
 
         # Save URLs.
         coords = self.place.geo.coords
-        self.tz_url = 'http://www.earthtools.org/timezone/{lat}/{long}'.format(
-                lat=coords[0], long=coords[1])
+        self.tz_url = ('http://api.geonames.org/timezone?lat={lat}'
+                       '&lng={long}&username=mkolodny').format(lat=coords[0],
+                                                               long=coords[1])
 
     def tearDown(self):
         self.patcher.stop()
 
-    @mock.patch('down.apps.events.models.get_offset_dt')
-    def test_invite_sms_full(self, mock_get_offset_dt):
+    @mock.patch('down.apps.events.models.get_local_dt')
+    def test_invite_sms_full(self, mock_get_local_dt):
         # Mock the timezone offset datetime.
         dt = datetime(2015, 5, 7, 10, 30, tzinfo=pytz.UTC)
-        mock_get_offset_dt.return_value = dt
+        mock_get_local_dt.return_value = dt
 
         event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p')
         expected_message = ('{name} invited you to {activity} at {place} on {date}'
@@ -94,12 +96,12 @@ class InvitationTests(APITestCase):
         self.assertEqual(message, expected_message)
 
         # It should call the mock the the right args.
-        mock_get_offset_dt.assert_called_with(self.event.datetime, self.place.geo)
+        mock_get_local_dt.assert_called_with(self.event.datetime, self.place.geo)
 
-    @mock.patch('down.apps.events.models.get_offset_dt')
-    def test_invite_sms_full_bad_offset_request(self, mock_get_offset_dt):
+    @mock.patch('down.apps.events.models.get_local_dt')
+    def test_invite_sms_full_bad_offset_request(self, mock_get_local_dt):
         # Mock the bad response.
-        mock_get_offset_dt.return_value = None
+        mock_get_local_dt.return_value = None
 
         event_date = self.event.datetime.strftime('%A, %b. %-d')
         expected_message = ('{name} invited you to {activity} at {place} on {date}'
@@ -110,7 +112,7 @@ class InvitationTests(APITestCase):
         self.assertEqual(message, expected_message)
 
         # It should call the mock the the right args.
-        mock_get_offset_dt.assert_called_with(self.event.datetime, self.place.geo)
+        mock_get_local_dt.assert_called_with(self.event.datetime, self.place.geo)
 
     def test_invite_sms_no_date(self):
         # Remove the event's date.
@@ -124,15 +126,15 @@ class InvitationTests(APITestCase):
         message = get_invite_sms(self.friend1, self.event)
         self.assertEqual(message, expected_message)
 
-    @mock.patch('down.apps.events.models.get_offset_dt')
-    def test_invite_sms_no_place(self, mock_get_offset_dt):
+    @mock.patch('down.apps.events.models.get_local_dt')
+    def test_invite_sms_no_place(self, mock_get_local_dt):
         # Remove the event's place.
         self.event.place = None
         self.event.save()
 
         # Mock the timezone aware datetime.
         dt = datetime(2015, 5, 7, 10, 30, tzinfo=pytz.UTC)
-        mock_get_offset_dt.return_value = dt
+        mock_get_local_dt.return_value = dt
 
         event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p')
         expected_message = ('{name} invited you to {activity} on {date}'
@@ -143,17 +145,17 @@ class InvitationTests(APITestCase):
         self.assertEqual(message, expected_message)
 
         # It should call the mock the the right args.
-        mock_get_offset_dt.assert_called_with(self.event.datetime,
+        mock_get_local_dt.assert_called_with(self.event.datetime,
                                               self.friend1.location)
 
-    @mock.patch('down.apps.events.models.get_offset_dt')
-    def test_invite_sms_no_place_bad_offset_request(self, mock_get_offset_dt):
+    @mock.patch('down.apps.events.models.get_local_dt')
+    def test_invite_sms_no_place_bad_offset_request(self, mock_get_local_dt):
         # Remove the event's place.
         self.event.place = None
         self.event.save()
 
         # Mock the bad response.
-        mock_get_offset_dt.return_value = None
+        mock_get_local_dt.return_value = None
 
         event_date = self.event.datetime.strftime('%A, %b. %-d')
         expected_message = ('{name} invited you to {activity} on {date}'
@@ -164,7 +166,7 @@ class InvitationTests(APITestCase):
         self.assertEqual(message, expected_message)
 
         # It should call the mock the the right args.
-        mock_get_offset_dt.assert_called_with(self.event.datetime,
+        mock_get_local_dt.assert_called_with(self.event.datetime,
                                               self.friend1.location)
 
     def test_invite_sms_no_place_or_date(self):
@@ -180,37 +182,40 @@ class InvitationTests(APITestCase):
         self.assertEqual(message, expected_message)
 
     @httpretty.activate
-    def test_get_offset_dt(self):
+    def test_get_local_dt(self):
         # Mock the Earth Tools response.
         body = '''
-        <?xml version="1.0" encoding="ISO-8859-1" ?>
-        <timezone xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="http://www.earthtools.org/timezone.xsd">
-            <version>1.1</version>
-            <location>
-                <latitude>40.6898319</latitude>
-                <longitude>-73.9904645</longitude>
-            </location>
-            <offset>-5</offset>
-            <suffix>R</suffix>
-            <localtime>4 Dec 2005 12:06:56</localtime>
-            <isotime>2005-12-04 12:06:56 -0500</isotime>
-            <utctime>2005-12-04 17:06:56</utctime>
-            <dst>False</dst>
-        </timezone>           
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <geonames>
+          <timezone tzversion="tzdata2015a">
+            <countryCode>US</countryCode>
+            <countryName>United States</countryName>
+            <lat>33.6054149</lat>
+            <lng>-112.125051</lng>
+            <timezoneId>America/Phoenix</timezoneId>
+            <dstOffset>-7.0</dstOffset>
+            <gmtOffset>-7.0</gmtOffset>
+            <rawOffset>-7.0</rawOffset>
+            <time>2015-05-15 09:04</time>
+            <sunrise>2015-05-15 05:27</sunrise>
+            <sunset>2015-05-15 19:22</sunset>
+          </timezone>
+        </geonames>
         '''
         httpretty.register_uri(httpretty.GET, self.tz_url, body=body)
 
-        dt = get_offset_dt(self.event.datetime, self.place.geo)
-        expected_dt = self.event.datetime + timedelta(hours=-5)
+        dt = get_local_dt(self.event.datetime, self.place.geo)
+        local_tz = pytz.timezone('America/Phoenix')
+        datetime = self.event.datetime
+        expected_dt = datetime.replace(tzinfo=pytz.utc).astimezone(local_tz)
         self.assertEqual(dt, expected_dt)
 
     @httpretty.activate
-    def test_get_offset_dt_bad_request(self):
+    def test_get_local_dt_bad_request(self):
         httpretty.register_uri(httpretty.GET, self.tz_url,
                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        dt = get_offset_dt(self.event.datetime, self.place.geo)
+        dt = get_local_dt(self.event.datetime, self.place.geo)
         # It should return the original datetime.
         self.assertEqual(dt, None)
 

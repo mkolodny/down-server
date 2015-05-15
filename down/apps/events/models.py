@@ -7,11 +7,12 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from push_notifications.models import APNSDevice
+import pytz
 import requests
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import User, UserPhone
 
-EARTHTOOLS_RE = re.compile(r'<offset>(-?\d+)</offset>')
+GEONAMES_RE = re.compile(r'<timezoneId>(.+?)</timezoneId>')
 
 
 class Place(models.Model):
@@ -78,27 +79,30 @@ def get_event_date(event, point):
     """
     Return a date string to include in the text message invitation.
     """
-    event_dt = get_offset_dt(event.datetime, point)
+    event_dt = get_local_dt(event.datetime, point)
     if event_dt:
         event_date = event_dt.strftime('%A, %b. %-d @ %-I:%M %p')
     else:
         event_date = event.datetime.strftime('%A, %b. %-d')
     return event_date
 
-def get_offset_dt(dt, point):
+def get_local_dt(dt, point):
     """
-    Return a datetime offset based on the timezone where `point` lays.
+    Return a local datetime based on the timezone where `point` lays.
+
+    If there is an error connecting to the GeoNames API, return None.
     """
     coords = point.coords
-    url = 'http://www.earthtools.org/timezone/{lat}/{long}'.format(
-            lat=coords[0], long=coords[1])
+    url = ('http://api.geonames.org/timezone?lat={lat}&lng={long}'
+           '&username=mkolodny').format(lat=coords[0], long=coords[1])
     r = requests.get(url)
-    match = EARTHTOOLS_RE.search(r.content)
+    match = GEONAMES_RE.search(r.content)
     if not match:
         return None
-    offset = match.group(1)
-    offset_dt = dt + timedelta(hours=int(offset))
-    return offset_dt
+    timezone = match.group(1)
+    local_tz = pytz.timezone(timezone)
+    local_dt = dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+    return local_dt
 
 class InvitationManager(models.Manager):
 
