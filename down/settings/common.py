@@ -32,7 +32,6 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-#    'down.middleware.Versioning',
 )
 ROOT_URLCONF = 'down.urls'
 WSGI_APPLICATION = 'down.wsgi.application'
