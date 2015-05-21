@@ -349,10 +349,16 @@ class InvitationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.models.TwilioRestClient')
     @mock.patch('down.apps.events.models.get_invite_sms')
-    def test_bulk_create_as_creator_not_invited(self, mock_sms, mock_send):
+    def test_bulk_create_as_creator_not_invited(self, mock_sms, mock_twilio,
+                                                mock_send):
         # Mock the sms message.
         mock_sms.return_value = '<user> invited you to <event>'
+
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
 
         response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
