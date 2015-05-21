@@ -351,9 +351,6 @@ class UserTests(APITestCase):
 class SocialAccountTests(APITestCase):
     
     def setUp(self):
-        self.url = reverse('social-account-login')
-        self.profile_url = 'https://graph.facebook.com/v2.2/me'
-
         # Mock the user.
         self.user = User()
         self.user.save()
@@ -373,50 +370,55 @@ class SocialAccountTests(APITestCase):
         self.token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
+        # Save URLs.
+        self.url = reverse('social-account-login')
+        self.profile_url = 'https://graph.facebook.com/v2.2/me'
+
+        # Save request data.
+        self.facebook_token = 'asdf123'
+        self.facebook_user_id = 1207059
+        self.email = 'aturing@gmail.com'
+        self.name = 'Alan Tdog Turing'
+        self.image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
+                id=self.facebook_user_id)
+        self.hometown = 'Paddington, London'
+        self.post_data = {'access_token': self.facebook_token}
+
     @httpretty.activate
     def test_create(self):
-        facebook_token = 'asdf123'
-        facebook_user_id = 1207059
-        email = 'aturing@gmail.com'
-        name = 'Alan Tdog Turing'
-        image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
-                id=facebook_user_id)
-        hometown = 'Paddington, London'
-
         # Request the user's profile.
         body = json.dumps({
-            'id': facebook_user_id,
-            'email': email,
-            'name': name,
-            'hometown': hometown,
+            'id': self.facebook_user_id,
+            'email': self.email,
+            'name': self.name,
+            'hometown': self.hometown,
         })
         httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
                                content_type='application/json')
 
-        data = {'access_token': facebook_token}
-        response = self.client.post(self.url, data)
+        response = self.client.post(self.url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should update the user.
-        user = User.objects.get(id=self.user.id, email=email, name=name,
-                                image_url=image_url)
+        user = User.objects.get(id=self.user.id, email=self.email,
+                                name=self.name, image_url=self.image_url)
 
         # It should create the user's social account.
         profile = {
-            'access_token': facebook_token,
-            'id': facebook_user_id,
-            'email': email,
-            'name': name,
-            'image_url': image_url,
-            'hometown': hometown,
+            'access_token': self.facebook_token,
+            'id': self.facebook_user_id,
+            'email': self.email,
+            'name': self.name,
+            'image_url': self.image_url,
+            'hometown': self.hometown,
         }
         account = SocialAccount.objects.get(user=self.user,
                                             provider=SocialAccount.FACEBOOK,
-                                            uid=facebook_user_id)
+                                            uid=self.facebook_user_id)
         self.assertEqual(account.profile, profile)
 
         # It should give Facebook the access token.
-        params = {'access_token': [facebook_token]}
+        params = {'access_token': [self.facebook_token]}
         self.assertEqual(httpretty.last_request().querystring, params)
 
         # It should return the user.
@@ -425,18 +427,45 @@ class SocialAccountTests(APITestCase):
         self.assertEqual(response.content, json_user)
 
     @httpretty.activate
-    def test_create_bad_profile_request(self):
+    def test_create_no_email(self):
         # Request the user's profile.
-        httpretty.register_uri(httpretty.GET, self.profile_url, status=500,
+        body = json.dumps({
+            'id': self.facebook_user_id,
+            'name': self.name,
+            'hometown': self.hometown,
+        })
+        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
                                content_type='application/json')
 
-        data = {
-            'access_token': 'asdf123',
-            'provider': SocialAccount.FACEBOOK,
-            'user': self.user.id,
+        response = self.client.post(self.url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should update the user with a default email.
+        default_email = 'no.email@down.life'
+        user = User.objects.get(id=self.user.id, name=self.name,
+                                email=default_email, image_url=self.image_url)
+
+        # It should create the user's social account.
+        profile = {
+            'access_token': self.facebook_token,
+            'id': self.facebook_user_id,
+            'name': self.name,
+            'image_url': self.image_url,
+            'hometown': self.hometown,
         }
-        response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        account = SocialAccount.objects.get(user=self.user,
+                                            provider=SocialAccount.FACEBOOK,
+                                            uid=self.facebook_user_id)
+        self.assertEqual(account.profile, profile)
+
+        # It should give Facebook the access token.
+        params = {'access_token': [self.facebook_token]}
+        self.assertEqual(httpretty.last_request().querystring, params)
+
+        # It should return the user.
+        serializer = UserSerializer(user)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
 
     def test_create_not_logged_in(self):
         # Log the user out.

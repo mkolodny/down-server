@@ -142,7 +142,10 @@ class SocialAccountSync(APIView):
         profile = self.get_profile(provider, access_token)
 
         # Update the user.
-        request.user.email = profile['email']
+        # TODO: Remove the default email after updating the client to handle the
+        # case where the user has synced with Facebook, but doesn't have an email
+        # set.
+        request.user.email = profile.get('email', 'no.email@down.life')
         request.user.name = profile['name']
         request.user.image_url = profile['image_url']
         request.user.save()
