@@ -139,6 +139,9 @@ class SocialAccountSync(APIView):
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
         access_token = serializer.data['access_token']
+        import logging
+        logger = logging.getLogger('console')
+        logger.info(access_token)
         profile = self.get_profile(provider, access_token)
 
         # Update the user.
