@@ -42,7 +42,6 @@ class FriendTests(APITestCase):
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_friendship_create_notify(self, mock_send): 
-
         # Add one direction of the friendship
         friendship = Friendship(user=self.user, friend=self.friend)
         friendship.save()
@@ -52,12 +51,9 @@ class FriendTests(APITestCase):
         message = '{name} added you as a friend!'.format(name=self.user.name)
 
         mock_send.assert_any_call(registration_ids=[token], alert=message)
-        extra = {'message': message}
-        mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_friendship_create_notify_added_back(self, mock_send): 
-
         # Add one direction of the friendship
         friendship = Friendship(user=self.user, friend=self.friend)
         friendship.save()
@@ -71,5 +67,3 @@ class FriendTests(APITestCase):
         token = self.user_apns_device.registration_id
         message = '{name} added you back!'.format(name=self.friend.name)
         mock_send.assert_any_call(registration_ids=[token], alert=message)
-        extra = {'message': message}
-        mock_send.assert_any_call(registration_ids=[token], alert=None, extra=extra)
