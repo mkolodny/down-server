@@ -118,6 +118,51 @@ class EventTests(APITestCase):
         response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_update(self):
+        data = {
+            'title': self.event.title,
+            'creator': self.event.creator_id,
+            'canceled': self.event.canceled,
+            'datetime': int(time.mktime(self.event.datetime.timetuple())),
+            'place': {
+                'name': '540 State St',
+                'geo': 'POINT(40.685339 -73.979361)',
+            },
+        }
+        response = self.client.put(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should create the place.
+        place_data = data.pop('place')
+        place = Place.objects.get(**place_data)
+
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        self.assertEqual(event.place_id, place.id)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    def test_update_not_creator(self):
+        # Mock another user.
+        user = User(name='Michael Jordan', email='mj@gmail.com',
+                    username='mj', image_url='http://imgur.com/mj')
+        user.save()
+
+        # Invite them to the event.
+        invitation = Invitation(from_user=self.user, to_user=user, event=self.event)
+        invitation.save()
+
+        # Log them in.
+        token = Token(user=user)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token '+token.key)
+
+        response = self.client.put(self.detail_url, None, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create_message(self, mock_send):
         # Mock two of the user's friends.

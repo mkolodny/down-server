@@ -9,6 +9,7 @@ from .filters import EventFilter
 from .models import Event, Invitation
 from .permissions import (
     InviterWasInvited,
+    IsCreator,
     IsFromUser,
     OtherUsersNotDown,
     WasInvited,
@@ -21,9 +22,10 @@ from .serializers import (
 
 
 class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
-                   mixins.CreateModelMixin, viewsets.GenericViewSet):
+                   mixins.CreateModelMixin, mixins.UpdateModelMixin,
+                   viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
-    permission_classes = (IsAuthenticated, WasInvited)
+    permission_classes = (IsAuthenticated, IsCreator, WasInvited)
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
