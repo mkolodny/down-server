@@ -66,9 +66,12 @@ class UserTests(APITestCase):
         # Mock an event that the user's invited to.
         self.event = Event(title='bars?!?!?!', creator=self.friend)
         self.event.save()
-        self.invitation = Invitation(from_user=self.user, to_user=self.user,
-                                     event=self.event)
-        self.invitation.save()
+        self.user_invitation = Invitation(from_user=self.user, to_user=self.user,
+                                          event=self.event)
+        self.user_invitation.save()
+        self.friend_invitation = Invitation(from_user=self.user,
+                                            to_user=self.friend, event=self.event)
+        self.friend_invitation.save()
 
         # Mock the users' phone numbers.
         self.friend_phone = UserPhone(user=self.friend, phone='+12036227310')
@@ -81,6 +84,8 @@ class UserTests(APITestCase):
         self.list_url = reverse('user-list')
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
         self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
+        self.invited_events_url = reverse('user-invited-events',
+                                          kwargs={'pk': self.user.id})
 
     def tearDown(self):
         self.patcher.stop()
@@ -202,8 +207,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.content, json_friends)
 
     def test_invited_events(self):
-        url = reverse('user-invited-events', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
+        response = self.client.get(self.invited_events_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the user's invitations.
@@ -227,14 +231,38 @@ class UserTests(APITestCase):
                                 event=event)
         invitation.save()
 
-        url = reverse('user-invited-events', kwargs={'pk': self.user.id})
         updated_at = int(time.mktime(event.updated_at.timetuple()))
-        url += '?min_updated_at=' + unicode(updated_at)
-        response = self.client.get(url)
+        self.invited_events_url += '?min_updated_at=' + unicode(updated_at)
+        response = self.client.get(self.invited_events_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the user's invitations that have been updated
         # since `min_updated_at`.
+        serializer = EventSerializer([event], many=True)
+        json_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_events)
+
+    @mock.patch('django.db.models.fields.timezone.now')
+    def test_invited_events_invitation_updated(self, mock_now):
+        # Set the invitation to having been updated a significant amount later than
+        # the event. Since `auto_now` sets the value of `updated_at` using
+        # `timezone.now()`, mock `timezone.now()` to return the time one minute
+        # after the current time.
+        dt = datetime.now().replace(tzinfo=pytz.utc) + timedelta(minutes=1)
+        mock_now.return_value = dt
+
+        # Update the invitation.
+        self.friend_invitation.response = Invitation.DECLINED
+        self.friend_invitation.save()
+
+        updated_at = int(time.mktime(self.friend_invitation.updated_at.timetuple()))
+        self.invited_events_url += '?min_updated_at=' + unicode(updated_at)
+        response = self.client.get(self.invited_events_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the user's invitations that have been updated
+        # since `min_updated_at`.
+        event = Event.objects.get(id=self.event.id)
         serializer = EventSerializer([event], many=True)
         json_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_events)

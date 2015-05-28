@@ -97,16 +97,16 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     @detail_route(methods=['get'])
     def invited_events(self, request, pk=None):
         invitations = Invitation.objects.filter(to_user=request.user)
+        event_ids = [invitation.event_id for invitation in invitations]
+        events = Event.objects.filter(id__in=event_ids)
 
         # Check whether we only want the latest invited events.
         min_updated_at = request.query_params.get('min_updated_at')
         if min_updated_at:
             dt = datetime.utcfromtimestamp(int(min_updated_at))
             dt = dt.replace(tzinfo=pytz.utc)
-            invitations = invitations.filter(updated_at__gte=dt)
+            events = events.filter(updated_at__gte=dt)
 
-        event_ids = [invitation.event_id for invitation in invitations]
-        events = Event.objects.filter(id__in=event_ids)
         events.prefetch_related('place')
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)

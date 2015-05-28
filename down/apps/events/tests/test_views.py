@@ -445,11 +445,14 @@ class InvitationTests(APITestCase):
                                 event=self.event, response=Invitation.DECLINED)
         invitation.save()
 
+        # Save the most recent time the event was updated.
+        updated_at = self.event.updated_at
+
         url = reverse('invitation-detail', kwargs={'pk': invitation.id})
         data = {
             'from_user': invitation.from_user_id,
             'to_user': invitation.to_user_id,
-            'event': invitation.event.id,
+            'event': invitation.event_id,
             'response': Invitation.DECLINED,
         }
         response = self.client.put(url, data)
@@ -457,3 +460,7 @@ class InvitationTests(APITestCase):
 
         # It should update the invitation.
         invitation = Invitation.objects.get(**data)
+
+        # It should update the event.
+        event = Event.objects.get(id=invitation.event_id)
+        self.assertGreater(event.updated_at, updated_at)

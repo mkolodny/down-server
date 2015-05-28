@@ -197,6 +197,14 @@ class Invitation(models.Model):
             self.previously_accepted = True
             self.save(update_fields=['previously_accepted'])
 
+        # Update the event whenever we update an invitation from anything other
+        # than no response.
+        if self.response != self.NO_RESPONSE:
+            # The event is an id-only model object, so we need to fetch the whole
+            # thing.
+            event = Event.objects.get(id=self.event.id)
+            event.save()
+
 
 @receiver(post_save, sender=Invitation)
 def send_invitation_accept_notification(sender, instance, created, **kwargs):
