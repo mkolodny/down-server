@@ -123,7 +123,7 @@ class EventTests(APITestCase):
             'title': self.event.title,
             'creator': self.event.creator_id,
             'canceled': self.event.canceled,
-            'datetime': int(time.mktime(self.event.datetime.timetuple())),
+            'datetime': int(time.mktime(timezone.now().timetuple())) + 1,
             'place': {
                 'name': '540 State St',
                 'geo': 'POINT(40.685339 -73.979361)',
@@ -139,6 +139,7 @@ class EventTests(APITestCase):
         # It should update the event.
         event = Event.objects.get(id=self.event.id)
         self.assertEqual(event.place_id, place.id)
+        self.assertGreater(event.datetime, self.event.datetime)
 
         # It should return the event.
         serializer = EventSerializer(event)

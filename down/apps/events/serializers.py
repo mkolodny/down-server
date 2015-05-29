@@ -109,6 +109,8 @@ class EventSerializer(serializers.ModelSerializer):
             place.save()
 
         event = instance
+        for attr, value in validated_data.items():
+            setattr(event, attr, value)
         if event_has_place:
             event.place = place
         event.save()
