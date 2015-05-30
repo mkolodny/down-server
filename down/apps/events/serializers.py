@@ -82,7 +82,6 @@ class EventSerializer(serializers.ModelSerializer):
         We're doing this to avoid having to make two HTTP requests for something
         super common - saving an event with a place.
         """
-        # TODO: Test when the event doesn't have a place.
         event_has_place = validated_data.has_key('place')
         if event_has_place:
             place = Place(**validated_data.pop('place'))
@@ -102,7 +101,6 @@ class EventSerializer(serializers.ModelSerializer):
         We're doing this to avoid having to make two HTTP requests for something
         super common - saving an event with a place.
         """
-        # TODO: Test when the event doesn't have a place.
         event_has_place = validated_data.has_key('place')
         if event_has_place:
             place = Place(**validated_data.pop('place'))
@@ -113,6 +111,12 @@ class EventSerializer(serializers.ModelSerializer):
             setattr(event, attr, value)
         if event_has_place:
             event.place = place
+        # Since we can't send back a null value from the client right now, we
+        # have to explictly set missing fields to None.
+        else:
+            event.place = None
+        if not validated_data.has_key('datetime'):
+            event.datetime = None
         event.save()
         return event
 

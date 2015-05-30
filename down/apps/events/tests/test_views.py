@@ -146,6 +146,26 @@ class EventTests(APITestCase):
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
 
+    def test_update_no_place_or_datetime(self):
+        # Send data without a place or datetime.
+        data = {
+            'title': self.event.title,
+            'creator': self.event.creator_id,
+            'canceled': self.event.canceled,
+        }
+        response = self.client.put(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the event by removing the place and datetime.
+        event = Event.objects.get(id=self.event.id)
+        self.assertIsNone(event.place)
+        self.assertIsNone(event.datetime)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
     def test_update_not_creator(self):
         # Mock another user.
         user = User(name='Michael Jordan', email='mj@gmail.com',
