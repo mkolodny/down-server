@@ -13,8 +13,12 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from twilio import TwilioRestException
 from down.apps.auth.models import User, UserPhone
-from down.apps.events.models import Event, Invitation, Place
-from down.apps.events.serializers import EventSerializer, InvitationSerializer
+from down.apps.events.models import AllFriendsInvitation, Event, Invitation, Place
+from down.apps.events.serializers import (
+    AllFriendsInvitationSerializer,
+    EventSerializer,
+    InvitationSerializer,
+)
 
 
 class EventTests(APITestCase):
@@ -530,3 +534,86 @@ class InvitationTests(APITestCase):
         # It should update the event.
         event = Event.objects.get(id=invitation.event_id)
         self.assertGreater(event.updated_at, updated_at)
+
+
+class AllFriendsInvitationTests(APITestCase):
+
+    def setUp(self):
+        # Mock two users.
+        self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing',
+                          username='tdog')
+        self.user1.save()
+        self.user2 = User(email='rfeynman@gmail.com', name='Richard Feynman',
+                          username='partickle')
+        self.user2.save()
+
+        # Authorize the requests with the user's token.
+        self.token = Token(user=self.user1)
+        self.token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        # Mock an event.
+        self.event = Event(title='bars?!?!!', creator=self.user1)
+        self.event.save()
+
+        # Invite the first user to the event.
+        self.invitation = Invitation(event=self.event, from_user=self.user1,
+                                     to_user=self.user1)
+        self.invitation.save()
+
+        # Save URLs.
+        self.list_url = reverse('all-friends-invitation-list')
+
+    def test_create(self):
+        data = {
+            'event': self.event.id,
+        }
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the all friends invitation.
+        all_friends_invitation = AllFriendsInvitation.objects.get(
+                event=self.event, from_user=self.user1)
+
+        # It should return the invitation.
+        serializer = AllFriendsInvitationSerializer(all_friends_invitation)
+        json_all_friends_invitation = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_all_friends_invitation)
+
+    def test_create_by_invited_user(self):
+        # Invite the second user to the event.
+        invitation = Invitation(event=self.event, from_user=self.user1,
+                                to_user=self.user2)
+        invitation.save()
+
+        # Log the second user in.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        data = {
+            'event': self.event.id,
+        }
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the all friends invitation.
+        all_friends_invitation = AllFriendsInvitation.objects.get(
+                event=self.event, from_user=self.user2)
+
+        # It should return the invitation.
+        serializer = AllFriendsInvitationSerializer(all_friends_invitation)
+        json_all_friends_invitation = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_all_friends_invitation)
+
+    def test_create_not_invited(self):
+        # Log the second user in.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        data = {
+            'event': self.event.id,
+        }
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

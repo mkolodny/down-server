@@ -247,3 +247,9 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
                 activity=event.title)
         devices = APNSDevice.objects.filter(user_id=invitation.from_user_id)
         devices.send_message(message)
+
+
+class AllFriendsInvitation(models.Model):
+    event = models.ForeignKey(Event)
+    from_user = models.ForeignKey(User)
+    created_at = models.DateTimeField(auto_now_add=True)

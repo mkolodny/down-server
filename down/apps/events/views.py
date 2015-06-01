@@ -6,15 +6,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from down.apps.auth.models import User
 from .filters import EventFilter
-from .models import Event, Invitation
+from .models import AllFriendsInvitation, Event, Invitation
 from .permissions import (
+    AllFriendsInviterWasInvited,
     InviterWasInvited,
     IsCreator,
-    IsFromUser,
+    IsInvitationsFromUser,
     OtherUsersNotDown,
     WasInvited,
 )
 from .serializers import (
+    AllFriendsInvitationSerializer,
     EventSerializer,
     InvitationSerializer,
     MessageSentSerializer,
@@ -69,7 +71,7 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
-    permission_classes = (IsAuthenticated, IsFromUser, InviterWasInvited,
+    permission_classes = (IsAuthenticated, IsInvitationsFromUser, InviterWasInvited,
                           OtherUsersNotDown)
     queryset = Invitation.objects.all()
     serializer_class = InvitationSerializer
@@ -81,3 +83,22 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
             kwargs['many'] = True
 
         return super(InvitationViewSet, self).get_serializer(*args, **kwargs)
+
+
+class AllFriendsInvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (authentication.TokenAuthentication,)
+    permission_classes = (AllFriendsInviterWasInvited,)
+    queryset = AllFriendsInvitation.objects.all()
+    serializer_class = AllFriendsInvitationSerializer
+
+    def create(self, request, *args, **kwargs):
+        # Set the from_user to the currently logged in user.
+        data = request.data
+        data['from_user'] = request.user.id
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED,
+                        headers=headers)

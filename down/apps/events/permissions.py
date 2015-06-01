@@ -50,10 +50,10 @@ class WasInvited(permissions.BasePermission):
             return False
 
 
-class IsFromUser(permissions.BasePermission):
+class IsInvitationsFromUser(permissions.BasePermission):
     """
     Global permission to only allow the logged in user to be the `from_user` when
-    creating an invitation.
+    bulk creating invitations.
     """
 
     def has_permission(self, request, view):
@@ -109,3 +109,22 @@ class IsCreator(permissions.BasePermission):
         if event.creator_id != request.user.id:
             return False
         return True
+
+
+class AllFriendsInviterWasInvited(permissions.BasePermission):
+    """
+    Global permission to only allow users who were invited to an event to
+    invite all of their friends.
+    """
+
+    def has_permission(self, request, view):
+        # This permission is only focused on creating an event.
+        if request.method != 'POST':
+            return True
+
+        try:
+            event_id = request.data['event']
+            Invitation.objects.get(event_id=event_id, to_user=request.user)
+            return True
+        except Invitation.DoesNotExist:
+            return False

@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework_gis.serializers import GeoModelSerializer
-from .models import Event, Invitation, Place
+from .models import AllFriendsInvitation, Event, Invitation, Place
 from down.apps.auth.models import User
 from down.apps.auth.serializers import UserSerializer
 from down.apps.utils.serializers import (
@@ -60,6 +60,12 @@ class PlaceSerializer(GeoModelSerializer):
 
     class Meta:
         model = Place
+
+
+class AllFriendsInvitationSerializer(GeoModelSerializer):
+
+    class Meta:
+        model = AllFriendsInvitation
 
 
 class EventSerializer(serializers.ModelSerializer):
