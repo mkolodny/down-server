@@ -22,7 +22,7 @@ from down.apps.auth.models import (
     UserPhone,
 )
 from down.apps.auth.serializers import UserSerializer, UserPhoneSerializer
-from down.apps.events.models import Event, Invitation
+from down.apps.events.models import AllFriendsInvitation, Event, Invitation
 from down.apps.events.serializers import EventSerializer
 from down.apps.friends.models import Friendship
 
@@ -66,10 +66,10 @@ class UserTests(APITestCase):
         # Mock an event that the user's invited to.
         self.event = Event(title='bars?!?!?!', creator=self.friend)
         self.event.save()
-        self.user_invitation = Invitation(from_user=self.user, to_user=self.user,
+        self.user_invitation = Invitation(from_user=self.friend, to_user=self.user,
                                           event=self.event)
         self.user_invitation.save()
-        self.friend_invitation = Invitation(from_user=self.user,
+        self.friend_invitation = Invitation(from_user=self.friend,
                                             to_user=self.friend, event=self.event)
         self.friend_invitation.save()
 
@@ -85,6 +85,8 @@ class UserTests(APITestCase):
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
         self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
         self.invited_events_url = reverse('user-invited-events',
+                                          kwargs={'pk': self.user.id})
+        self.nearby_events_url = reverse('user-nearby-events',
                                           kwargs={'pk': self.user.id})
 
     def tearDown(self):
@@ -266,6 +268,75 @@ class UserTests(APITestCase):
         serializer = EventSerializer([event], many=True)
         json_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_events)
+
+    def test_nearby_events(self):
+        # Change the friend's invitation to an all friends invitation.
+        self.friend_invitation.delete()
+        all_friends_invitation = AllFriendsInvitation(from_user=self.friend,
+                                                      event=self.event)
+        all_friends_invitation.save()
+
+        # Have the friend add the user as their friend.
+        friendship = Friendship(user=self.friend, friend=self.user)
+        friendship.save()
+
+        # Set the friend to be within 5 miles of the user.
+        self.friend.location = 'POINT(40.7545645 -73.9813595)'
+        self.friend.save()
+        self.user.location = 'POINT(40.685339 -73.979361)'
+        self.user.save()
+
+        response = self.client.get(self.nearby_events_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the user's nearby events.
+        serializer = EventSerializer([self.event], many=True)
+        json_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_events)
+
+    @mock.patch('django.db.models.fields.timezone.now')
+    def test_nearby_events_min_updated_at(self, mock_now):
+        # Set the event to having been updated a significant amount later than
+        # the first event. Since `auto_now` sets the value of `updated_at` using
+        # `timezone.now()`, mock `timezone.now()` to return the time one minute
+        # after the current time.
+        dt = datetime.now().replace(tzinfo=pytz.utc) + timedelta(minutes=1)
+        mock_now.return_value = dt
+
+        # Change the friend's invitation to an all friends invitation.
+        self.friend_invitation.delete()
+        all_friends_invitation = AllFriendsInvitation(from_user=self.friend,
+                                                      event=self.event)
+        all_friends_invitation.save()
+
+        # Mock another event where the user's friend has invited all of their
+        # friends
+        event = Event(title='rat fishing', creator=self.friend)
+        event.save()
+        all_friends_invitation = AllFriendsInvitation(from_user=self.friend,
+                                                      event=event)
+        all_friends_invitation.save()
+
+        # Have the friend add the user as their friend.
+        friendship = Friendship(user=self.friend, friend=self.user)
+        friendship.save()
+
+        # Set the friend to be within 5 miles of the user.
+        self.friend.location = 'POINT(40.7545645 -73.9813595)'
+        self.friend.save()
+        self.user.location = 'POINT(40.685339 -73.979361)'
+        self.user.save()
+
+        updated_at = int(time.mktime(event.updated_at.timetuple()))
+        self.nearby_events_url += '?min_updated_at=' + unicode(updated_at)
+        response = self.client.get(self.nearby_events_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the user's nearby events.
+        serializer = EventSerializer([event], many=True)
+        json_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_events)
+
 
     @httpretty.activate
     def test_facebook_friends(self):
