@@ -260,7 +260,7 @@ class InvitationTests(APITestCase):
         self.patcher = mock.patch('requests.patch')
         self.mock_patch = self.patcher.start()
 
-        # Mock a couple users.
+        # Mock a few users.
         self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                           username='tdog')
         self.user1.save()
@@ -269,6 +269,9 @@ class InvitationTests(APITestCase):
         self.user2.save()
         self.user3 = User(name='Bruce Lee') # SMS users don't have a username.
         self.user3.save()
+        self.user4 = User(email='alovelace@gmail.com', name='Ada Lovely Lovelace',
+                          username='alove')
+        self.user4.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user1)
@@ -291,6 +294,14 @@ class InvitationTests(APITestCase):
                                        device_id=device_id, name='iPhone, 8.2',
                                        user=self.user2)
         self.user2_device.save()
+
+        registration_id = ('4ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.user4_device = APNSDevice(registration_id=registration_id,
+                                       device_id=device_id, name='iPhone, 8.2',
+                                       user=self.user4)
+        self.user4_device.save()
 
         # Mock the user without a username's user phone.
         self.user3_phone = UserPhone(user=self.user3, phone='+12036227310')
@@ -329,6 +340,13 @@ class InvitationTests(APITestCase):
                     'to_user': self.user3.id,
                     'event': self.event.id,
                     'response': Invitation.NO_RESPONSE,
+                },
+                {
+                    'from_user': self.user1.id,
+                    'to_user': self.user4.id,
+                    'event': self.event.id,
+                    'response': Invitation.NO_RESPONSE,
+                    'open': True,
                 },
             ],
         }

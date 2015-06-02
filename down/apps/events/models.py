@@ -143,9 +143,11 @@ class InvitationQuerySet(models.query.QuerySet):
         })
         requests.patch(url, json_invitations)
 
-        # Don't notify the user who is sending the invitations.
+        # Don't notify the user who is sending the invitations, or users with
+        # open invitations.
         invitations = [invitation for invitation in self
-                       if invitation.to_user_id != from_user.id]
+                       if invitation.to_user_id != from_user.id
+                       and not invitation.open]
 
         # Send users with devices push notifications.
         message = '{name} invited you to {activity}'.format(name=from_user.name,
@@ -181,9 +183,10 @@ class Invitation(models.Model):
     )
     response = models.SmallIntegerField(choices=RESPONSE_CHOICES,
                                         default=NO_RESPONSE)
+    previously_accepted = models.BooleanField(default=False)
+    open = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    previously_accepted = models.BooleanField(default=False)
 
     objects = InvitationManager()
 
