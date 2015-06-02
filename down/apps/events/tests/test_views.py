@@ -561,9 +561,24 @@ class AllFriendsInvitationTests(APITestCase):
         self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                           username='tdog')
         self.user1.save()
+        registration_id = ('1ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.user1_device = APNSDevice(registration_id=registration_id,
+                                       device_id=device_id, name='iPhone, 8.2',
+                                       user=self.user1)
+        self.user1_device.save()
+
         self.user2 = User(email='rfeynman@gmail.com', name='Richard Feynman',
                           username='partickle')
         self.user2.save()
+        registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.user2_device = APNSDevice(registration_id=registration_id,
+                                       device_id=device_id, name='iPhone, 8.2',
+                                       user=self.user2)
+        self.user2_device.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user1)
@@ -575,14 +590,20 @@ class AllFriendsInvitationTests(APITestCase):
         self.event.save()
 
         # Invite the first user to the event.
-        self.invitation = Invitation(event=self.event, from_user=self.user1,
-                                     to_user=self.user1)
-        self.invitation.save()
+        self.invitation1 = Invitation(event=self.event, from_user=self.user1,
+                                      to_user=self.user1)
+        self.invitation1.save()
+
+        # Create an open invitation for the second user.
+        self.invitation2 = Invitation(event=self.event, from_user=self.user1,
+                                      to_user=self.user2, open=True)
+        self.invitation2.save()
 
         # Save URLs.
         self.list_url = reverse('all-friends-invitation-list')
 
-    def test_create(self):
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_create(self, mock_apns):
         data = {
             'event': self.event.id,
         }
@@ -593,17 +614,20 @@ class AllFriendsInvitationTests(APITestCase):
         all_friends_invitation = AllFriendsInvitation.objects.get(
                 event=self.event, from_user=self.user1)
 
+        # It should send users push notifications.
+        token = self.user2_device.registration_id
+        message = '{name} is down for {activity}'.format(
+                name=self.user1.name,
+                activity=self.event.title)
+        mock_apns.assert_any_call(registration_ids=[token], alert=message,
+                                  badge=1)
+
         # It should return the invitation.
         serializer = AllFriendsInvitationSerializer(all_friends_invitation)
         json_all_friends_invitation = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_all_friends_invitation)
 
     def test_create_by_invited_user(self):
-        # Invite the second user to the event.
-        invitation = Invitation(event=self.event, from_user=self.user1,
-                                to_user=self.user2)
-        invitation.save()
-
         # Log the second user in.
         token = Token(user=self.user2)
         token.save()
@@ -625,6 +649,9 @@ class AllFriendsInvitationTests(APITestCase):
         self.assertEqual(response.content, json_all_friends_invitation)
 
     def test_create_not_invited(self):
+        # Delete the second user's invitation.
+        self.invitation2.delete()
+
         # Log the second user in.
         token = Token(user=self.user2)
         token.save()

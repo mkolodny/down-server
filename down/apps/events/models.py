@@ -256,3 +256,23 @@ class AllFriendsInvitation(models.Model):
     event = models.ForeignKey(Event)
     from_user = models.ForeignKey(User)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # TODO: Make the event and the from_user unique together.
+
+@receiver(post_save, sender=AllFriendsInvitation)
+def send_open_invitation_notification(sender, instance, created, **kwargs):
+    """
+    Notify users with an open invitation to the event that the user is down for
+    something.
+    """
+    all_friends_invitation = instance
+    event = all_friends_invitation.event
+    from_user = all_friends_invitation.from_user
+
+    invitations = Invitation.objects.filter(event=event, from_user=from_user,
+                                            open=True)
+    user_ids = [invitation.to_user_id for invitation in invitations]
+    devices = APNSDevice.objects.filter(user_id__in=user_ids)
+    message = '{name} is down for {activity}'.format(name=from_user.name,
+                                                     activity=event.title)
+    devices.send_message(message, badge=1)
