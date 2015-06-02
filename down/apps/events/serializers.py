@@ -32,13 +32,13 @@ class InvitationListSerializer(serializers.ListSerializer):
 
         # Make sure the event exists.
         try:
-            Event.objects.get(id=event_id)
+            event = Event.objects.get(id=event_id)
         except Event.DoesNotExist:
             raise ValidationError('Event doesn\'t exist')
 
         Invitation.objects.bulk_create(invitations)
         to_user_ids = [invitation.to_user_id for invitation in invitations]
-        invitations = Invitation.objects.filter(event_id=event_id,
+        invitations = Invitation.objects.filter(event=event,
                                                 to_user_id__in=to_user_ids)
         invitations.send()
         return invitations
