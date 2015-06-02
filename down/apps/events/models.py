@@ -257,7 +257,8 @@ class AllFriendsInvitation(models.Model):
     from_user = models.ForeignKey(User)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # TODO: Make the event and the from_user unique together.
+    class Meta:
+        unique_together = ('event', 'from_user')
 
 @receiver(post_save, sender=AllFriendsInvitation)
 def send_open_invitation_notification(sender, instance, created, **kwargs):
