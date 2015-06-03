@@ -12,7 +12,7 @@ class FriendTests(APITestCase):
         self.mock_patch = self.patcher.start()
 
         # Mock a user
-        self.user = User(name='Alan Tdog Turing')
+        self.user = User(name='Alan Tdog Turing', username='tdog')
         self.user.save()
 
         # Mock the user's device.
@@ -48,7 +48,8 @@ class FriendTests(APITestCase):
 
         # It should notify the friend that they were added by the user
         token = self.friend_apns_device.registration_id
-        message = '{name} added you as a friend!'.format(name=self.user.name)
+        message = '{name} (@{username}) added you as a friend!'.format(
+                name=self.user.name, username=self.user.username)
 
         mock_send.assert_any_call(registration_ids=[token], alert=message)
 

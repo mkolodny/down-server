@@ -25,12 +25,15 @@ def send_new_friendship_notification(sender, instance, created, **kwargs):
         return
 
     friendship = instance
+    friend = friendship.user
 
     # check if one leg of this friendship already exists in the database
-    if Friendship.objects.filter(user=friendship.friend, friend=friendship.user):
+    if Friendship.objects.filter(user=friendship.friend, friend=friend):
         message = '{name} added you back!'.format(name=friendship.user.name)
     else:
-        message = '{name} added you as a friend!'.format(name=friendship.user.name)
+        message = '{name} (@{username}) added you as a friend!'.format(
+                name=friendship.user.name, username=friend.username)
+        print message
 
     devices = APNSDevice.objects.filter(user_id=friendship.friend.id)
     devices.send_message(message)

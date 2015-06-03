@@ -357,7 +357,7 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         # Text the contact to let them know that the user added them.
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        message = ('{name} (@{username}) added you on Down!'
+        message = ('{name} (@{username}) added you as a friend on Down!'
                    ' - http://down.life/app').format(name=request.user.name,
                                                      username=request.user.username)
         client.messages.create(to=phone, from_=settings.TWILIO_PHONE,

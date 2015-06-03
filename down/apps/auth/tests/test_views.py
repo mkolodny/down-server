@@ -863,7 +863,7 @@ class UserPhoneViewSetTests(APITestCase):
                                        settings.TWILIO_TOKEN)
 
         # It should text the contact.
-        message = ('{name} (@{username}) added you on Down!'
+        message = ('{name} (@{username}) added you as a friend on Down!'
                    ' - http://down.life/app').format(name=self.user.name,
                                                      username=self.user.username)
         mock_client.messages.create.assert_called_with(to=data['phone'], 
@@ -894,7 +894,7 @@ class UserPhoneViewSetTests(APITestCase):
                                        settings.TWILIO_TOKEN)
 
         # It should text the contact.
-        message = ('{name} (@{username}) added you on Down!'
+        message = ('{name} (@{username}) added you as a friend on Down!'
                    ' - http://down.life/app').format(name=self.user.name,
                                                      username=self.user.username)
         mock_client.messages.create.assert_called_with(to=data['phone'], 
