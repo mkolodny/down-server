@@ -346,14 +346,22 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         user.save()
 
         # Create a userphone for the new user.
+        phone = serializer.data['phone']
         try:
-            phone = serializer.data['phone']
             user_phone = UserPhone.objects.get(phone=phone)
             status_code = status.HTTP_200_OK
         except UserPhone.DoesNotExist:
             user_phone = UserPhone(user=user, phone=phone)
             user_phone.save()
             status_code = status.HTTP_201_CREATED
+
+        # Text the contact to let them know that the user added them.
+        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
+        message = ('{name} (@{username}) added you on Down!'
+                   ' - http://down.life/app').format(name=request.user.name,
+                                                     username=request.user.username)
+        client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
+                               body=message)
 
         serializer = UserPhoneSerializer(user_phone)
         return Response(serializer.data, status=status_code)

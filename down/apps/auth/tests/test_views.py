@@ -839,7 +839,12 @@ class UserPhoneViewSetTests(APITestCase):
         # It should create a new user.
         self.assertEqual(User.objects.count(), num_users+1)
 
-    def test_create_for_contact(self):
+    @mock.patch('down.apps.auth.views.TwilioRestClient')
+    def test_create_for_contact(self, mock_twilio):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
         data = {
             'phone': '+19178699626',
             'name': 'Dickface Killah',
@@ -853,9 +858,21 @@ class UserPhoneViewSetTests(APITestCase):
         # It should create a new user with the POSTed name.
         User.objects.get(name=data['name'])
 
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should text the contact.
+        message = ('{name} (@{username}) added you on Down!'
+                   ' - http://down.life/app').format(name=self.user.name,
+                                                     username=self.user.username)
+        mock_client.messages.create.assert_called_with(to=data['phone'], 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=message)
+
     def test_create_for_contact_user_exists(self):
         # Create a user with a name and phone.
-        user = User(name='Maya Tinder')
+        user = User(name='Denise Tinder')
         user.save()
         user_phone = UserPhone(user=user, phone='+19178699626')
         user_phone.save()

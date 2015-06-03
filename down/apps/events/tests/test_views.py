@@ -662,3 +662,7 @@ class AllFriendsInvitationTests(APITestCase):
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # TODO
+    def test_create_not_logged_in(self):
+        return
