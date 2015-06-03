@@ -87,7 +87,7 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
 
 class AllFriendsInvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
-    permission_classes = (AllFriendsInviterWasInvited,)
+    permission_classes = (IsAuthenticated, AllFriendsInviterWasInvited)
     queryset = AllFriendsInvitation.objects.all()
     serializer_class = AllFriendsInvitationSerializer
 
