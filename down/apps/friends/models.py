@@ -33,7 +33,6 @@ def send_new_friendship_notification(sender, instance, created, **kwargs):
     else:
         message = '{name} (@{username}) added you as a friend!'.format(
                 name=friendship.user.name, username=friend.username)
-        print message
 
     devices = APNSDevice.objects.filter(user_id=friendship.friend.id)
     devices.send_message(message)

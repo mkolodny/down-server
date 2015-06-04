@@ -243,7 +243,8 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
         notify_responses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
         devices = event.get_member_devices(user, notify_responses)
         devices.send_message(message)
-    elif invitation.response == Invitation.DECLINED:
+    elif (invitation.response == Invitation.DECLINED
+            and invitation.previously_accepted):
         # Only notify the user who invited them.
         message = '{name} isn\'t down for {activity}'.format(
                 name=user.name,

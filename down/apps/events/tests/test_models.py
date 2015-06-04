@@ -321,7 +321,7 @@ class InvitationTests(APITestCase):
         self.assertEqual(mock_send.call_count, 0)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_post_invitation_decline(self, mock_send):
+    def test_post_invitation_accept_then_decline(self, mock_send):
         # Mock another friend.
         self.mock_friend2()
 
@@ -333,6 +333,10 @@ class InvitationTests(APITestCase):
         # Invite the user.
         invitation = Invitation(from_user=self.user, to_user=self.user,
                                 event=self.event)
+        invitation.save()
+
+        # The user accepts the invitation.
+        invitation.response = Invitation.ACCEPTED
         invitation.save()
 
         # Clear the mock's apns call count.
