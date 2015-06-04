@@ -67,6 +67,7 @@ class PlaceSerializer(GeoModelSerializer):
 
 
 class AllFriendsInvitationSerializer(GeoModelSerializer):
+    created_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = AllFriendsInvitation
