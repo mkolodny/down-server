@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from datetime import datetime
 import json
 import time
 from django.utils import timezone
@@ -7,13 +8,20 @@ from django.core.urlresolvers import reverse
 import httpretty
 import mock
 from push_notifications.models import APNSDevice
+import pytz
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from twilio import TwilioRestException
 from down.apps.auth.models import User, UserPhone
-from down.apps.events.models import AllFriendsInvitation, Event, Invitation, Place
+from down.apps.events.models import (
+    AllFriendsInvitation,
+    Event,
+    Invitation,
+    Place,
+    get_event_date,
+)
 from down.apps.events.serializers import (
     AllFriendsInvitationSerializer,
     EventSerializer,
@@ -42,6 +50,24 @@ class EventTests(APITestCase):
                                       user=self.user)
         self.apns_device.save()
 
+        # Mock two of the user's friend1s
+        self.friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
+                           username='jcke')
+        self.friend1.save()
+        registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        self.friend1_device = APNSDevice(registration_id=registration_id,
+                                         device_id=device_id, name='iPhone, 8.2',
+                                         user=self.friend1)
+        self.friend1_device.save()
+
+        # This user doesn't have the app yet, so they only have a name.
+        self.friend2 = User(name='Richard Feynman')
+        self.friend2.save()
+        self.friend2_phone = UserPhone(phone='+19178699626', user=self.friend2)
+        self.friend2_phone.save()
+
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user)
         self.token.save()
@@ -53,12 +79,25 @@ class EventTests(APITestCase):
         self.place.save()
 
         # Mock an event.
-        self.event = Event(title='bars?!?!!', creator=self.user,
-                           datetime=timezone.now(), place=self.place)
+        timestamp = int(time.mktime(timezone.now().timetuple()))
+        dt = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
+        self.event = Event(title='bars?!?!!', creator=self.user, datetime=dt,
+                           place=self.place)
         self.event.save()
-        self.invitation = Invitation(from_user=self.user, to_user=self.user,
-                                     event=self.event)
-        self.invitation.save()
+        self.user_invitation = Invitation(from_user=self.user, to_user=self.user,
+                                          event=self.event,
+                                          response=Invitation.ACCEPTED)
+        self.user_invitation.save()
+        self.friend1_invitation = Invitation(from_user=self.user,
+                                             to_user=self.friend1, event=self.event,
+                                             response=Invitation.ACCEPTED)
+        self.friend1_invitation.save()
+        self.friend2_invitation = Invitation(from_user=self.user,
+                                             to_user=self.friend2, event=self.event)
+        self.friend2_invitation.save()
+
+        # Save SMS details.
+        self.signature = '\n--\nSent from Down (http://down.life/app)'
 
         # Save urls.
         self.list_url = reverse('event-list')
@@ -117,12 +156,24 @@ class EventTests(APITestCase):
         # We know a user was invited because an invitation exists with them as
         # the `to_user`. So, to mock the user not being invited, delete their
         # invitation.
-        self.invitation.delete()
+        self.user_invitation.delete()
 
         response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_update(self):
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.serializers.TwilioRestClient')
+    @mock.patch('down.apps.events.serializers.get_event_date')
+    def test_update_place_and_datetime(self, mock_date, mock_twilio, mock_apns):
+        # TODO: Figure out why this test is taking so long.
+        # Mock the localized date string.
+        date = 'Thursday, Jun. 4 @ 6 PM'
+        mock_date.return_value = date
+
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
         data = {
             'title': self.event.title,
             'creator': self.event.creator_id,
@@ -145,12 +196,316 @@ class EventTests(APITestCase):
         self.assertEqual(event.place_id, place.id)
         self.assertGreater(event.datetime, self.event.datetime)
 
+        # It should notify the users who haven't declined their invitation about
+        # the changes.
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = ('{name} changed the location and time where {activity} is'
+                 ' happening.').format(name=event.creator.name,
+                                       activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        sms_extra = (' The new location is {place}, and the new time is'
+                     ' {date}.').format(place=place.name, date=date)
+        sms = notif + sms_extra + self.signature
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=sms)
+
         # It should return the event.
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
 
-    def test_update_no_place_or_datetime(self):
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.serializers.TwilioRestClient')
+    def test_update_place(self, mock_twilio, mock_apns):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        data = {
+            'title': self.event.title,
+            'creator': self.event.creator_id,
+            'canceled': self.event.canceled,
+            'datetime': int(time.mktime(self.event.datetime.timetuple())),
+            'place': {
+                'name': '540 State St',
+                'geo': 'POINT(40.685339 -73.979361)',
+            },
+        }
+        response = self.client.put(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should create the place.
+        place_data = data.pop('place')
+        place = Place.objects.get(**place_data)
+
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        self.assertEqual(event.place_id, place.id)
+
+        # It should notify the users who haven't declined their invitation about
+        # the changes.
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = ('{name} changed the location where {activity} is'
+                 ' happening.').format(name=event.creator.name,
+                                       activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        sms_extra = ' The new location is {place}.'.format(place=place.name)
+        sms = notif + sms_extra + self.signature
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=sms)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.serializers.TwilioRestClient')
+    @mock.patch('down.apps.events.serializers.get_event_date')
+    def test_update_datetime(self, mock_date, mock_twilio, mock_apns):
+        # Mock the localized date string.
+        date = 'Thursday, Jun. 4 @ 6 PM'
+        mock_date.return_value = date
+
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        coords = self.place.geo.coords
+        timestamp = int(time.mktime(timezone.now().timetuple())) + 1
+        data = {
+            'title': self.event.title,
+            'creator': self.event.creator_id,
+            'canceled': self.event.canceled,
+            'datetime': timestamp,
+            'place': {
+                'name': self.place.name,
+                'geo': 'POINT({lat} {lng})'.format(lat=coords[0], lng=coords[1]),
+            },
+        }
+        response = self.client.put(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        dt = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
+        self.assertEqual(event.datetime, dt)
+
+        # It should notify the users who haven't declined their invitation about
+        # the changes.
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = ('{name} changed the time when {activity} is'
+                 ' happening.').format(name=event.creator.name,
+                                       activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        sms_extra = ' The new time is {date}.'.format(date=date)
+        sms = notif + sms_extra + self.signature
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=sms)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.serializers.TwilioRestClient')
+    @mock.patch('down.apps.events.serializers.get_event_date')
+    def test_update_datetime_remove_place(self, mock_date, mock_twilio, mock_apns):
+        # Mock the localized date string.
+        date = 'Thursday, Jun. 4 @ 6 PM'
+        mock_date.return_value = date
+
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        coords = self.place.geo.coords
+        timestamp = int(time.mktime(timezone.now().timetuple())) + 1
+        data = {
+            'title': self.event.title,
+            'creator': self.event.creator_id,
+            'canceled': self.event.canceled,
+            'datetime': timestamp,
+        }
+        response = self.client.put(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        dt = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
+        self.assertEqual(event.datetime, dt)
+        self.assertIsNone(event.place)
+
+        # It should notify the users who haven't declined their invitation about
+        # the changes.
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = ('{name} changed the location and time where {activity} is'
+                 ' happening.').format(name=event.creator.name,
+                                       activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        sms_extra = ' The location was removed. The new time is {date}.'.format(
+                date=date)
+        sms = notif + sms_extra + self.signature
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=sms)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.serializers.TwilioRestClient')
+    def test_update_remove_place(self, mock_twilio, mock_apns):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        data = {
+            'title': self.event.title,
+            'creator': self.event.creator_id,
+            'canceled': self.event.canceled,
+            'datetime': int(time.mktime(self.event.datetime.timetuple())),
+        }
+        response = self.client.put(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        self.assertIsNone(event.place)
+
+        # It should notify the users who haven't declined their invitation about
+        # the changes.
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = ('{name} removed the location where {activity} is'
+                 ' happening.').format(name=event.creator.name,
+                                       activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        sms_extra = ''
+        sms = notif + sms_extra + self.signature
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=sms)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.serializers.TwilioRestClient')
+    @mock.patch('down.apps.events.serializers.get_event_date')
+    def test_update_datetime(self, mock_date, mock_twilio, mock_apns):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        coords = self.place.geo.coords
+        data = {
+            'title': self.event.title,
+            'creator': self.event.creator_id,
+            'canceled': self.event.canceled,
+            'place': {
+                'name': self.place.name,
+                'geo': 'POINT({lat} {lng})'.format(lat=coords[0], lng=coords[1]),
+            },
+        }
+        response = self.client.put(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        self.assertIsNone(event.datetime)
+
+        # It should notify the users who haven't declined their invitation about
+        # the changes.
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = ('{name} removed the time when {activity} is happening.').format(
+                name=event.creator.name, activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        sms_extra = ''
+        sms = notif + sms_extra + self.signature
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=sms)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.serializers.TwilioRestClient')
+    def test_update_remove_place_and_datetime(self, mock_twilio, mock_apns):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
         # Send data without a place or datetime.
         data = {
             'title': self.event.title,
@@ -165,23 +520,38 @@ class EventTests(APITestCase):
         self.assertIsNone(event.place)
         self.assertIsNone(event.datetime)
 
+        # It should notify the users who haven't declined their invitation about
+        # the changes.
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = ('{name} removed the location and time where {activity} is'
+                 ' happening.').format(name=event.creator.name,
+                                       activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        sms_extra = ''
+        sms = notif + sms_extra + self.signature
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=sms)
+
         # It should return the event.
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
 
-    def test_update_not_creator(self):
-        # Mock another user.
-        user = User(name='Michael Jordan', email='mj@gmail.com',
-                    username='mj', image_url='http://imgur.com/mj')
-        user.save()
-
-        # Invite them to the event.
-        invitation = Invitation(from_user=self.user, to_user=user, event=self.event)
-        invitation.save()
-
-        # Log them in.
-        token = Token(user=user)
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_update_not_creator(self, mock_apns):
+        # Log another user who was invited to the event in.
+        token = Token(user=self.friend1)
         token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token '+token.key)
 
@@ -190,50 +560,13 @@ class EventTests(APITestCase):
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create_message(self, mock_send):
-        # Mock two of the user's friends.
-        friend1 = User(name='Michael Jordan', email='mj@gmail.com',
-                       username='mj', image_url='http://imgur.com/mj')
-        friend1.save()
-        registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        friend1_device = APNSDevice(registration_id=registration_id,
-                                  device_id=device_id, name='iPhone, 8.2',
-                                  user=friend1)
-        friend1_device.save()
-
-        friend2 = User(name='Bruce Lee', email='blee@gmail.com',
-                       username='blee', image_url='http://imgur.com/blee')
-        friend2.save()
-        registration_id = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        friend2_device = APNSDevice(registration_id=registration_id,
-                                    device_id=device_id, name='iPhone, 8.2',
-                                    user=friend2)
-        friend2_device.save()
-
-        # Mock one friend being down, and another friend not having responded yet.
-        invitation = Invitation(from_user=self.user, to_user=friend1,
-                                event=self.event, response=Invitation.ACCEPTED)
-        invitation.save()
-        invitation = Invitation(from_user=self.user, to_user=friend2,
-                                event=self.event, response=Invitation.NO_RESPONSE)
-        invitation.save()
-
-        # Clear any previous notifications
-        mock_send.reset_mock()
-
         data = {'text': 'So down!'}
         response = self.client.post(self.create_message_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should notify the user and the first friend that their friend
-        # commented on the event.
-        tokens = [
-            friend1_device.registration_id,
-            friend2_device.registration_id,
-        ]
+        # It should notify users with devices who haven't declined their invitation
+        # that their friend commented on the event.
+        tokens = [self.friend1_device.registration_id]
         if len(self.event.title) > 25:
             activity = self.event.title[:25] + '...'
         else:
@@ -243,8 +576,8 @@ class EventTests(APITestCase):
         mock_send.assert_any_call(registration_ids=tokens, alert=message)
 
     def test_create_message_not_invited(self):
-        # Uninvite the logged in user.
-        self.invitation.delete()
+        # Uninvite the logged in user. (You can't actually do that)
+        self.user_invitation.delete()
         
         data = {'text': 'So down!'}
         response = self.client.post(self.create_message_url, data)
