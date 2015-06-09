@@ -145,15 +145,25 @@ class InvitationQuerySet(models.query.QuerySet):
 
         # Don't notify the user who is sending the invitations, or users with
         # open invitations.
+        import logging
+        logger = logging.getLogger('console')
         invitations = [invitation for invitation in self
                        if invitation.to_user_id != from_user.id
                        and not invitation.open]
+        logger.info('invitation ids:')
+        logger.info([invitation.id for invitation in invitations])
 
         # Send users with devices push notifications.
         message = '{name} invited you to {activity}'.format(name=from_user.name,
                                                             activity=event.title)
         user_ids = [invitation.to_user_id for invitation in invitations]
+        logger.info('to_user ids:')
+        logger.info(user_ids)
         devices = APNSDevice.objects.filter(user_id__in=user_ids)
+        logger.info('num devices:')
+        logger.info(devices.count())
+        logger.info('message:')
+        logger.info(message)
         devices.send_message(message, badge=1)
 
         # Text message everyone else their invitation.
