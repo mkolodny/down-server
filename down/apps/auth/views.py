@@ -103,9 +103,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
         # Check whether we only want the latest invited events.
         min_updated_at = request.query_params.get('min_updated_at')
-        import logging
-        logger = logging.getLogger('console')
-        logger.info(min_updated_at)
         if min_updated_at:
             dt = datetime.utcfromtimestamp(int(min_updated_at))
             dt = dt.replace(tzinfo=pytz.utc)
