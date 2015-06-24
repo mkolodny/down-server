@@ -124,7 +124,35 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             dt = dt.replace(tzinfo=pytz.utc)
             events = events.filter(updated_at__gte=dt)
 
+        # Prefetch related fields to avoid lots of queries when serializing the
+        # events.
         events.select_related('place').prefetch_related('invitation_set')
+
+        # Create open invitations for any nearby events that the user doesn't
+        # have an invitation for yet.
+        invitations_created = False
+        for event in events:
+            if event.invitation_set.filter(to_user=request.user).exists():
+                # The user already has an invitation for this event.
+                continue
+
+            # Get the user who sent out the invitation to all of their nearby
+            # friends.
+            for all_friends_invitation in all_friends_invitations:
+                if event.id == all_friends_invitation.event_id:
+                    from_user_id = all_friends_invitation.from_user_id
+
+            invitation = Invitation(event=event, from_user_id=from_user_id,
+                                    to_user=request.user, open=True)
+            invitation.save()
+            invitations_created = True
+
+        if invitations_created:
+            # Since we updated the event invitations, prefetch the invitations
+            # again so that we're including the new invitation in the returned
+            # events.
+            events.prefetch_related('invitation_set')
+
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
 

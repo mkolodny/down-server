@@ -227,6 +227,10 @@ class UserTests(APITestCase):
         response = self.client.get(self.invited_events_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # It should create an open invitation for the user.
+        Invitation.objects.get(event=event, from_user=self.friend1,
+                               to_user=self.user, open=True)
+
         # It should return a list of the events that the user was invited to.
         serializer = EventSerializer([self.event, event], many=True)
         json_events = JSONRenderer().render(serializer.data)
