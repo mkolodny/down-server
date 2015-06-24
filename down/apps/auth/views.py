@@ -124,7 +124,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             dt = dt.replace(tzinfo=pytz.utc)
             events = events.filter(updated_at__gte=dt)
 
-        events.prefetch_related('place')
+        events.select_related('place').prefetch_related('invitation_set')
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
 
