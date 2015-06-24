@@ -38,7 +38,8 @@ class UserTests(APITestCase):
 
         # Mock a user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
-                         username='tdog', image_url='http://imgur.com/tdog')
+                         username='tdog', image_url='http://imgur.com/tdog',
+                         location='POINT(50.7545645 -73.9813595)')
         self.user.save()
         self.user_social = SocialAccount(user=self.user,
                                          provider=SocialAccount.FACEBOOK,
@@ -51,31 +52,32 @@ class UserTests(APITestCase):
         self.token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
-        # Mock the user's friend.
-        self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
-                           image_url='http://imgur.com/jcke')
-        self.friend.save()
-        friendship = Friendship(user=self.user, friend=self.friend)
+        # Mock two of the user's friends.
+        self.friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
+                            image_url='http://imgur.com/jcke',
+                            location='POINT(40.7545645 -73.9813595)')
+        self.friend1.save()
+        friendship = Friendship(user=self.user, friend=self.friend1)
         friendship.save()
-        self.friend_social = SocialAccount(user=self.friend,
-                                           provider=SocialAccount.FACEBOOK,
-                                           uid='20101293050283881',
-                                           profile={'access_token': '2234asdf'})
-        self.friend_social.save()
+        self.friend1_social = SocialAccount(user=self.friend1,
+                                            provider=SocialAccount.FACEBOOK,
+                                            uid='20101293050283881',
+                                            profile={'access_token': '2234asdf'})
+        self.friend1_social.save()
 
         # Mock an event that the user's invited to.
-        self.event = Event(title='bars?!?!?!', creator=self.friend)
+        self.event = Event(title='bars?!?!?!', creator=self.friend1)
         self.event.save()
-        self.user_invitation = Invitation(from_user=self.friend, to_user=self.user,
+        self.user_invitation = Invitation(from_user=self.friend1, to_user=self.user,
                                           event=self.event)
         self.user_invitation.save()
-        self.friend_invitation = Invitation(from_user=self.friend,
-                                            to_user=self.friend, event=self.event)
-        self.friend_invitation.save()
+        self.friend1_invitation = Invitation(from_user=self.friend1,
+                                             to_user=self.friend1, event=self.event)
+        self.friend1_invitation.save()
 
         # Mock the users' phone numbers.
-        self.friend_phone = UserPhone(user=self.friend, phone='+12036227310')
-        self.friend_phone.save()
+        self.friend1_phone = UserPhone(user=self.friend1, phone='+12036227310')
+        self.friend1_phone.save()
         self.user_phone = UserPhone(user=self.user, phone='+14388843460')
         self.user_phone.save()
 
@@ -85,8 +87,6 @@ class UserTests(APITestCase):
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
         self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
         self.invited_events_url = reverse('user-invited-events',
-                                          kwargs={'pk': self.user.id})
-        self.nearby_events_url = reverse('user-nearby-events',
                                           kwargs={'pk': self.user.id})
 
     def tearDown(self):
@@ -138,7 +138,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.content, json_user)
 
     def test_put_not_current_user(self):
-        detail_url = reverse('user-detail', kwargs={'pk': self.friend.id})
+        detail_url = reverse('user-detail', kwargs={'pk': self.friend1.id})
         response = self.client.put(detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -204,16 +204,31 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the user's friends.
-        serializer = UserSerializer([self.friend], many=True)
+        serializer = UserSerializer([self.friend1], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 
     def test_invited_events(self):
+        # Create an new event with an open invitation.
+        event = Event(creator=self.friend1, title='Ex Machina')
+        event.save()
+        all_friends_invitation = AllFriendsInvitation(from_user=self.friend1,
+                                                      event=event)
+        all_friends_invitation.save()
+
+        # Have the friend add the user as their friend.
+        friendship = Friendship(user=self.friend1, friend=self.user)
+        friendship.save()
+
+        # Set the user to be within 5 miles of the friend.
+        self.user.location = 'POINT(40.685339 -73.979361)'
+        self.user.save()
+
         response = self.client.get(self.invited_events_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return a list of the user's invitations.
-        serializer = EventSerializer([self.event], many=True)
+        # It should return a list of the events that the user was invited to.
+        serializer = EventSerializer([self.event, event], many=True)
         json_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_events)
 
@@ -227,9 +242,9 @@ class UserTests(APITestCase):
         mock_now.return_value = dt
 
         # Mock another event that the user's invited to.
-        event = Event(title='rat fishing', creator=self.friend)
+        event = Event(title='rat fishing', creator=self.friend1)
         event.save()
-        invitation = Invitation(from_user=self.friend, to_user=self.user,
+        invitation = Invitation(from_user=self.friend1, to_user=self.user,
                                 event=event)
         invitation.save()
 
@@ -254,10 +269,11 @@ class UserTests(APITestCase):
         mock_now.return_value = dt
 
         # Update the invitation.
-        self.friend_invitation.response = Invitation.DECLINED
-        self.friend_invitation.save()
+        self.friend1_invitation.response = Invitation.DECLINED
+        self.friend1_invitation.save()
 
-        updated_at = int(time.mktime(self.friend_invitation.updated_at.timetuple()))
+        timetuple = self.friend1_invitation.updated_at.timetuple()
+        updated_at = int(time.mktime(timetuple))
         self.invited_events_url += '?min_updated_at=' + unicode(updated_at)
         response = self.client.get(self.invited_events_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -269,82 +285,13 @@ class UserTests(APITestCase):
         json_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_events)
 
-    def test_nearby_events(self):
-        # Change the friend's invitation to an all friends invitation.
-        self.friend_invitation.delete()
-        all_friends_invitation = AllFriendsInvitation(from_user=self.friend,
-                                                      event=self.event)
-        all_friends_invitation.save()
-
-        # Have the friend add the user as their friend.
-        friendship = Friendship(user=self.friend, friend=self.user)
-        friendship.save()
-
-        # Set the friend to be within 5 miles of the user.
-        self.friend.location = 'POINT(40.7545645 -73.9813595)'
-        self.friend.save()
-        self.user.location = 'POINT(40.685339 -73.979361)'
-        self.user.save()
-
-        response = self.client.get(self.nearby_events_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return a list of the user's nearby events.
-        serializer = EventSerializer([self.event], many=True)
-        json_events = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_events)
-
-    @mock.patch('django.db.models.fields.timezone.now')
-    def test_nearby_events_min_updated_at(self, mock_now):
-        # Set the event to having been updated a significant amount later than
-        # the first event. Since `auto_now` sets the value of `updated_at` using
-        # `timezone.now()`, mock `timezone.now()` to return the time one minute
-        # after the current time.
-        dt = datetime.now().replace(tzinfo=pytz.utc) + timedelta(minutes=1)
-        mock_now.return_value = dt
-
-        # Change the friend's invitation to an all friends invitation.
-        self.friend_invitation.delete()
-        all_friends_invitation = AllFriendsInvitation(from_user=self.friend,
-                                                      event=self.event)
-        all_friends_invitation.save()
-
-        # Mock another event where the user's friend has invited all of their
-        # friends
-        event = Event(title='rat fishing', creator=self.friend)
-        event.save()
-        all_friends_invitation = AllFriendsInvitation(from_user=self.friend,
-                                                      event=event)
-        all_friends_invitation.save()
-
-        # Have the friend add the user as their friend.
-        friendship = Friendship(user=self.friend, friend=self.user)
-        friendship.save()
-
-        # Set the friend to be within 5 miles of the user.
-        self.friend.location = 'POINT(40.7545645 -73.9813595)'
-        self.friend.save()
-        self.user.location = 'POINT(40.685339 -73.979361)'
-        self.user.save()
-
-        updated_at = int(time.mktime(event.updated_at.timetuple()))
-        self.nearby_events_url += '?min_updated_at=' + unicode(updated_at)
-        response = self.client.get(self.nearby_events_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return a list of the user's nearby events.
-        serializer = EventSerializer([event], many=True)
-        json_events = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_events)
-
-
     @httpretty.activate
     def test_facebook_friends(self):
         # Mock the user's facebook friends.
         body = json.dumps({
             'data': [{
                 'name': 'Joan Clarke', 
-                'id': self.friend_social.uid,
+                'id': self.friend1_social.uid,
             }],
             'paging': {
             },
@@ -361,7 +308,7 @@ class UserTests(APITestCase):
         self.assertEqual(httpretty.last_request().querystring, querystring)
 
         # It should return a list of the users facebook friends.
-        serializer = UserSerializer([self.friend], many=True)
+        serializer = UserSerializer([self.friend1], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 
@@ -384,7 +331,7 @@ class UserTests(APITestCase):
         body = json.dumps({
             'data': [{
                 'name': 'Joan Clarke', 
-                'id': self.friend_social.uid,
+                'id': self.friend1_social.uid,
             } for i in xrange(25)],
             'paging': {
                 'next': next_url,
@@ -410,7 +357,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the users facebook friends.
-        serializer = UserSerializer([self.friend, friend], many=True)
+        serializer = UserSerializer([self.friend1, friend], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 

@@ -97,11 +97,27 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
     @detail_route(methods=['get'])
     def invited_events(self, request, pk=None):
+        # Create a list of ids of events that the user was invited to directly.
         invitations = Invitation.objects.filter(to_user=request.user)
         event_ids = [invitation.event_id for invitation in invitations]
+
+        # Create a list of ids of open events that were posted by people nearby the
+        # user, who've added the user as their friend.
+        added_me_friendships = Friendship.objects.filter(friend=request.user)
+        user_ids = [friendship.user_id for friendship in added_me_friendships]
+        radius = (request.user.location, D(mi=5))
+        added_me = User.objects.filter(id__in=user_ids,
+                                       location__distance_lte=radius)
+        all_friends_invitations = AllFriendsInvitation.objects.filter(
+                from_user__in=added_me)
+        nearby_event_ids = [all_friends_invitation.event_id
+            for all_friends_invitation in all_friends_invitations]
+
+        # Fetch both directly invited and nearby events.
+        event_ids.extend(nearby_event_ids)
         events = Event.objects.filter(id__in=event_ids)
 
-        # Check whether we only want the latest invited events.
+        # Check whether we only want the latest events.
         min_updated_at = request.query_params.get('min_updated_at')
         if min_updated_at:
             dt = datetime.utcfromtimestamp(int(min_updated_at))
@@ -110,33 +126,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
         events.prefetch_related('place')
         serializer = EventSerializer(events, many=True)
-        return Response(serializer.data)
-
-    @detail_route(methods=['get'])
-    def nearby_events(self, request, pk=None):
-        # Get the users who have added the logged in user as their friend, and
-        # who are also currently within 5 miles of the logged in user.
-        added_me_friendships = Friendship.objects.filter(friend=request.user)
-        user_ids = [friendship.user_id for friendship in added_me_friendships]
-        radius = (request.user.location, D(mi=5))
-        added_me = User.objects.filter(id__in=user_ids,
-                                       location__distance_lte=radius)
-
-        # Get events that those users have invited all their friends to.
-        all_friends_invitations = AllFriendsInvitation.objects.filter(
-                from_user__in=added_me)
-        nearby_event_ids = [all_friends_invitation.event_id
-            for all_friends_invitation in all_friends_invitations]
-        nearby_events = Event.objects.filter(id__in=nearby_event_ids)
-
-        # Check whether we only want the latest nearby events.
-        min_updated_at = request.query_params.get('min_updated_at')
-        if min_updated_at:
-            dt = datetime.utcfromtimestamp(int(min_updated_at))
-            dt = dt.replace(tzinfo=pytz.utc)
-            nearby_events = nearby_events.filter(updated_at__gte=dt)
-
-        serializer = EventSerializer(nearby_events, many=True)
         return Response(serializer.data)
 
     @list_route(methods=['get'])
