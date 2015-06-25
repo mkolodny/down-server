@@ -64,7 +64,6 @@ class PlaceSerializer(GeoModelSerializer):
 
     class Meta:
         model = Place
-        exclude = ('name',)
 
 
 class AllFriendsInvitationSerializer(GeoModelSerializer):
