@@ -549,6 +549,77 @@ class EventTests(APITestCase):
         self.assertEqual(response.content, json_event)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.serializers.TwilioRestClient')
+    @mock.patch('down.apps.events.serializers.get_event_date')
+    def test_update_add_place_and_datetime(self, mock_date, mock_twilio,
+                                           mock_apns):
+        # TODO: Figure out why this test is taking so long.
+        # Mock the localized date string.
+        date = 'Thursday, Jun. 4 @ 6 PM'
+        mock_date.return_value = date
+
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        # Mock the event having no place or datetime.
+        self.event.place = None
+        self.event.datetime = None
+        self.event.save()
+
+        data = {
+            'title': self.event.title,
+            'creator': self.event.creator_id,
+            'canceled': self.event.canceled,
+            'datetime': int(time.mktime(timezone.now().timetuple())) + 1,
+            'place': {
+                'name': '540 State St',
+                'geo': 'POINT(40.685339 -73.979361)',
+            },
+        }
+        response = self.client.put(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should create the place.
+        place_data = data.pop('place')
+        place = Place.objects.get(**place_data)
+
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        self.assertEqual(event.place_id, place.id)
+        dt = datetime.utcfromtimestamp(data['datetime']).replace(tzinfo=pytz.utc)
+        self.assertEqual(event.datetime, dt)
+
+        # It should notify the users who haven't declined their invitation about
+        # the changes.
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = ('{name} changed the location and time where {activity} is'
+                 ' happening.').format(name=event.creator.name,
+                                       activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        sms_extra = (' The new location is {place}, and the new time is'
+                     ' {date}.').format(place=place.name, date=date)
+        sms = notif + sms_extra + self.signature
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=sms)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_update_not_creator(self, mock_apns):
         # Log another user who was invited to the event in.
         token = Token(user=self.friend1)

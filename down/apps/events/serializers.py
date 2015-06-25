@@ -122,7 +122,9 @@ class EventSerializer(serializers.ModelSerializer):
         event = instance
 
         # Check whether the place, date, or both were updated.
-        place_edited = (has_place and place.name != event.place.name)
+        place_edited = (has_place and
+                (event.place is None or
+                (place.name != event.place.name or place.geo != event.place.geo)))
         place_removed = (not has_place and event.place_id is not None)
         datetime_edited = (has_datetime
                 and validated_data['datetime'] != event.datetime)
