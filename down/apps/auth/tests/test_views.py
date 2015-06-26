@@ -208,7 +208,8 @@ class UserTests(APITestCase):
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 
-    def test_invited_events(self):
+    @mock.patch('down.apps.auth.views.requests')
+    def test_invited_events(self, mock_requests):
         # Create an new event with an open invitation.
         event = Event(creator=self.friend1, title='Ex Machina')
         event.save()
@@ -231,13 +232,22 @@ class UserTests(APITestCase):
         Invitation.objects.get(event=event, from_user=self.friend1,
                                to_user=self.user, open=True)
 
+        # It should add the users to the firebase members list.
+        url = ('{firebase_url}/events/members/{event_id}/.json'
+               '?auth={firebase_secret}').format(
+                firebase_url=settings.FIREBASE_URL, event_id=event.id,
+                firebase_secret=settings.FIREBASE_SECRET)
+        json_invitation = json.dumps({self.user.id: True})
+        mock_requests.patch.assert_called_with(url, json_invitation)
+
         # It should return a list of the events that the user was invited to.
         serializer = EventSerializer([self.event, event], many=True)
         json_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_events)
 
     @mock.patch('django.db.models.fields.timezone.now')
-    def test_invited_events_min_updated_at(self, mock_now):
+    @mock.patch('down.apps.auth.views.requests')
+    def test_invited_events_min_updated_at(self, mock_requests, mock_now):
         # Set the event to having been updated a significant amount later than
         # the first event. Since `auto_now` sets the value of `updated_at` using
         # `timezone.now()`, mock `timezone.now()` to return the time one minute
@@ -264,7 +274,8 @@ class UserTests(APITestCase):
         self.assertEqual(response.content, json_events)
 
     @mock.patch('django.db.models.fields.timezone.now')
-    def test_invited_events_invitation_updated(self, mock_now):
+    @mock.patch('down.apps.auth.views.requests')
+    def test_invited_events_invitation_updated(self, mock_requests, mock_now):
         # Set the invitation to having been updated a significant amount later than
         # the event. Since `auto_now` sets the value of `updated_at` using
         # `timezone.now()`, mock `timezone.now()` to return the time one minute

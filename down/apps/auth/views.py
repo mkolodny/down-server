@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from datetime import datetime
+import json
 from urllib import urlencode
 import uuid
 from django.conf import settings
@@ -146,6 +147,14 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                                     to_user=request.user, open=True)
             invitation.save()
             invitations_created = True
+
+            # Add the user to the Firebase members list.
+            url = ('{firebase_url}/events/members/{event_id}/.json?auth='
+                   '{firebase_secret}').format(
+                    firebase_url=settings.FIREBASE_URL, event_id=event.id,
+                    firebase_secret=settings.FIREBASE_SECRET)
+            json_invitation = json.dumps({request.user.id: True})
+            requests.patch(url, json_invitation)
 
         if invitations_created:
             # Since we updated the event invitations, prefetch the invitations
