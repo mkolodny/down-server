@@ -1,0 +1,66 @@
+.navbar {
+  border-radius: 0;
+  margin-bottom: 0;
+  background-color: #fff;
+  border: none;
+}
+#brand {
+  height: 25px;
+  margin-top: -2px;
+}
+#masthead {
+  padding-top: 110px;
+  padding-bottom: 50px;
+  margin-bottom: 80px;
+}
+h1,
+h3 {
+  font-family: 'jaf-bernino-sans','Lucida Grande','Lucida Sans Unicode','Lucida Sans',Geneva,Verdana,sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -moz-font-feature-settings: 'liga' on;
+}
+h1 {
+  font-size: 60px;
+  margin-left: -3px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #fff;
+}
+h3 {
+  font-size: 36px;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  margin-top: 40px;
+}
+p {
+  font-family: 'freight-text-pro',Georgia,Cambria,'Times New Roman',Times,serif;
+  position: relative;
+  font-size: 22px;
+  line-height: 1.5;
+  margin-bottom: 30px;
+  letter-spacing: .01rem;
+  font-weight: 400;
+  font-style: normal;
+}
+.section-divider {
+  width: 100px;
+  margin: 51px auto 41px auto;
+  border: 0;
+  border-top: 1px solid rgba(0,0,0,0.15);
+}
+#cta-wrapper {
+  padding-bottom: 100px;
+}
+#download {
+  text-align: center;
+}
+#download-link {
+  margin-top: -16px;
+}
+#download-img {
+  height: 45px;
+}

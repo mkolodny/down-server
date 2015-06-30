@@ -410,3 +410,7 @@ class AppStoreView(RedirectView):
     url = ('https://itunes.apple.com/us/app/down-connect-people-around/id'
            '969040287?mt=8')
     permanent = False
+
+
+class ArticleView(TemplateView):
+    template_name = 'festivals.html'

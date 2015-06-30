@@ -918,3 +918,12 @@ class AppStoreTests(APITestCase):
                          '-around/id969040287?mt=8')
         self.assertRedirects(response, app_store_url,
                              fetch_redirect_response=False)
+
+
+class ArticleTests(APITestCase):
+
+    def test_get(self):
+        url = reverse('article')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'festivals.html')

@@ -1,0 +1,81 @@
+{% load static from staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>7 Epic Music Festivals You Didn’t Know Existed</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{% static 'css/festivals.css' %}">
+
+  <!-- Favicon and touch icons -->
+  <link rel="shortcut icon" href="{% static 'img/down-favicon.png' %}">
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'img/apple-touch-icon-144-precomposed.png' %}">
+  <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'img/apple-touch-icon-114-precomposed.png' %}">
+  <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'img/apple-touch-icon-72-precomposed.png' %}">
+  <link rel="apple-touch-icon-precomposed" href="{% static 'img/apple-touch-icon-57-precomposed.png' %}">
+</head>
+<body>
+  <nav class="navbar navbar-default">
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#">
+          <img id="brand" alt="Brand" src="{% static 'img/down-logo.png' %}">
+        </a>
+      </div>
+    </div>
+  </nav>
+  <div id="masthead">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+          <h1>7 Epic Music Festivals You Didn’t Know Existed</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+  <style>
+    #masthead {
+      background: url({% static 'img/backgrounds/1.jpg' %}) no-repeat center center fixed;
+    }
+  </style>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <p></p>
+        <h3>1. Bhidora - Cuautla, Mexico</h3>
+        <img src="" alt="Bhidora">
+        <p></p>
+        <h3>2. Outlook - Pula, Croatia</h3>
+        <img src="" alt="Outlook">
+        <p></p>
+        <h3>3. Fuji Rock - Niigata Prefecture, Japan</h3>
+        <img src="" alt="Fuji Rock">
+        <p></p>
+        <h3>4. Roskilde - Roskilde, Denmark</h3>
+        <img src="" alt="Roskilde">
+        <p></p>
+        <h3>5. Secret Garden Party - Abbots Ripton, UK</h3>
+        <img src="" alt="Secret Garden Party">
+        <p></p>
+        <h3>6. The Garden Festival - Tisno, Croatia</h3>
+        <img src="" alt="The Garden Festival">
+        <p></p>
+        <h3>7. Benicàssim - Benicàssim, Spain</h3>
+        <img src="" alt="Benicàssim">
+        <p></p>
+        <div class="section-divider"></div>
+        <div id="cta-wrapper">
+          <h3>Get Down</h2>
+          <p>Down is an app that makes it easier to rally your friends to go on epic adventures, like booking a flight and heading out to one of these festivals ;). If you enjoyed this list, you should <a href="https://bnc.lt/l/6_AeOvU_SJ">download it for free on the iOS App Store here.</a></p>
+          <div id="download-link">
+            <a href="https://bnc.lt/l/6_AeOvU_SJ">
+              <img src="{% static 'img/download-ios.png' %}" alt="Download on the App Store" id="download-img">
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

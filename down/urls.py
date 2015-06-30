@@ -3,6 +3,7 @@ from django.contrib import admin
 from rest_framework import routers
 from down.apps.auth.views import (
     AppStoreView,
+    ArticleView,
     AuthCodeViewSet,
     LandingView,
     LinfootFunnelViewSet,
@@ -53,6 +54,7 @@ urlpatterns = patterns('',
     url(r'^api/', include(router.urls)),
     url(r'^terms/?$', TermsView.as_view(), name='terms'),
     url(r'^$', LandingView.as_view(), name='landing'),
+    url(r'^7-Epic-Music-Festivals$', ArticleView.as_view(), name='article'),
     url(r'^app/?$', AppStoreView.as_view(), name='app-store'),
     url(r'^admin/', include(admin.site.urls)),
 )
