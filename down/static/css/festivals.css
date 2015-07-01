@@ -9,8 +9,8 @@
   margin-top: -2px;
 }
 #masthead {
-  padding-top: 110px;
-  padding-bottom: 50px;
+  padding-top: 250px;
+  padding-bottom: 250px;
   margin-bottom: 80px;
 }
 h1,
@@ -29,6 +29,7 @@ h1 {
   line-height: 1;
   letter-spacing: -0.04em;
   color: #fff;
+  text-shadow: 0 -1px 1px rgba(0,0,0,0.6);
 }
 h3 {
   font-size: 36px;
@@ -45,6 +46,13 @@ p {
   letter-spacing: .01rem;
   font-weight: 400;
   font-style: normal;
+}
+.content-image {
+  display: block;
+  margin: 15px auto 0;
+  width: 100%;
+  max-width: 600px;
+  max-height: 450px;
 }
 .section-divider {
   width: 100px;
