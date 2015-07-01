@@ -239,16 +239,18 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
                 activity=event.title)
 
         # Get all other members who have accepted their invitation, or haven't
-        # responded yet, who've added the user as a friend.
+        # responded yet, who've added the user as a friend. Always notify the
+        # creator.
         invitations = Invitation.objects.filter(event=event) \
                 .exclude(response=Invitation.DECLINED) \
                 .exclude(to_user=user)
         member_ids = [invitation.to_user_id for invitation in invitations]
         added_me = Friendship.objects.filter(friend=user, user_id__in=member_ids)
-        to_users = [friendship.user for friendship in added_me]
+        to_user_ids = [friendship.user_id for friendship in added_me]
+        to_user_ids.append(event.creator_id)
 
         # This filter operation will only return unique devices.
-        devices = APNSDevice.objects.filter(user__in=to_users)
+        devices = APNSDevice.objects.filter(user_id__in=to_user_ids)
         devices.send_message(message)
     elif (invitation.response == Invitation.DECLINED
             and invitation.previously_accepted):
