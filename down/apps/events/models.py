@@ -32,21 +32,6 @@ class Event(models.Model):
     members = models.ManyToManyField(User, through='Invitation',
                                      through_fields=('event', 'to_user'))
 
-    def get_member_devices(self, except_user, notify_responses):
-        """
-        Get all members who have accepted their invitation, or haven't responded
-        yet, except the `except_user`.
-
-        Get the creator whether or not they've accepted the invitation.
-        """
-        invitations = Invitation.objects.filter(response__in=notify_responses,
-                                                event=self)
-        invitations = invitations.exclude(to_user=except_user)
-        member_ids = [invitation.to_user_id for invitation in invitations]
-
-        # This filter operation will only return unique devices.
-        return APNSDevice.objects.filter(user_id__in=member_ids)
-
 
 def get_invite_sms(from_user, event):
     """
@@ -186,6 +171,7 @@ class Invitation(models.Model):
                                         default=NO_RESPONSE)
     previously_accepted = models.BooleanField(default=False)
     open = models.BooleanField(default=False)
+    to_user_messaged = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

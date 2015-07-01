@@ -89,11 +89,13 @@ class EventTests(APITestCase):
                                           response=Invitation.ACCEPTED)
         self.user_invitation.save()
         self.friend1_invitation = Invitation(from_user=self.user,
-                                             to_user=self.friend1, event=self.event,
+                                             to_user=self.friend1,
+                                             event=self.event,
                                              response=Invitation.ACCEPTED)
         self.friend1_invitation.save()
         self.friend2_invitation = Invitation(from_user=self.user,
-                                             to_user=self.friend2, event=self.event)
+                                             to_user=self.friend2,
+                                             event=self.event)
         self.friend2_invitation.save()
 
         # Save SMS details.
@@ -631,13 +633,30 @@ class EventTests(APITestCase):
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_create_message(self, mock_send):
+        # Mark friend2 as having posted a message in the event's group chat.
+        self.friend2_invitation.to_user_messaged = True
+        self.friend2_invitation.save()
+
+        # Give friend2 a device so that we can send them a push notification.
+        registration_id = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
+                           '10df230567037dcc4')
+        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
+        friend2_device = APNSDevice(registration_id=registration_id,
+                                    device_id=device_id, name='iPhone, 8.2',
+                                    user=self.friend2)
+        friend2_device.save()
+
         data = {'text': 'So down!'}
         response = self.client.post(self.create_message_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should notify users with devices who haven't declined their invitation
-        # that their friend commented on the event.
-        tokens = [self.friend1_device.registration_id]
+        # It should notify users with devices who have accepted the invitation,
+        # or who have posted a message in the group chat about the user's
+        # message.
+        tokens = [
+            self.friend1_device.registration_id,
+            friend2_device.registration_id,
+        ]
         if len(self.event.title) > 25:
             activity = self.event.title[:25] + '...'
         else:
@@ -645,6 +664,11 @@ class EventTests(APITestCase):
         message = '{name} to {activity}: {text}'.format(
                 name=self.user.name, activity=activity, text=data['text'])
         mock_send.assert_any_call(registration_ids=tokens, alert=message)
+
+        # It should set a flag on the invitation marking that the user has posted
+        # a message in the group chat.
+        invitation = Invitation.objects.get(id=self.user_invitation.id)
+        self.assertTrue(invitation.to_user_messaged)
 
     def test_create_message_not_invited(self):
         # Uninvite the logged in user. (You can't actually do that)

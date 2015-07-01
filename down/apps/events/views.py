@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
+from django.db.models import Q
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from push_notifications.models import APNSDevice
 from down.apps.auth.models import User
 from .filters import EventFilter
 from .models import AllFriendsInvitation, Event, Invitation
@@ -57,10 +59,19 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             message = '{name} to {activity}: {text}'.format(
                     name=request.user.name, activity=activity,
                     text=serializer.data['text'])
-            notify_responses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
-            devices = event.get_member_devices(request.user, notify_responses)
+            invitations = Invitation.objects.filter(
+                    Q(event=event, response=Invitation.ACCEPTED)
+                    | Q(event=event, to_user_messaged=True)) \
+                    .exclude(to_user=request.user)
+            member_ids = [invitation.to_user_id for invitation in invitations]
+            devices = APNSDevice.objects.filter(user_id__in=member_ids)
             # TODO: Catch exception if sending the message fails.
             devices.send_message(message)
+
+            # Set a flag on the user's invitation marking that they've posted a
+            # message on this event's group chat.
+            Invitation.objects.filter(event=event, to_user=request.user) \
+                    .update(to_user_messaged=True)
 
             return Response(status=status.HTTP_201_CREATED)
         else:
