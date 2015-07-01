@@ -11,6 +11,7 @@ import pytz
 import requests
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import User, UserPhone
+from down.apps.friends.models import Friendship
 
 GEONAMES_RE = re.compile(r'<timezoneId>(.+?)</timezoneId>')
 
@@ -238,10 +239,16 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
                 activity=event.title)
 
         # Get all other members who have accepted their invitation, or haven't
-        # responded yet, except the `current_user`. Get the creator whether or not
-        # they've accepted the invitation.
-        notify_responses = [Invitation.ACCEPTED, Invitation.NO_RESPONSE]
-        devices = event.get_member_devices(user, notify_responses)
+        # responded yet, who've added the user as a friend.
+        invitations = Invitation.objects.filter(event=event) \
+                .exclude(response=Invitation.DECLINED) \
+                .exclude(to_user=user)
+        member_ids = [invitation.to_user_id for invitation in invitations]
+        added_me = Friendship.objects.filter(friend=user, user_id__in=member_ids)
+        to_users = [friendship.user for friendship in added_me]
+
+        # This filter operation will only return unique devices.
+        devices = APNSDevice.objects.filter(user__in=to_users)
         devices.send_message(message)
     elif (invitation.response == Invitation.DECLINED
             and invitation.previously_accepted):

@@ -288,7 +288,7 @@ class InvitationTests(APITestCase):
         invitation.save()
 
         # It should notify the invited users who are either down, or haven't
-        # responded yet.
+        # responded yet, who've added the user as a friend.
         message = '{name} is also down for {activity}'.format(
                 name=self.user.name,
                 activity=self.event.title)
