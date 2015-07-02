@@ -82,6 +82,9 @@ p {
 }
 
 @media(min-width: 768px) {
+  #masthead {
+    background-attachment: fixed;
+  }
   h1 {
     padding: 24px;
   }
