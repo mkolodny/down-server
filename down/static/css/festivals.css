@@ -80,3 +80,12 @@ p {
     padding-bottom: 160px;
   }
 }
+
+@media(min-width: 768px) {
+  #masthead {
+    background-attachment: fixed;
+  }
+  h1 {
+    padding: 24px;
+  }
+}
