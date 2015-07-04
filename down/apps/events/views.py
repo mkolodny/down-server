@@ -59,10 +59,11 @@ class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             message = '{name} to {activity}: {text}'.format(
                     name=request.user.name, activity=activity,
                     text=serializer.data['text'])
-            invitations = Invitation.objects.filter(
-                    Q(event=event, response=Invitation.ACCEPTED)
-                    | Q(event=event, to_user_messaged=True)) \
-                    .exclude(to_user=request.user)
+            invitations = Invitation.objects.filter(event=event) \
+                    .filter(Q(response=Invitation.ACCEPTED)
+                            | Q(to_user_messaged=True)) \
+                    .exclude(to_user=request.user) \
+                    .exclude(muted=True)
             member_ids = [invitation.to_user_id for invitation in invitations]
             devices = APNSDevice.objects.filter(user_id__in=member_ids)
             # TODO: Catch exception if sending the message fails.

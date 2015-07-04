@@ -172,6 +172,7 @@ class Invitation(models.Model):
     previously_accepted = models.BooleanField(default=False)
     open = models.BooleanField(default=False)
     to_user_messaged = models.BooleanField(default=False)
+    muted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
