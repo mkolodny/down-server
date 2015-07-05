@@ -25,13 +25,22 @@ from .serializers import (
 )
 
 
-class EventViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
-                   mixins.CreateModelMixin, mixins.UpdateModelMixin,
-                   viewsets.GenericViewSet):
+class EventViewSet(viewsets.ModelViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
     permission_classes = (IsAuthenticated, IsCreator, WasInvited)
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Set the event to canceled.
+        """
+        event = self.get_object()
+        event.canceled = True
+        event.save()
+
+        serializer = self.get_serializer(event)
+        return Response(serializer.data)
 
     @detail_route(methods=['post'])
     def messages(self, request, pk=None):
