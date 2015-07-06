@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from django.db.models import Q
+from django.views.generic.base import TemplateView
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
@@ -113,3 +114,7 @@ class AllFriendsInvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewS
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED,
                         headers=headers)
+
+
+class SuggestedEventsView(TemplateView):
+    template_name = 'suggested-events.html'

@@ -1100,3 +1100,12 @@ class AllFriendsInvitationTests(APITestCase):
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class SuggestedEventsTests(APITestCase):
+
+    def test_get(self):
+        url = reverse('suggested-events')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'suggested-events.html')
