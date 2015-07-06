@@ -18,6 +18,7 @@ from down.apps.events.views import (
     AllFriendsInvitationViewSet,
     EventViewSet,
     InvitationViewSet,
+    SuggestedEventsView,
 )
 from down.apps.friends.views import FriendshipViewSet
 from down.apps.notifications.views import APNSDeviceViewSet
@@ -55,6 +56,7 @@ urlpatterns = patterns('',
     url(r'^terms/?$', TermsView.as_view(), name='terms'),
     url(r'^$', LandingView.as_view(), name='landing'),
     url(r'^7-Epic-Music-Festivals$', ArticleView.as_view(), name='article'),
+    url(r'^suggested-events$', SuggestedEventsView.as_view(), name='suggested-events'),
     url(r'^app/?$', AppStoreView.as_view(), name='app-store'),
     url(r'^admin/', include(admin.site.urls)),
 )
