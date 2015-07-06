@@ -14,6 +14,7 @@ firebase-token-generator==2.0.0
 gnureadline==6.3.3
 greenlet==0.4.5
 gunicorn==19.2.1
+hashids==1.1.0
 httplib2==0.9
 httpretty==0.8.8
 ipython==2.4.1

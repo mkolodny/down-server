@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework_gis.serializers import GeoModelSerializer
 from twilio.rest import TwilioRestClient
-from .models import AllFriendsInvitation, Event, Invitation, Place
+from .models import AllFriendsInvitation, Event, Invitation, LinkInvitation, Place
 from down.apps.auth.models import User, UserPhone
 from down.apps.auth.serializers import UserSerializer
 from down.apps.events.models import get_event_date
@@ -229,6 +229,14 @@ class EventSerializer(serializers.ModelSerializer):
             client.messages.create(to=phone, from_=settings.TWILIO_PHONE, body=sms)
         
         return event
+
+
+class LinkInvitationSerializer(GeoModelSerializer):
+    created_at = UnixEpochDateField(read_only=True)
+
+    class Meta:
+        model = LinkInvitation
+        read_only_fields = ('link_id',)
 
 
 class MessageSentSerializer(serializers.Serializer):

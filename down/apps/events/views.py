@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.db.models import Q
 from django.views.generic.base import TemplateView
+from hashids import Hashids
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
@@ -11,12 +12,13 @@ from push_notifications.models import APNSDevice
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import User, UserPhone
 from .filters import EventFilter
-from .models import AllFriendsInvitation, Event, Invitation
+from .models import AllFriendsInvitation, Event, Invitation, LinkInvitation
 from .permissions import (
     AllFriendsInviterWasInvited,
     InviterWasInvited,
     IsCreator,
     IsInvitationsFromUser,
+    LinkInviterWasInvited,
     OtherUsersNotDown,
     WasInvited,
 )
@@ -24,6 +26,7 @@ from .serializers import (
     AllFriendsInvitationSerializer,
     EventSerializer,
     InvitationSerializer,
+    LinkInvitationSerializer,
     MessageSentSerializer,
 )
 
@@ -148,6 +151,33 @@ class AllFriendsInvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewS
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED,
                         headers=headers)
+
+
+class LinkInvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+                            viewsets.GenericViewSet):
+    authentication_classes = (authentication.TokenAuthentication,)
+    lookup_field = 'link_id'
+    lookup_value_regex = '[a-zA-Z0-9]{6,}'
+    permission_classes = (IsAuthenticated, LinkInviterWasInvited,)
+    queryset = LinkInvitation.objects.all()
+    serializer_class = LinkInvitationSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=False):
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED,
+                            headers=headers)
+        else:
+            # TODO: Handle when the error is something other than the link
+            # invitation not being unique.
+            hashids = Hashids(salt=settings.HASHIDS_SALT, min_length=6)
+            data = serializer.data
+            link_id = hashids.encode(data['event'], data['from_user'])
+            link_invitation = LinkInvitation.objects.get(link_id=link_id)
+            serializer = self.get_serializer(link_invitation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class SuggestedEventsView(TemplateView):

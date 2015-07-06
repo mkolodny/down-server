@@ -18,6 +18,7 @@ from down.apps.events.views import (
     AllFriendsInvitationViewSet,
     EventViewSet,
     InvitationViewSet,
+    LinkInvitationViewSet,
     SuggestedEventsView,
 )
 from down.apps.friends.views import FriendshipViewSet
@@ -35,6 +36,8 @@ router.register(r'authcodes', AuthCodeViewSet)
 router.register(r'events', EventViewSet)
 router.register(r'friendships', FriendshipViewSet)
 router.register(r'invitations', InvitationViewSet)
+router.register(r'link-invitations', LinkInvitationViewSet,
+                base_name='link-invitation')
 router.register(r'phonenumbers', LinfootFunnelViewSet, base_name='phonenumbers')
 router.register(r'userphones', UserPhoneViewSet, base_name='userphone')
 router.register(r'users', UserViewSet)

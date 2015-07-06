@@ -6,6 +6,7 @@ from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
+from hashids import Hashids
 from push_notifications.models import APNSDevice
 import pytz
 import requests
@@ -274,3 +275,20 @@ def send_open_invitation_notification(sender, instance, created, **kwargs):
     message = '{name} is down for {activity}'.format(name=from_user.name,
                                                      activity=event.title)
     devices.send_message(message, badge=1)
+
+
+class LinkInvitation(models.Model):
+    event = models.ForeignKey(Event)
+    from_user = models.ForeignKey(User)
+    link_id = models.TextField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('event', 'from_user')
+
+    def save(self, *args, **kwargs):
+        if not self.link_id:
+            hashids = Hashids(salt=settings.HASHIDS_SALT, min_length=6)
+            self.link_id = hashids.encode(self.event_id, self.from_user_id)
+
+        super(LinkInvitation, self).save(*args, **kwargs)

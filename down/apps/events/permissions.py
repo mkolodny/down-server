@@ -128,3 +128,37 @@ class AllFriendsInviterWasInvited(permissions.BasePermission):
             return True
         except Invitation.DoesNotExist:
             return False
+
+
+class LinkInviterWasInvited(permissions.BasePermission):
+    """
+    Global permission to only allow users who were invited to an event to
+    share a link to the event.
+    """
+
+    def has_permission(self, request, view):
+        # This permission is only focused on creating an event.
+        if request.method != 'POST':
+            return True
+
+        try:
+            event_id = request.data['event']
+            Invitation.objects.get(event_id=event_id, to_user=request.user)
+            return True
+        except Invitation.DoesNotExist:
+            return False
+
+
+class LinkInviterIsFromUser(permissions.BasePermission):
+    """
+    Global permission to only allow users who were invited to an event to
+    share a link to the event.
+    """
+
+    def has_permission(self, request, view):
+        # This permission is only focused on creating an event.
+        if request.method != 'POST':
+            return True
+
+        from_user_id = request.data['from_user']
+        return from_user_id == request.user.id
