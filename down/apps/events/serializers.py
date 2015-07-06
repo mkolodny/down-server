@@ -59,6 +59,24 @@ class InvitationSerializer(serializers.ModelSerializer):
         model = Invitation
         list_serializer_class = InvitationListSerializer
 
+    def update(self, instance, validated_data):
+        """
+        Update the event whenever we update an invitation from anything other
+        than no response.
+        """
+        invitation = instance
+        new_response = validated_data['response']
+        if (invitation.response != Invitation.NO_RESPONSE
+                and invitation.response != new_response):
+            # The event is an id-only model object, so we need to fetch the whole
+            # thing.
+            Event.objects.filter(id=self.event.id).update()
+
+        for attr, value in validated_data.items():
+            setattr(invitation, attr, value)
+
+        return invitation
+
 
 class PlaceSerializer(GeoModelSerializer):
 

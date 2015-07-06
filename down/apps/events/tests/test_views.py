@@ -678,6 +678,19 @@ class EventTests(APITestCase):
         response = self.client.post(self.create_message_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_cancel(self):
+        response = self.client.delete(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should set the event to canceled.
+        event = Event.objects.get(id=self.event.id)
+        self.assertTrue(event.canceled)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
 
 class InvitationTests(APITestCase):
 
