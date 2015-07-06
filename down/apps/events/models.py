@@ -24,7 +24,6 @@ class Place(models.Model):
 class Event(models.Model):
     title = models.TextField()
     creator = models.ForeignKey(User, related_name='creators')
-    comment = models.TextField(blank=True, null=True)
     canceled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
