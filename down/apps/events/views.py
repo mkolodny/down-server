@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from django.conf import settings
 from django.db.models import Q
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
@@ -6,7 +7,8 @@ from rest_framework.filters import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from push_notifications.models import APNSDevice
-from down.apps.auth.models import User
+from twilio.rest import TwilioRestClient
+from down.apps.auth.models import User, UserPhone
 from .filters import EventFilter
 from .models import AllFriendsInvitation, Event, Invitation
 from .permissions import (
@@ -38,6 +40,28 @@ class EventViewSet(viewsets.ModelViewSet):
         event = self.get_object()
         event.canceled = True
         event.save()
+
+        # Notify people who were down that the event was canceled.
+        message = '{name} canceled {activity}'.format(name=event.creator.name,
+                                                      activity=event.title)
+        invitations = Invitation.objects.filter(event=event) \
+                .filter(Q(response=Invitation.ACCEPTED)) \
+                .exclude(to_user=request.user)
+        member_ids = [invitation.to_user_id for invitation in invitations]
+        devices = APNSDevice.objects.filter(user_id__in=member_ids)
+        # TODO: Catch exception if sending the message fails.
+        devices.send_message(message, badge=1)
+
+        # Notify all SMS users that the event was canceled.
+        device_ids = set(device.user_id for device in devices)
+        sms_user_ids = [member_id for member_id in member_ids
+                if member_id not in device_ids]
+        userphones = UserPhone.objects.filter(user_id__in=sms_user_ids)
+        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
+        for userphone in userphones:
+            phone = unicode(userphone.phone)
+            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
+                                   body=message)
 
         serializer = self.get_serializer(event)
         return Response(serializer.data)

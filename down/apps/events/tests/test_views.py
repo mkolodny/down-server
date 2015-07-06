@@ -555,7 +555,6 @@ class EventTests(APITestCase):
     @mock.patch('down.apps.events.serializers.get_event_date')
     def test_update_add_place_and_datetime(self, mock_date, mock_twilio,
                                            mock_apns):
-        # TODO: Figure out why this test is taking so long.
         # Mock the localized date string.
         date = 'Thursday, Jun. 4 @ 6 PM'
         mock_date.return_value = date
@@ -678,13 +677,40 @@ class EventTests(APITestCase):
         response = self.client.post(self.create_message_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_cancel(self):
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.views.TwilioRestClient')
+    def test_cancel(self, mock_twilio, mock_apns):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        # Have the SMS user accept their invitation.
+        self.friend2_invitation.response = Invitation.ACCEPTED
+        self.friend2_invitation.save()
+
         response = self.client.delete(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should set the event to canceled.
         event = Event.objects.get(id=self.event.id)
         self.assertTrue(event.canceled)
+
+        # It should send push notifications to users with devices.
+        registration_ids = [self.friend1_device.registration_id]
+        notif = '{name} canceled {activity}'.format(name=event.creator.name,
+                                                    activity=event.title)
+        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
+                                  badge=1)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(self.friend2_phone.phone)
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=notif)
 
         # It should return the event.
         serializer = EventSerializer(event)
