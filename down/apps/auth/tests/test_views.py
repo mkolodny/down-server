@@ -217,6 +217,9 @@ class UserTests(APITestCase):
                                                       event=event)
         all_friends_invitation.save()
 
+        # Save the most recent time the event was updated.
+        updated_at = event.updated_at
+
         # Have the friend add the user as their friend.
         friendship = Friendship(user=self.friend1, friend=self.user)
         friendship.save()
@@ -239,6 +242,10 @@ class UserTests(APITestCase):
                 firebase_secret=settings.FIREBASE_SECRET)
         json_invitation = json.dumps({self.user.id: True})
         mock_requests.patch.assert_called_with(url, json_invitation)
+
+        # It should update the event.
+        event = Event.objects.get(id=event.id)
+        self.assertGreater(event.updated_at, updated_at)
 
         # It should return a list of the events that the user was invited to.
         serializer = EventSerializer([self.event, event], many=True)
