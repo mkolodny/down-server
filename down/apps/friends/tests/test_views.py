@@ -6,6 +6,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from down.apps.auth.models import User
+from down.apps.events.models import AllFriendsInvitation, Event, Invitation
 from down.apps.friends.models import Friendship
 from down.apps.friends.serializers import FriendshipSerializer
 
@@ -55,6 +56,16 @@ class FriendshipTests(APITestCase):
         # Delete the mocked friendship.
         self.friendship.delete()
 
+        # Create an new event with an open invitation.
+        event = Event(creator=self.user, title='Ex Machina')
+        event.save()
+        all_friends_invitation = AllFriendsInvitation(from_user=self.user,
+                                                      event=event)
+        all_friends_invitation.save()
+
+        # Save the most recent time the event was updated.
+        updated_at = event.updated_at
+
         data = {
             'user': self.user.id,
             'friend': self.friend.id,
@@ -64,6 +75,14 @@ class FriendshipTests(APITestCase):
 
         # It should save the friendship in the DB.
         friendship = Friendship.objects.get(user=self.user, friend=self.friend)
+
+        # It should create an open invitation for the user.
+        Invitation.objects.get(event=event, from_user=self.user,
+                               to_user=self.friend, open=True)
+
+        # It should update the event.
+        event = Event.objects.get(id=event.id)
+        self.assertGreater(event.updated_at, updated_at)
 
         # It should return the friendship.
         serializer = FriendshipSerializer(friendship)
