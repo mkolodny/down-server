@@ -64,16 +64,24 @@ class InvitationSerializer(serializers.ModelSerializer):
         Update the event whenever we update an invitation from anything other
         than no response.
         """
+        import logging
+        logger = logging.getLogger('console')
+        logger.info('starting update')
         invitation = instance
         new_response = validated_data['response']
         if (invitation.response != Invitation.NO_RESPONSE
                 and invitation.response != new_response):
-            # The event is an id-only model object, so we need to fetch the whole
-            # thing.
+            logger.info('updating invitation')
+            # Update the event's `updated_at` time.
             Event.objects.filter(id=self.event.id).update()
 
+        logger.info('setting new attrs')
         for attr, value in validated_data.items():
             setattr(invitation, attr, value)
+        logger.info('set attrs')
+
+        from django.forms.models import model_to_dict
+        logger.info(model_to_dict(invitation))
 
         return invitation
 
