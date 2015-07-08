@@ -148,6 +148,9 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             invitation.save()
             invitations_created = True
 
+            # Update the event so that other users fetch the new invitation.
+            event.save()
+
             # Add the user to the Firebase members list.
             url = ('{firebase_url}/events/members/{event_id}/.json?auth='
                    '{firebase_secret}').format(
