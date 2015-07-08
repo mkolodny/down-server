@@ -1000,7 +1000,7 @@ class InvitationTests(APITestCase):
     def test_update(self, mock_send):
         # Mock an invitation.
         invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                event=self.event, response=Invitation.DECLINED)
+                                event=self.event, response=Invitation.MAYBE)
         invitation.save()
 
         # Save the most recent time the event was updated.
