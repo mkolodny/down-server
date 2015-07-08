@@ -163,10 +163,12 @@ class Invitation(models.Model):
     NO_RESPONSE = 0
     ACCEPTED = 1
     DECLINED = 2
+    MAYBE = 3
     RESPONSE_CHOICES = (
         (NO_RESPONSE, 'no response'),
         (ACCEPTED, 'accepted'),
         (DECLINED, 'declined'),
+        (MAYBE, 'maybe'),
     )
     response = models.SmallIntegerField(choices=RESPONSE_CHOICES,
                                         default=NO_RESPONSE)
