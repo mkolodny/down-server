@@ -36,7 +36,6 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'down.urls'
 WSGI_APPLICATION = 'down.wsgi.application'
 ADMINS = (
-    ('Viraj Sinha', 'virajosinha@gmail.com'),
     ('Andrew Linfoot', 'ajlin500@gmail.com'),
     ('Michael Kolodny', 'michaelckolodny@gmail.com'),
 )
