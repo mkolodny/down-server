@@ -23,9 +23,11 @@ INSTALLED_APPS = (
     'down.apps.notifications',
     'push_notifications',
     'rest_framework.authtoken',
+    'corsheaders',
 )
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware', # Has to come before common middleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -36,7 +38,6 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'down.urls'
 WSGI_APPLICATION = 'down.wsgi.application'
 ADMINS = (
-    ('Viraj Sinha', 'virajosinha@gmail.com'),
     ('Andrew Linfoot', 'ajlin500@gmail.com'),
     ('Michael Kolodny', 'michaelckolodny@gmail.com'),
 )
@@ -109,6 +110,9 @@ LOGGING = {
 REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning',
 }
+
+# CORS
+CORS_ORIGIN_ALLOW_ALL = True
 
 # Facebook
 FACEBOOK_APP_ID = os.environ['FACEBOOK_APP_ID']
