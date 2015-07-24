@@ -24,7 +24,11 @@ from down.apps.auth.models import (
 )
 from down.apps.auth.serializers import UserSerializer, UserPhoneSerializer
 from down.apps.events.models import AllFriendsInvitation, Event, Invitation
-from down.apps.events.serializers import EventSerializer, InvitationSerializer
+from down.apps.events.serializers import (
+    EventSerializer,
+    InvitationSerializer,
+    MyInvitationSerializer,
+)
 from down.apps.friends.models import Friendship
 
 
@@ -213,11 +217,11 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the active invitations.
-        serializer = InvitationSerializer([self.user_invitation], many=True)
+        serializer = MyInvitationSerializer([self.user_invitation], many=True)
         json_invitations = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitations)
 
-    def test_get_invitations_expired_created(self):
+    def test_get_invitations_created_expired(self):
         # Mock an expired event without a datetime (by default, events expire after
         # 24 hours).
         self.event.created_at = timezone.now() - timedelta(hours=24)
@@ -233,11 +237,11 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should only return the active invitations.
-        serializer = InvitationSerializer([invitation], many=True)
+        serializer = MyInvitationSerializer([invitation], many=True)
         json_invitations = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitations)
 
-    def test_get_invitations_expired_datetime(self):
+    def test_get_invitations_datetime_expired(self):
         # Mock an expired event with a datetime (by default, events expire 24 hours
         # after the end of the event).
         self.event.datetime = timezone.now() - timedelta(hours=24)
@@ -254,7 +258,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should only return the active invitations.
-        serializer = InvitationSerializer([invitation], many=True)
+        serializer = MyInvitationSerializer([invitation], many=True)
         json_invitations = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitations)
 

@@ -39,7 +39,11 @@ from .serializers import (
 )
 from down.apps.auth.filters import UserFilter
 from down.apps.events.models import AllFriendsInvitation, Event, Invitation
-from down.apps.events.serializers import EventSerializer, InvitationSerializer
+from down.apps.events.serializers import (
+    EventSerializer,
+    InvitationSerializer,
+    MyInvitationSerializer,
+)
 from down.apps.friends.models import Friendship
 
 
@@ -107,7 +111,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                         Q(event__datetime__isnull=False,
                           event__datetime__gt=twenty_four_hrs_ago))
 
-        serializer = InvitationSerializer(invitations, many=True)
+        serializer = MyInvitationSerializer(invitations, many=True)
         return Response(serializer.data)
 
     @list_route(methods=['get'])
