@@ -28,6 +28,7 @@ from down.apps.events.serializers import (
     AllFriendsInvitationSerializer,
     EventSerializer,
     InvitationSerializer,
+    EventInvitationSerializer,
     LinkInvitationSerializer,
 )
 
@@ -110,6 +111,7 @@ class EventTests(APITestCase):
         self.create_message_url = reverse('event-messages', kwargs={
             'pk': self.event.id,
         })
+        self.invitations_url = reverse('event-invitations', kwargs={'pk': self.event.id})
     
     def tearDown(self):
         self.patcher.stop()
@@ -719,6 +721,25 @@ class EventTests(APITestCase):
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
+
+    def test_get_invitations(self):
+        response = self.client.get(self.invitations_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the invitations of users who are down or might be down.
+        invitations = [self.user_invitation, self.friend1_invitation]
+        serializer = EventInvitationSerializer(invitations, many=True)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    def test_get_invitations_not_member(self):
+        # You should only be able to get the invitations for an event that you
+        # are either down, or might be down for.
+        self.user_invitation.response = Invitation.NO_RESPONSE
+        self.user_invitation.save()
+
+        response = self.client.get(self.invitations_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class InvitationTests(APITestCase):

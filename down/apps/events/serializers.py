@@ -241,6 +241,18 @@ class MyInvitationSerializer(serializers.ModelSerializer):
         list_serializer_class = InvitationListSerializer
 
 
+class EventInvitationSerializer(serializers.ModelSerializer):
+    event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
+    from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
+    to_user = UserSerializer()
+    created_at = UnixEpochDateField(read_only=True)
+    updated_at = UnixEpochDateField(read_only=True)
+
+    class Meta:
+        model = Invitation
+        list_serializer_class = InvitationListSerializer
+
+
 class LinkInvitationSerializer(GeoModelSerializer):
     created_at = UnixEpochDateField(read_only=True)
 
