@@ -6,6 +6,7 @@ import mock
 from urllib import urlencode
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 import httpretty
 import pytz
 from rest_framework import status
@@ -23,7 +24,7 @@ from down.apps.auth.models import (
 )
 from down.apps.auth.serializers import UserSerializer, UserPhoneSerializer
 from down.apps.events.models import AllFriendsInvitation, Event, Invitation
-from down.apps.events.serializers import EventSerializer
+from down.apps.events.serializers import EventSerializer, InvitationSerializer
 from down.apps.friends.models import Friendship
 
 
@@ -86,8 +87,7 @@ class UserTests(APITestCase):
         self.list_url = reverse('user-list')
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
         self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
-        self.invited_events_url = reverse('user-invited-events',
-                                          kwargs={'pk': self.user.id})
+        self.invitations_url = reverse('user-invitations')
 
     def tearDown(self):
         self.patcher.stop()
@@ -207,6 +207,56 @@ class UserTests(APITestCase):
         serializer = UserSerializer([self.friend1], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
+
+    def test_get_invitations(self):
+        response = self.client.get(self.invitations_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the active invitations.
+        serializer = InvitationSerializer([self.user_invitation], many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
+
+    def test_get_invitations_expired_created(self):
+        # Mock an expired event without a datetime (by default, events expire after
+        # 24 hours).
+        self.event.created_at = timezone.now() - timedelta(hours=24)
+        self.event.save()
+
+        # Mock not-expired event without a datetime.
+        event = Event(title='Beach Day', creator=self.user)
+        event.save()
+        invitation = Invitation(event=event, from_user=self.user, to_user=self.user)
+        invitation.save()
+
+        response = self.client.get(self.invitations_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should only return the active invitations.
+        serializer = InvitationSerializer([invitation], many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
+
+    def test_get_invitations_expired_datetime(self):
+        # Mock an expired event with a datetime (by default, events expire 24 hours
+        # after the end of the event).
+        self.event.datetime = timezone.now() - timedelta(hours=24)
+        self.event.save()
+
+        # Mock not-expired event with a datetime.
+        tomorrow = timezone.now() + timedelta(hours=24)
+        event = Event(title='Beach Day', creator=self.user, datetime=tomorrow)
+        event.save()
+        invitation = Invitation(event=event, from_user=self.user, to_user=self.user)
+        invitation.save()
+
+        response = self.client.get(self.invitations_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should only return the active invitations.
+        serializer = InvitationSerializer([invitation], many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
 
     @mock.patch('down.apps.auth.views.requests')
     def test_invited_events(self, mock_requests):

@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from urllib import urlencode
 import uuid
@@ -7,7 +7,9 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.gis.measure import D
 from django.db import IntegrityError
+from django.db.models import Q
 from django.shortcuts import render
+from django.utils import timezone
 from django.views.generic.base import RedirectView, TemplateView
 from firebase_token_generator import create_token
 import pytz
@@ -37,7 +39,7 @@ from .serializers import (
 )
 from down.apps.auth.filters import UserFilter
 from down.apps.events.models import AllFriendsInvitation, Event, Invitation
-from down.apps.events.serializers import EventSerializer
+from down.apps.events.serializers import EventSerializer, InvitationSerializer
 from down.apps.friends.models import Friendship
 
 
@@ -94,6 +96,18 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         friend_ids = [account.user_id for account in social_accounts]
         friends = User.objects.filter(id__in=friend_ids)
         serializer = UserSerializer(friends, many=True)
+        return Response(serializer.data)
+
+    @list_route(methods=['get'])
+    def invitations(self, request):
+        twenty_four_hrs_ago = timezone.now() - timedelta(hours=24)
+        invitations = Invitation.objects.filter(to_user=request.user) \
+                .filter(Q(event__datetime__isnull=True,
+                          event__created_at__gt=twenty_four_hrs_ago) |
+                        Q(event__datetime__isnull=False,
+                          event__datetime__gt=twenty_four_hrs_ago))
+
+        serializer = InvitationSerializer(invitations, many=True)
         return Response(serializer.data)
 
     @detail_route(methods=['get'])
