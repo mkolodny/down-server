@@ -94,7 +94,7 @@ class EventTests(APITestCase):
         self.friend1_invitation = Invitation(from_user=self.user,
                                              to_user=self.friend1,
                                              event=self.event,
-                                             response=Invitation.ACCEPTED)
+                                             response=Invitation.MAYBE)
         self.friend1_invitation.save()
         self.friend2_invitation = Invitation(from_user=self.user,
                                              to_user=self.friend2,

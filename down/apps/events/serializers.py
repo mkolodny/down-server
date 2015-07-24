@@ -101,7 +101,7 @@ class EventSerializer(serializers.ModelSerializer):
         creator = event.creator
 
         # Get devices we should send push notifications to.
-        responses = [Invitation.NO_RESPONSE, Invitation.ACCEPTED]
+        responses = [Invitation.NO_RESPONSE, Invitation.ACCEPTED, Invitation.MAYBE]
         invites = Invitation.objects.filter(event=event, response__in=responses) \
                 .exclude(to_user=creator)
         member_ids = [invite.to_user_id for invite in invites]

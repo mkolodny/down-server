@@ -48,8 +48,9 @@ class EventViewSet(viewsets.ModelViewSet):
         # Notify people who were down that the event was canceled.
         message = '{name} canceled {activity}'.format(name=event.creator.name,
                                                       activity=event.title)
+        responses = [Invitation.ACCEPTED, Invitation.MAYBE]
         invitations = Invitation.objects.filter(event=event) \
-                .filter(Q(response=Invitation.ACCEPTED)) \
+                .filter(Q(response__in=responses)) \
                 .exclude(to_user=request.user)
         member_ids = [invitation.to_user_id for invitation in invitations]
         devices = APNSDevice.objects.filter(user_id__in=member_ids)
@@ -96,8 +97,9 @@ class EventViewSet(viewsets.ModelViewSet):
             message = '{name} to {activity}: {text}'.format(
                     name=request.user.name, activity=activity,
                     text=serializer.data['text'])
+            responses = [Invitation.ACCEPTED, Invitation.MAYBE]
             invitations = Invitation.objects.filter(event=event) \
-                    .filter(Q(response=Invitation.ACCEPTED)
+                    .filter(Q(response__in=responses)
                             | Q(to_user_messaged=True)) \
                     .exclude(to_user=request.user) \
                     .exclude(muted=True)
