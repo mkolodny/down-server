@@ -419,3 +419,11 @@ class AppStoreView(RedirectView):
 
 class ArticleView(TemplateView):
     template_name = 'festivals.html'
+
+
+class FellowshipFoundersView(TemplateView):
+    template_name = 'founders.html'
+
+
+class FellowshipDemoView(TemplateView):
+    template_name = 'demo.html'
