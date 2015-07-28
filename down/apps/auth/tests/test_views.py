@@ -890,8 +890,10 @@ class LandingTests(APITestCase):
     def test_get(self):
         url = reverse('landing')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTemplateUsed(response, 'landing.html')
+        app_store_url = ('https://itunes.apple.com/us/app/down-connect-people'
+                         '-around/id969040287?mt=8')
+        self.assertRedirects(response, app_store_url,
+                             fetch_redirect_response=False)
 
 
 class LinfootFunnelTests(APITestCase):

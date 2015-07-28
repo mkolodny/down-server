@@ -400,8 +400,10 @@ class TermsView(TemplateView):
     template_name = 'terms.html'
 
 
-class LandingView(TemplateView):
-    template_name = 'landing.html'
+class LandingView(RedirectView):
+    url = ('https://itunes.apple.com/us/app/down-connect-people-around/id'
+           '969040287?mt=8')
+    permanent = False
 
 
 class LinfootFunnelViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
