@@ -889,3 +889,21 @@ class ArticleTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTemplateUsed(response, 'festivals.html')
+
+
+class FellowshipFoundersTests(APITestCase):
+
+    def test_get(self):
+        url = reverse('founders')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'founders.html')
+
+
+class FellowshipDemoTests(APITestCase):
+
+    def test_get(self):
+        url = reverse('demo')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'demo.html')
