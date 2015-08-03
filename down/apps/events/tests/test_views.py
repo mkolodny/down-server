@@ -105,19 +105,14 @@ class EventTests(APITestCase):
         # Save SMS details.
         self.signature = '\n--\nSent from Down (http://down.life/app)'
 
-        # Save urls.
-        self.list_url = reverse('event-list')
-        self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
-        self.create_message_url = reverse('event-messages', kwargs={
-            'pk': self.event.id,
-        })
-        self.invitations_url = reverse('event-invitations', kwargs={'pk': self.event.id})
-    
-    def tearDown(self):
-        self.patcher.stop()
-
-    def test_create(self):
-        data = {
+        # Save post data.
+        self.user_invitation_data = {
+            'to_user': self.user.id,
+        }
+        self.friend_invitation_data = {
+            'to_user': self.friend1.id,
+        }
+        self.post_data = {
             'title': 'rat fishing with the boys over at the place!',
             'creator': self.user.id,
             'canceled': False,
@@ -126,7 +121,28 @@ class EventTests(APITestCase):
                 'name': 'Atlantic-Barclays Station',
                 'geo': 'POINT(40.685339 -73.979361)',
             },
+            'invitations': [
+                self.user_invitation_data,
+                self.friend_invitation_data,
+            ],
         }
+
+        # Save urls.
+        self.list_url = reverse('event-list')
+        self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
+        self.create_message_url = reverse('event-messages', kwargs={
+            'pk': self.event.id,
+        })
+        self.invitations_url = reverse('event-invitations', kwargs={
+            'pk': self.event.id
+        })
+    
+    def tearDown(self):
+        self.patcher.stop()
+
+    @mock.patch('down.apps.events.models.Invitation.objects.bulk_create')
+    def test_create(self, mock_bulk_create):
+        data = self.post_data
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -136,7 +152,22 @@ class EventTests(APITestCase):
 
         # It should create the event.
         data.pop('datetime') # TODO: Figure out why the saved ms are off.
+        data.pop('invitations') # The event model doesn't have invitations.
         event = Event.objects.get(**data)
+
+        # It should bulk create two invitations.
+        self.assertTrue(mock_bulk_create.called)
+        call_args = mock_bulk_create.call_args[0][0]
+        user_invitation_call = call_args[0]
+        self.assertEqual(user_invitation_call.event_id, event.id)
+        self.assertEqual(user_invitation_call.response, Invitation.MAYBE)
+        self.assertEqual(user_invitation_call.to_user_id, self.user.id)
+        self.assertEqual(user_invitation_call.from_user_id, self.user.id)
+        friend_invitation_call = call_args[1]
+        self.assertEqual(friend_invitation_call.event_id, event.id)
+        self.assertEqual(friend_invitation_call.response, Invitation.NO_RESPONSE)
+        self.assertEqual(friend_invitation_call.to_user_id, self.friend1.id)
+        self.assertEqual(friend_invitation_call.from_user_id, self.user.id)
 
         # It should return the event.
         serializer = EventSerializer(event)
@@ -812,6 +843,7 @@ class InvitationTests(APITestCase):
         self.list_url = reverse('invitation-list')
 
         # Save POST data.
+        # TODO: Only send the to user and the event.
         self.post_data = {
             'invitations': [
                 {
@@ -845,66 +877,14 @@ class InvitationTests(APITestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('down.apps.events.models.TwilioRestClient')
-    @mock.patch('down.apps.events.models.get_invite_sms')
-    @mock.patch('down.apps.events.models.requests')
-    def test_bulk_create(self, mock_requests, mock_get_message, mock_twilio,
-                         mock_apns):
-        # Mock the getting the invitation message.
-        mock_message = 'Barack Obama invited you to ball hard'
-        mock_get_message.return_value = mock_message
-
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
+    @mock.patch('down.apps.events.models.Invitation.objects.bulk_create')
+    def test_bulk_create(self, mock_bulk_create):
         response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should create the invitations.
-        invitations = Invitation.objects.filter(from_user=self.user1,
-                                                event=self.event)
-        self.assertEqual(invitations.count(),
-                         len(self.post_data['invitations']))
-
-        # It should send push notifications to users with devices.
-        token = self.user2_device.registration_id
-        message = '{name} invited you to {activity}'.format(
-                name=self.user1.name,
-                activity=self.event.title)
-        mock_apns.assert_any_call(registration_ids=[token], alert=message,
-                                  badge=1)
-
-        # It should use the mock to get the SMS invite message.
-        mock_get_message.assert_called_with(self.user1, self.event)
-
-        # It should init the Twilio client with the proper params.
-        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
-                                       settings.TWILIO_TOKEN)
-
-        # It should send SMS to users without devices.
-        phone = unicode(self.user3_phone.phone)
-        mock_client.messages.create.assert_called_with(to=phone, 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=mock_message)
-
-        # It should add the users to the firebase members list.
-        url = ('{firebase_url}/events/members/{event_id}/.json'
-               '?auth={firebase_secret}').format(
-                firebase_url=settings.FIREBASE_URL,
-                event_id=self.event.id,
-                firebase_secret=settings.FIREBASE_SECRET)
-        json_invitations = json.dumps({
-            invite['to_user']: True
-            for invite in self.post_data['invitations']
-        })
-        mock_requests.patch.assert_called_with(url, json_invitations)
-
-        # It should return the invitations.
-        serializer = InvitationSerializer(invitations, many=True)
-        json_invitations = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitations)
+        # It should bulk create the invitations.
+        # TODO: Make this test more robust.
+        self.assertTrue(mock_bulk_create.called)
 
     def test_bulk_create_not_logged_in(self):
         # Don't include the user's credentials in the request.
@@ -947,11 +927,6 @@ class InvitationTests(APITestCase):
                                                 event=self.event)
         self.assertEqual(invitations.count(),
                          len(self.post_data['invitations']))
-
-        # It should return the invitations.
-        serializer = InvitationSerializer(invitations, many=True)
-        json_invitations = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitations)
 
     def test_bulk_create_not_invited(self):
         # Log the second user in.

@@ -29,11 +29,21 @@ class AllFriendsInvitationSerializer(GeoModelSerializer):
         model = AllFriendsInvitation
 
 
+class CreateEventInvitationSerializer(serializers.ModelSerializer):
+    to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = Invitation
+        fields = ('to_user',)
+
+
 class EventSerializer(serializers.ModelSerializer):
     created_at = UnixEpochDateField(read_only=True)
     updated_at = UnixEpochDateField(read_only=True)
     place = PlaceSerializer(required=False)
     datetime = UnixEpochDateField(required=False)
+    invitations = CreateEventInvitationSerializer(write_only=True, required=False,
+                                                  many=True)
 
     class Meta:
         model = Event
@@ -42,11 +52,14 @@ class EventSerializer(serializers.ModelSerializer):
         """
         Django REST Framework doesn't support writable nested fields by default.
         So first we create the place. Then we create an event that's related to the
-        place.
+        place. Finally, we create the invitations sent out along with the event.
 
         We're doing this to avoid having to make two HTTP requests for something
         super common - saving an event with a place.
         """
+        invitations = [Invitation(**invitation)
+                for invitation in validated_data.pop('invitations')]
+
         has_place = validated_data.has_key('place')
         if has_place:
             place = Place(**validated_data.pop('place'))
@@ -56,6 +69,16 @@ class EventSerializer(serializers.ModelSerializer):
         if has_place:
             event.place = place
         event.save()
+
+        for invitation in invitations:
+            invitation.event = event
+            invitation.from_user_id = event.creator_id
+            if invitation.to_user.id == event.creator_id:
+                invitation.response = Invitation.MAYBE
+            else:
+                invitation.response = Invitation.NO_RESPONSE
+        Invitation.objects.bulk_create(invitations)
+
         return event
 
     def update(self, instance, validated_data):
@@ -192,10 +215,7 @@ class InvitationListSerializer(serializers.ListSerializer):
             raise ValidationError('Event doesn\'t exist')
 
         Invitation.objects.bulk_create(invitations)
-        to_user_ids = [invitation.to_user_id for invitation in invitations]
-        invitations = Invitation.objects.filter(event=event,
-                                                to_user_id__in=to_user_ids)
-        invitations.send()
+
         return invitations
 
 

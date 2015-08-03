@@ -355,3 +355,72 @@ class InvitationTests(APITestCase):
         ]
         mock_send.assert_called_with(registration_ids=tokens, alert=message)
         self.assertEqual(mock_send.call_count, 1)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('down.apps.events.models.TwilioRestClient')
+    @mock.patch('down.apps.events.models.get_invite_sms')
+    def test_bulk_create(self, mock_get_invite_sms, mock_twilio, mock_apns):
+        # Mock the getting the invitation message.
+        mock_sms = 'Barack Obama invited you to ball hard'
+        mock_get_invite_sms.return_value = mock_sms
+
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        # Mock a friend without a device.
+        friend2 = User(email='ltorvalds@gmail.com', name='Linus Torvalds',
+                       username='valding', image_url='http://imgur.com/valding')
+        friend2.save()
+        friendship = Friendship(user=self.user, friend=friend2)
+        friendship.save()
+        friend2_userphone = UserPhone(phone='+1234567890', user=friend2)
+        friend2_userphone.save()
+
+        invitation1_data = {
+            'to_user': self.user,
+            'from_user': self.user,
+            'event': self.event,
+            'response': Invitation.MAYBE,
+        }
+        invitation2_data = {
+            'to_user': self.friend1,
+            'from_user': self.user,
+            'event': self.event,
+            'response': Invitation.NO_RESPONSE,
+        }
+        invitation3_data = {
+            'to_user': friend2,
+            'from_user': self.user,
+            'event': self.event,
+            'response': Invitation.NO_RESPONSE,
+        }
+        invitations_data = [invitation1_data, invitation2_data, invitation3_data]
+        invitations = [Invitation(**invitation_data)
+                for invitation_data in invitations_data]
+        Invitation.objects.bulk_create(invitations)
+
+        # It should create the invitations.
+        for invitation in invitation_data:
+            Invitation.objects.get(**invitation_data)
+
+        # It should send push notifications to users with devices.
+        token = self.friend1_device.registration_id
+        message = 'from {name}'.format(name=self.user.name)
+        mock_apns.assert_any_call(registration_ids=[token], alert=message,
+                                  badge=1)
+
+        # It should use the mock to get the SMS invite message.
+        mock_get_invite_sms.assert_called_with(self.user, self.event)
+
+        # It should init the Twilio client with the proper params.
+        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
+                                       settings.TWILIO_TOKEN)
+
+        # It should send SMS to users without devices.
+        phone = unicode(friend2_userphone.phone)
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=mock_sms)
+
+        # TODO: It should add the users to the meteor members list.

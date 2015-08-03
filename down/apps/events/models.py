@@ -96,6 +96,41 @@ class InvitationManager(models.Manager):
     def get_queryset(self):
         return InvitationQuerySet(self.model)
 
+    def bulk_create(self, invitations):
+        # TODO: Test this.
+        if len(invitations) == 0:
+            return
+
+        super(InvitationManager, self).bulk_create(invitations)
+
+        # Get the first invitation to use to grab the user sending the invitations,
+        # and the event.
+        first_invitation = invitations[0]
+        from_user = first_invitation.from_user
+        event = first_invitation.event
+
+        # Don't notify the user who is sending the invitations.
+        invitations = [invitation for invitation in invitations
+                       if invitation.to_user_id != from_user.id]
+
+        # Send users with devices push notifications.
+        message = 'from {name}'.format(name=from_user.name)
+        user_ids = [invitation.to_user_id for invitation in invitations]
+        devices = APNSDevice.objects.filter(user_id__in=user_ids)
+        devices.send_message(message, badge=1)
+
+        # Text message everyone else their invitation.
+        message = get_invite_sms(from_user, event)
+        device_user_ids = [device.user_id for device in devices]
+        sms_user_ids = [invitation.to_user_id for invitation in invitations
+                        if invitation.to_user_id not in device_user_ids]
+        userphones = UserPhone.objects.filter(user_id__in=sms_user_ids)
+        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
+        for userphone in userphones:
+            phone = unicode(userphone.phone)
+            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
+                                   body=message)
+
 
 class InvitationQuerySet(models.query.QuerySet):
 
