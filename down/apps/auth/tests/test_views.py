@@ -594,11 +594,13 @@ class SessionTests(APITestCase):
     def setUp(self):
         # Save URLs.
         self.list_url = reverse('session')
+        self.meteor_url = '{meteor_url}/sessions'.format(
+                meteor_url=settings.METEOR_URL)
     
     @httpretty.activate
     def test_create(self):
         # Mock the meteor server response.
-        httpretty.register_uri(httpretty.POST, settings.METEOR_URL,
+        httpretty.register_uri(httpretty.POST, self.meteor_url,
                                content_type='application/json')
 
         # Make sure no users have been created yet.
@@ -626,12 +628,11 @@ class SessionTests(APITestCase):
         token = Token.objects.get(user=user)
 
         # It should authenticate the user on the meteor server.
-        data = json.dumps({
+        self.assertEqual(httpretty.last_request().body, json.dumps({
             'api_key': settings.METEOR_KEY,
             'user_id': user.id,
             'password': token.key,
         })
-        self.assertEqual(httpretty.last_request().body, data)
 
         # It should return the user.
         user.authtoken = token.key
@@ -642,7 +643,7 @@ class SessionTests(APITestCase):
     @httpretty.activate
     def test_create_bad_credentials(self):
         # Mock the meteor server response.
-        httpretty.register_uri(httpretty.POST, settings.METEOR_URL,
+        httpretty.register_uri(httpretty.POST, self.meteor_url,
                                content_type='application/json')
 
         # Mock an auth code.
@@ -656,7 +657,7 @@ class SessionTests(APITestCase):
     @httpretty.activate
     def create_already_created(self, phone_number):
         # Mock the meteor server response.
-        httpretty.register_uri(httpretty.POST, settings.METEOR_URL,
+        httpretty.register_uri(httpretty.POST, self.meteor_url,
                                content_type='application/json')
 
         # Mock an already created user
@@ -703,7 +704,7 @@ class SessionTests(APITestCase):
     @httpretty.activate
     def test_create_bad_meteor_response(self):
         # Mock the meteor server response.
-        httpretty.register_uri(httpretty.POST, settings.METEOR_URL,
+        httpretty.register_uri(httpretty.POST, self.meteor_url,
                                content_type='application/json',
                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
 

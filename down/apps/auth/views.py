@@ -267,7 +267,8 @@ class SessionView(APIView):
         user.authtoken = token.key
 
         # Authenticate the user on the meteor server.
-        response = requests.post(settings.METEOR_URL, data=json.dumps({
+        url = '{meteor_url}/sessions'.format(meteor_url=settings.METEOR_URL)
+        response = requests.post(url, data=json.dumps({
             'api_key': settings.METEOR_KEY,
             'user_id': user.id,
             'password': token.key,
