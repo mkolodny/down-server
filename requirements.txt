@@ -11,7 +11,6 @@ django-uuidfield==0.5.0
 djangorestframework==3.1.1
 djangorestframework-gis==0.8.2
 eventlet==0.17.1
-firebase-token-generator==2.0.0
 gnureadline==6.3.3
 greenlet==0.4.5
 gunicorn==19.2.1

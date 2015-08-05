@@ -21,7 +21,6 @@ class User(AbstractBaseUser):
     # time that they give us permission to view their location.
     location = models.PointField(null=True, blank=True)
     authtoken = models.TextField(null=True, blank=True)
-    firebase_token = models.TextField(null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False,

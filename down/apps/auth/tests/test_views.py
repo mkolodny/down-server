@@ -590,66 +590,74 @@ class AuthCodeTests(APITestCase):
 
 
 class SessionTests(APITestCase):
-    
-    @mock.patch('down.apps.auth.views.create_token')
-    def test_create(self, mock_create_token):
-        # Make sure no users have been created yet
-        self.assertEquals(User.objects.count(), 0)
 
-        # Generate a Firebase token.
-        firebase_token = 'qwer1234'
-        mock_create_token.return_value = firebase_token
+    def setUp(self):
+        # Save URLs.
+        self.list_url = reverse('session')
+    
+    @httpretty.activate
+    def test_create(self):
+        # Mock the meteor server response.
+        httpretty.register_uri(httpretty.POST, settings.METEOR_URL,
+                               content_type='application/json')
+
+        # Make sure no users have been created yet.
+        self.assertEquals(User.objects.count(), 0)
 
         # Mock the user's auth code.
         auth = AuthCode(phone='+12345678910')
         auth.save()
 
-        url = reverse('session')
         data = {'phone': unicode(auth.phone), 'code': auth.code}
-        response = self.client.post(url, data)
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should delete the auth code
+        # It should delete the auth code.
         with self.assertRaises(AuthCode.DoesNotExist):
             AuthCode.objects.get(code=auth.code, phone=auth.phone)
 
-        # Make sure we've created a user for this number 
+        # It should create a user associated with the given number.
         user = User.objects.get()
 
-        # Make sure the phone number was created
+        # It should create a userphone.
         UserPhone.objects.get(user=user, phone=auth.phone)
 
-        # Get the token, which should've been created
+        # It should create a token.
         token = Token.objects.get(user=user)
 
-        # It should generate a Firebase token.
-        auth_payload = {'uid': unicode(user.id)}
-        mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
+        # It should authenticate the user on the meteor server.
+        data = json.dumps({
+            'api_key': settings.METEOR_KEY,
+            'user_id': user.id,
+            'password': token.key,
+        })
+        self.assertEqual(httpretty.last_request().body, data)
 
-        # Check that the response is the user we're expecting
+        # It should return the user.
         user.authtoken = token.key
-        user.firebase_token = firebase_token
         serializer = UserSerializer(user)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
+    @httpretty.activate
     def test_create_bad_credentials(self):
+        # Mock the meteor server response.
+        httpretty.register_uri(httpretty.POST, settings.METEOR_URL,
+                               content_type='application/json')
+
         # Mock an auth code.
         auth = AuthCode(phone='+12345678910')
         auth.save()
 
-        url = reverse('session')
         data = {'phone': unicode(auth.phone), 'code': (auth.code + 'x')}
-        response = self.client.post(url, data)
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @mock.patch('down.apps.auth.views.create_token')
-    @mock.patch('down.apps.auth.views.uuid')
-    def create_already_created(self, phone_number, mock_uuid, mock_create_token):
-        firebase_uuid = 9876
-        firebase_token = 'qwer1234'
-        mock_uuid.uuid1.return_value = firebase_uuid
-        mock_create_token.return_value = firebase_token
+    @httpretty.activate
+    def create_already_created(self, phone_number):
+        # Mock the meteor server response.
+        httpretty.register_uri(httpretty.POST, settings.METEOR_URL,
+                               content_type='application/json')
 
         # Mock an already created user
         mock_user = User()
@@ -667,11 +675,10 @@ class SessionTests(APITestCase):
         self.auth.save()
 
         data = {'phone': unicode(self.auth.phone), 'code': self.auth.code}
-        response = self.client.post(url, data)
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         mock_user.authtoken = token.key
-        mock_user.firebase_token = firebase_token
         serializer = UserSerializer(mock_user)
         mock_user_json = JSONRenderer().render(serializer.data)
 
@@ -692,6 +699,24 @@ class SessionTests(APITestCase):
 
         # The user's auth code should still exist.
         AuthCode.objects.get(id=self.auth.id)
+
+    @httpretty.activate
+    def test_create_bad_meteor_response(self):
+        # Mock the meteor server response.
+        httpretty.register_uri(httpretty.POST, settings.METEOR_URL,
+                               content_type='application/json',
+                               status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # Mock the user's auth code.
+        auth = AuthCode(phone='+12345678910')
+        auth.save()
+
+        data = {'phone': unicode(auth.phone), 'code': auth.code}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # The auth code should still exist.
+        AuthCode.objects.get(code=auth.code, phone=auth.phone)
 
 
 class UserPhoneViewSetTests(APITestCase):

@@ -114,13 +114,13 @@ REST_FRAMEWORK = {
 # CORS
 CORS_ORIGIN_ALLOW_ALL = True
 
+# Meteor Server
+METEOR_KEY = os.environ['METEOR_KEY']
+METEOR_URL = os.environ['METEOR_URL']
+
 # Facebook
 FACEBOOK_APP_ID = os.environ['FACEBOOK_APP_ID']
 FACEBOOK_APP_SECRET = os.environ['FACEBOOK_APP_SECRET']
-
-# Firebase
-FIREBASE_URL = os.environ['FIREBASE_URL']
-FIREBASE_SECRET = os.environ['FIREBASE_SECRET']
 
 # Twilio
 TWILIO_ACCOUNT = os.environ['TWILIO_ACCOUNT']

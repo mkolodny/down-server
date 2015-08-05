@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 from datetime import datetime, timedelta
 import json
 from urllib import urlencode
-import uuid
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.gis.measure import D
@@ -11,7 +10,6 @@ from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.generic.base import RedirectView, TemplateView
-from firebase_token_generator import create_token
 import pytz
 import requests
 from rest_framework import mixins, status, viewsets
@@ -249,36 +247,37 @@ class SessionView(APIView):
         except AuthCode.DoesNotExist:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        # If the user is the Apple test user, don't delete the auth code.
-        if serializer.data['phone'] != '+15555555555':
-            # Delete the auth code to keep the db clean
-            auth.delete()
-
         # Get or create the user
         try:
             phone = serializer.data['phone']
             user_number = UserPhone.objects.get(phone=phone)
             # User exists
             user = user_number.user
+            token, created = Token.objects.get_or_create(user=user)
         except UserPhone.DoesNotExist:
             # User doesn't already exist, so create a blank new user and phone
             # number.
             user = User()
             user.save()
 
-            user_number = UserPhone(user=user, phone=serializer.data['phone'])
-            user_number.save()
+            userphone = UserPhone(user=user, phone=serializer.data['phone'])
+            userphone.save()
 
-        token, created = Token.objects.get_or_create(user=user)
+            token = Token.objects.create(user=user)
         user.authtoken = token.key
 
-        # Generate a Firebase token every time.
-        # TODO: Don't set the firebase token on the user. Just add it as
-        # extra context to the user serializer.
-        #auth_payload = {'uid': unicode(uuid.uuid1())}
-        auth_payload = {'uid': unicode(user.id)}
-        firebase_token = create_token(settings.FIREBASE_SECRET, auth_payload)
-        user.firebase_token = firebase_token
+        # Authenticate the user on the meteor server.
+        response = requests.post(settings.METEOR_URL, data=json.dumps({
+            'api_key': settings.METEOR_KEY,
+            'user_id': user.id,
+            'password': token.key,
+        }))
+        if response.status_code != 200:
+            return Response(status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # If the user is the Apple test user, don't delete the auth code.
+        if serializer.data['phone'] != '+15555555555':
+            auth.delete()
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
