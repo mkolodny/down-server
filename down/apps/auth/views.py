@@ -106,10 +106,12 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     def invitations(self, request):
         twenty_four_hrs_ago = timezone.now() - timedelta(hours=24)
         invitations = Invitation.objects.filter(to_user=request.user) \
+                .select_related('event') \
                 .filter(Q(event__datetime__isnull=True,
                           event__created_at__gt=twenty_four_hrs_ago) |
                         Q(event__datetime__isnull=False,
-                          event__datetime__gt=twenty_four_hrs_ago))
+                          event__datetime__gt=twenty_four_hrs_ago)) \
+                .select_related('from_user')
 
         serializer = MyInvitationSerializer(invitations, many=True)
         return Response(serializer.data)

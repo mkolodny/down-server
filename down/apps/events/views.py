@@ -129,6 +129,7 @@ class EventViewSet(viewsets.ModelViewSet):
         if invitations.filter(to_user=request.user).count() < 1:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
+        invitations.select_related('to_user')
         serializer = EventInvitationSerializer(invitations, many=True)
         return Response(serializer.data)
 

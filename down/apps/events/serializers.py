@@ -258,7 +258,6 @@ class MyInvitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Invitation
-        list_serializer_class = InvitationListSerializer
 
 
 class EventInvitationSerializer(serializers.ModelSerializer):
@@ -270,7 +269,6 @@ class EventInvitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Invitation
-        list_serializer_class = InvitationListSerializer
 
 
 class LinkInvitationSerializer(GeoModelSerializer):
