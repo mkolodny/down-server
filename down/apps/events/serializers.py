@@ -1,15 +1,18 @@
 from __future__ import unicode_literals
 from django.conf import settings
 from push_notifications.models import APNSDevice
+import requests
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework_gis.serializers import GeoModelSerializer
 from twilio.rest import TwilioRestClient
 from .models import AllFriendsInvitation, Event, Invitation, LinkInvitation, Place
+from .utils import add_member, remove_member
 from down.apps.auth.models import User, UserPhone
 from down.apps.auth.serializers import UserSerializer
 from down.apps.events.models import get_event_date
+from down.apps.utils.exceptions import ServiceUnavailable
 from down.apps.utils.serializers import (
     PkOnlyPrimaryKeyRelatedField,
     UnixEpochDateField,
@@ -69,6 +72,12 @@ class EventSerializer(serializers.ModelSerializer):
         if has_place:
             event.place = place
         event.save()
+
+        # Add the creator to the meteor server members list.
+        try:
+            add_member(event.id, event.creator_id)
+        except requests.exceptions.HTTPError:
+            raise ServiceUnavailable()
 
         for invitation in invitations:
             invitation.event = event
@@ -237,6 +246,19 @@ class InvitationSerializer(serializers.ModelSerializer):
         """
         invitation = instance
         new_response = validated_data['response']
+
+        # Update the meteor server's event member list.
+        try:
+            if new_response in [Invitation.ACCEPTED, Invitation.MAYBE]:
+                # Add the user to the meteor server members list.
+                add_member(invitation.event_id, invitation.to_user_id)
+            else:
+                # Remove the user from the meteor server members list.
+                remove_member(invitation.event_id, invitation.to_user_id)
+        except requests.exceptions.HTTPError:
+            raise ServiceUnavailable()
+
+        # Update the invitation.
         if (invitation.response != Invitation.NO_RESPONSE
                 and invitation.response != new_response):
             # Update the event's `updated_at` time.

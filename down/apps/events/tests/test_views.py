@@ -10,6 +10,7 @@ import httpretty
 import mock
 from push_notifications.models import APNSDevice
 import pytz
+import requests
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
@@ -140,8 +141,9 @@ class EventTests(APITestCase):
     def tearDown(self):
         self.patcher.stop()
 
+    @mock.patch('down.apps.events.serializers.add_member')
     @mock.patch('down.apps.events.models.Invitation.objects.bulk_create')
-    def test_create(self, mock_bulk_create):
+    def test_create(self, mock_bulk_create, mock_add_member):
         data = self.post_data
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -169,6 +171,9 @@ class EventTests(APITestCase):
         self.assertEqual(friend_invitation_call.to_user_id, self.friend1.id)
         self.assertEqual(friend_invitation_call.from_user_id, self.user.id)
 
+        # It should add the creator to the members list.
+        mock_add_member.assert_called_once_with(event.id, event.creator_id)
+
         # It should return the event.
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
@@ -181,12 +186,20 @@ class EventTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    @mock.patch('down.apps.events.serializers.add_member')
+    def test_create_add_member_error(self, mock_add_member):
+        mock_add_member.side_effect = requests.exceptions.HTTPError()
+
+        response = self.client.post(self.list_url, self.post_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
     def test_get(self):
         response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the event.
-        serializer = EventSerializer(self.event)
+        event = Event.objects.get(id=self.event.id)
+        serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
 
@@ -240,8 +253,8 @@ class EventTests(APITestCase):
         # It should send push notifications to users with devices.
         registration_ids = [self.friend1_device.registration_id]
         notif = ('{name} changed the location and time where {activity} is'
-                 ' happening.').format(name=event.creator.name,
-                                       activity=event.title)
+                 ' happening.') \
+                .format(name=event.creator.name, activity=event.title)
         mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
                                   badge=1)
 
@@ -992,11 +1005,74 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    @mock.patch('down.apps.events.serializers.add_member')
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_update(self, mock_send):
+    def test_accept(self, mock_send, mock_add_member):
         # Mock an invitation.
         invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                event=self.event, response=Invitation.MAYBE)
+                                event=self.event, response=Invitation.NO_RESPONSE)
+        invitation.save()
+
+        # Save the most recent time the event was updated.
+        updated_at = self.event.updated_at
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        data = {
+            'from_user': invitation.from_user_id,
+            'to_user': invitation.to_user_id,
+            'event': invitation.event_id,
+            'response': Invitation.ACCEPTED,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the invitation.
+        invitation = Invitation.objects.get(**data)
+
+        # It should update the event.
+        event = Event.objects.get(id=invitation.event_id)
+        self.assertGreater(event.updated_at, updated_at)
+
+        # It should add the user to the meteor server members list.
+        mock_add_member.assert_called_once_with(event.id, invitation.to_user_id)
+
+    @mock.patch('down.apps.events.serializers.add_member')
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_maybe(self, mock_send, mock_add_member):
+        # Mock an invitation.
+        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                event=self.event, response=Invitation.NO_RESPONSE)
+        invitation.save()
+
+        # Save the most recent time the event was updated.
+        updated_at = self.event.updated_at
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        data = {
+            'from_user': invitation.from_user_id,
+            'to_user': invitation.to_user_id,
+            'event': invitation.event_id,
+            'response': Invitation.MAYBE,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the invitation.
+        invitation = Invitation.objects.get(**data)
+
+        # It should update the event.
+        event = Event.objects.get(id=invitation.event_id)
+        self.assertGreater(event.updated_at, updated_at)
+
+        # It should add the user to the meteor server members list.
+        mock_add_member.assert_called_once_with(event.id, invitation.to_user_id)
+
+    @mock.patch('down.apps.events.serializers.remove_member')
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_decline(self, mock_send, mock_remove_member):
+        # Mock an invitation.
+        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
         # Save the most recent time the event was updated.
@@ -1018,6 +1094,51 @@ class InvitationTests(APITestCase):
         # It should update the event.
         event = Event.objects.get(id=invitation.event_id)
         self.assertGreater(event.updated_at, updated_at)
+
+        # It should add the user to the meteor server members list.
+        mock_remove_member.assert_called_once_with(event.id, invitation.to_user_id)
+
+    @mock.patch('down.apps.events.serializers.add_member')
+    def test_accept_bad_meteor_response(self, mock_add_member):
+        # Mock a bad response from the meteor server.
+        mock_add_member.side_effect = requests.exceptions.HTTPError()
+
+        # Mock an invitation.
+        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                event=self.event, response=Invitation.NO_RESPONSE)
+        invitation.save()
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        data = {
+            'from_user': invitation.from_user_id,
+            'to_user': invitation.to_user_id,
+            'event': invitation.event_id,
+            'response': Invitation.ACCEPTED,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code,
+                         status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    @mock.patch('down.apps.events.serializers.remove_member')
+    def test_decline_bad_meteor_response(self, mock_remove_member):
+        # Mock a bad response from the meteor server.
+        mock_remove_member.side_effect = requests.exceptions.HTTPError()
+
+        # Mock an invitation.
+        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                event=self.event, response=Invitation.NO_RESPONSE)
+        invitation.save()
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        data = {
+            'from_user': invitation.from_user_id,
+            'to_user': invitation.to_user_id,
+            'event': invitation.event_id,
+            'response': Invitation.DECLINED,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code,
+                         status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class AllFriendsInvitationTests(APITestCase):

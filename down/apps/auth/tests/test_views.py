@@ -632,7 +632,7 @@ class SessionTests(APITestCase):
             'api_key': settings.METEOR_KEY,
             'user_id': user.id,
             'password': token.key,
-        })
+        }))
 
         # It should return the user.
         user.authtoken = token.key
