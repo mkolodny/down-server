@@ -267,12 +267,14 @@ class SessionView(APIView):
         user.authtoken = token.key
 
         # Authenticate the user on the meteor server.
-        url = '{meteor_url}/sessions'.format(meteor_url=settings.METEOR_URL)
-        response = requests.post(url, data=json.dumps({
-            'api_key': settings.METEOR_KEY,
+        url = '{meteor_url}/users'.format(meteor_url=settings.METEOR_URL)
+        data = json.dumps({
             'user_id': user.id,
             'password': token.key,
-        }))
+        })
+        auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
+        headers = {'Authorization': auth_header}
+        response = requests.post(url, data=data, headers=headers)
         if response.status_code != 200:
             return Response(status=status.HTTP_503_SERVICE_UNAVAILABLE)
 

@@ -36,6 +36,9 @@ class MeteorTests(TestCase):
             #'api_key': settings.METEOR_KEY,
             'user_id': self.user_id,
         }))
+        auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
+        self.assertEqual(httpretty.last_request().headers['Authorization'],
+                         auth_header)
 
     @httpretty.activate
     def test_add_member_bad_response(self):
@@ -55,6 +58,9 @@ class MeteorTests(TestCase):
 
         # It should remove the user to the event's member list on the meteor server.
         self.assertEqual(httpretty.last_request().method, 'DELETE')
+        auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
+        self.assertEqual(httpretty.last_request().headers['Authorization'],
+                         auth_header)
 
     @httpretty.activate
     def test_remove_member_bad_response(self):

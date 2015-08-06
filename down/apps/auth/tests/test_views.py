@@ -594,7 +594,7 @@ class SessionTests(APITestCase):
     def setUp(self):
         # Save URLs.
         self.list_url = reverse('session')
-        self.meteor_url = '{meteor_url}/sessions'.format(
+        self.meteor_url = '{meteor_url}/users'.format(
                 meteor_url=settings.METEOR_URL)
     
     @httpretty.activate
@@ -629,10 +629,12 @@ class SessionTests(APITestCase):
 
         # It should authenticate the user on the meteor server.
         self.assertEqual(httpretty.last_request().body, json.dumps({
-            'api_key': settings.METEOR_KEY,
             'user_id': user.id,
             'password': token.key,
         }))
+        auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
+        self.assertEqual(httpretty.last_request().headers['Authorization'],
+                         auth_header)
 
         # It should return the user.
         user.authtoken = token.key
