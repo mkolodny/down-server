@@ -29,6 +29,7 @@ from .permissions import IsCurrentUserOrReadOnly
 from .serializers import (
     AuthCodeSerializer,
     ContactSerializer,
+    FriendSerializer,
     LinfootFunnelSerializer,
     PhoneSerializer,
     SessionSerializer,
@@ -59,7 +60,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     def friends(self, request, pk=None):
         # TODO: Handle when the user doesn't exist.
         user = User.objects.get(id=pk)
-        serializer = UserSerializer(user.friends, many=True)
+        serializer = FriendSerializer(user.friends, many=True)
         return Response(serializer.data)
 
     @detail_route(methods=['get'])
@@ -68,7 +69,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         Get a list of the user's facebook friends.
         """
         friends = get_facebook_friends(request.user)
-        serializer = UserSerializer(friends, many=True)
+        serializer = FriendSerializer(friends, many=True)
         return Response(serializer.data)
 
     @list_route(methods=['get'])

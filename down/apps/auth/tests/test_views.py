@@ -22,7 +22,11 @@ from down.apps.auth.models import (
     User,
     UserPhone,
 )
-from down.apps.auth.serializers import UserSerializer, UserPhoneSerializer
+from down.apps.auth.serializers import (
+    FriendSerializer,
+    UserSerializer,
+    UserPhoneSerializer,
+)
 from down.apps.events.models import AllFriendsInvitation, Event, Invitation
 from down.apps.events.serializers import (
     EventSerializer,
@@ -208,7 +212,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the user's friends.
-        serializer = UserSerializer([self.friend1], many=True)
+        serializer = FriendSerializer([self.friend1], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 
@@ -273,7 +277,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the users facebook friends.
-        serializer = UserSerializer(facebook_friends, many=True)
+        serializer = FriendSerializer(facebook_friends, many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 
