@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+
 from datetime import datetime, timedelta
 import json
 from urllib import urlencode
@@ -273,7 +273,10 @@ class SessionView(APIView):
             'password': token.key,
         })
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
-        headers = {'Authorization': auth_header}
+        headers = {
+            'Authorization': auth_header,
+            'Content-Type': 'application/json',
+        }
         response = requests.post(url, data=data, headers=headers)
         if response.status_code != 200:
             return Response(status=status.HTTP_503_SERVICE_UNAVAILABLE)

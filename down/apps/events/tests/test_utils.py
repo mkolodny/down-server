@@ -33,12 +33,13 @@ class MeteorTests(TestCase):
         # TODO: Get token auth going.
         # http://www.django-rest-framework.org/api-guide/authentication/#tokenauthentication
         self.assertEqual(httpretty.last_request().body, json.dumps({
-            #'api_key': settings.METEOR_KEY,
             'user_id': self.user_id,
         }))
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
         self.assertEqual(httpretty.last_request().headers['Authorization'],
                          auth_header)
+        self.assertEqual(httpretty.last_request().headers['Content-Type'],
+                         'application/json')
 
     @httpretty.activate
     def test_add_member_bad_response(self):
@@ -61,6 +62,8 @@ class MeteorTests(TestCase):
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
         self.assertEqual(httpretty.last_request().headers['Authorization'],
                          auth_header)
+        self.assertEqual(httpretty.last_request().headers['Content-Type'],
+                         'application/json')
 
     @httpretty.activate
     def test_remove_member_bad_response(self):

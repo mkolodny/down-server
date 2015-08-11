@@ -635,6 +635,8 @@ class SessionTests(APITestCase):
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
         self.assertEqual(httpretty.last_request().headers['Authorization'],
                          auth_header)
+        self.assertEqual(httpretty.last_request().headers['Content-Type'],
+                         'application/json')
 
         # It should return the user.
         user.authtoken = token.key
