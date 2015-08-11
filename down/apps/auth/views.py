@@ -23,6 +23,7 @@ from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
 from .exceptions import ServiceUnavailable
+from .filters import UserFilter
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
 from .permissions import IsCurrentUserOrReadOnly
 from .serializers import (
@@ -35,7 +36,7 @@ from .serializers import (
     UserSerializer,
     UserPhoneSerializer,
 )
-from down.apps.auth.filters import UserFilter
+from .utils import get_facebook_friends
 from down.apps.events.models import AllFriendsInvitation, Event, Invitation
 from down.apps.events.serializers import (
     EventSerializer,
@@ -66,37 +67,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         """
         Get a list of the user's facebook friends.
         """
-        # Ask Facebook for the user's Facebook friends who are using Down.
-        user_facebook_account = SocialAccount.objects.get(user=request.user)
-        params = {'access_token': user_facebook_account.profile['access_token']}
-        url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
-        facebook_friend_ids = []
-        while True:
-            r = requests.get(url)
-            if r.status_code != status.HTTP_200_OK:
-                raise ServiceUnavailable(r.content)
-            try:
-                facebook_json = r.json()
-            except ValueError:
-                raise ServiceUnavailable('Facebook response data was not JSON.')
-            try:
-                new_friend_ids = [
-                    facebook_friend['id']
-                    for facebook_friend in facebook_json['data']
-                ]
-                facebook_friend_ids.extend(new_friend_ids)
-                paging = facebook_json['paging']
-                if len(new_friend_ids) < 25 or 'next' not in paging:
-                    break
-                url = paging['next']
-            except KeyError:
-                raise ServiceUnavailable('Facebook response did not contain data.')
-
-        # Use the list of the user's Facebook friends to create a queryset of the
-        # user's friends on Down.
-        social_accounts = SocialAccount.objects.filter(uid__in=facebook_friend_ids)
-        friend_ids = [account.user_id for account in social_accounts]
-        friends = User.objects.filter(id__in=friend_ids)
+        friends = get_facebook_friends(request.user)
         serializer = UserSerializer(friends, many=True)
         return Response(serializer.data)
 
@@ -249,11 +220,18 @@ class SessionView(APIView):
 
         # Get or create the user
         try:
+            # Init the user's facebook friends.
+            facebook_friends = None
+
             phone = serializer.data['phone']
             user_number = UserPhone.objects.get(phone=phone)
+
             # User exists
             user = user_number.user
             token, created = Token.objects.get_or_create(user=user)
+
+            if not created:
+                facebook_friends = get_facebook_friends(user)
         except UserPhone.DoesNotExist:
             # User doesn't already exist, so create a blank new user and phone
             # number.
@@ -264,7 +242,6 @@ class SessionView(APIView):
             userphone.save()
 
             token = Token.objects.create(user=user)
-        user.authtoken = token.key
 
         # Authenticate the user on the meteor server.
         url = '{meteor_url}/users'.format(meteor_url=settings.METEOR_URL)
@@ -285,7 +262,10 @@ class SessionView(APIView):
         if serializer.data['phone'] != '+15555555555':
             auth.delete()
 
-        serializer = UserSerializer(user)
+        data = {'authtoken': token.key}
+        if facebook_friends is not None:
+            data['facebook_friends'] = facebook_friends
+        serializer = UserSerializer(user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 

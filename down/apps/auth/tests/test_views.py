@@ -262,113 +262,20 @@ class UserTests(APITestCase):
         json_invitations = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitations)
 
-    @httpretty.activate
-    def test_facebook_friends(self):
-        # Mock the user's facebook friends.
-        body = json.dumps({
-            'data': [{
-                'name': 'Joan Clarke', 
-                'id': self.friend1_social.uid,
-            }],
-            'paging': {
-            },
-        })
-        httpretty.register_uri(httpretty.GET, self.friends_url, body=body,
-                               content_type='application/json')
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    @mock.patch('down.apps.auth.views.get_facebook_friends')
+    def test_facebook_friends(self, mock_get_facebook_friends):
+        # Mock the friends Facebook returns.
+        facebook_friends = [self.friend1]
+        mock_get_facebook_friends.return_value = facebook_friends
 
-        # It should request the user's friends with their facebook access token.
-        querystring = {'access_token': [self.user_social.profile['access_token']]}
-        self.assertEqual(httpretty.last_request().querystring, querystring)
-
-        # It should return a list of the users facebook friends.
-        serializer = UserSerializer([self.friend1], many=True)
-        json_friends = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_friends)
-
-    @httpretty.activate
-    def test_facebook_friends_next_page(self):
-        # Mock another of the user's friends.
-        friend = User(email='htubman@gmail.com', name='Harriet Tubman',
-                      image_url='http://imgur.com/tubby')
-        friend.save()
-        friendship = Friendship(user=self.user, friend=friend)
-        friendship.save()
-        friend_social = SocialAccount(user=friend,
-                                      provider=SocialAccount.FACEBOOK,
-                                      uid='30101293050283881',
-                                      profile={'access_token': '3234asdf'})
-        friend_social.save()
-
-        # Mock the user having more than 25 friends on Down.
-        next_url = 'https://graph.facebook.com/v2.2/123/friends'
-        body = json.dumps({
-            'data': [{
-                'name': 'Joan Clarke', 
-                'id': self.friend1_social.uid,
-            } for i in xrange(25)],
-            'paging': {
-                'next': next_url,
-            },
-        })
-        httpretty.register_uri(httpretty.GET, self.friends_url, body=body,
-                               content_type='application/json')
-
-        # Mock the next url response.
-        body = json.dumps({
-            'data': [{
-                'name': 'Joan Clarke', 
-                'id': friend_social.uid,
-            }],
-            'paging': {
-            }
-        })
-        httpretty.register_uri(httpretty.GET, next_url, body=body,
-                               content_type='application/json')
-        
         url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the users facebook friends.
-        serializer = UserSerializer([self.friend1, friend], many=True)
+        serializer = UserSerializer(facebook_friends, many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
-
-    @httpretty.activate
-    def test_facebook_friends_bad_response(self):
-        # Mock a bad response from Facebook when requesting the user's facebook
-        # friends.
-        httpretty.register_uri(httpretty.GET, self.friends_url,
-                               status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    @httpretty.activate
-    def test_facebook_friends_no_content(self):
-        # Mock bad response data from Facebook when requesting the user's facebook
-        # friends.
-        httpretty.register_uri(httpretty.GET, self.friends_url, body='',
-                               status=status.HTTP_200_OK)
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    @httpretty.activate
-    def test_facebook_friends_no_data(self):
-        # Mock Facebook response data without a `data` property.
-        httpretty.register_uri(httpretty.GET, self.friends_url, body=json.dumps({}),
-                               status=status.HTTP_200_OK)
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class SocialAccountTests(APITestCase):
@@ -596,13 +503,16 @@ class SessionTests(APITestCase):
         self.list_url = reverse('session')
         self.meteor_url = '{meteor_url}/users'.format(
                 meteor_url=settings.METEOR_URL)
-    
-    @httpretty.activate
-    def test_create(self):
-        # Mock the meteor server response.
+
+        # Mock a successfuly meteor server response.
+        httpretty.enable()
         httpretty.register_uri(httpretty.POST, self.meteor_url,
                                content_type='application/json')
 
+    def tearDown(self):
+        httpretty.disable()
+    
+    def test_create(self):
         # Make sure no users have been created yet.
         self.assertEquals(User.objects.count(), 0)
 
@@ -644,12 +554,7 @@ class SessionTests(APITestCase):
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
-    @httpretty.activate
     def test_create_bad_credentials(self):
-        # Mock the meteor server response.
-        httpretty.register_uri(httpretty.POST, self.meteor_url,
-                               content_type='application/json')
-
         # Mock an auth code.
         auth = AuthCode(phone='+12345678910')
         auth.save()
@@ -658,52 +563,106 @@ class SessionTests(APITestCase):
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @httpretty.activate
-    def create_already_created(self, phone_number):
-        # Mock the meteor server response.
-        httpretty.register_uri(httpretty.POST, self.meteor_url,
-                               content_type='application/json')
-
+    def mock_user(self, phone='+12345678901'):
         # Mock an already created user
-        mock_user = User()
-        mock_user.save()
+        self.user = User()
+        self.user.save()
+        self.userphone = UserPhone(user=self.user, phone=phone)
+        self.userphone.save()
 
-        mock_user_number = UserPhone(user=mock_user, phone=phone_number)
-        mock_user_number.save()
-
-        # User has already logged in, so mock their token
-        token = Token(user=mock_user)
-        token.save()
-
-        url = reverse('session')
-        self.auth = AuthCode(phone=phone_number)
+        self.auth = AuthCode(phone=phone)
         self.auth.save()
+
+    def test_create_already_created(self):
+        self.mock_user()
 
         data = {'phone': unicode(self.auth.phone), 'code': self.auth.code}
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        mock_user.authtoken = token.key
-        serializer = UserSerializer(mock_user)
-        mock_user_json = JSONRenderer().render(serializer.data)
+        # It should create a token.
+        token = Token.objects.get(user=self.user)
 
-        # Response should have the same user object
-        user_json = response.content
-        self.assertEqual(user_json, mock_user_json)
+        # The response should have the same user object
+        data = {'authtoken': token.key}
+        serializer = UserSerializer(self.user, context=data)
+        user_json = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, user_json)
 
         # The number of users in the database should still be 1
         self.assertEqual(User.objects.count(), 1)
 
-    def test_create_already_created(self):
-        phone_number = '+12345678910'
-        self.create_already_created(phone_number)
+        # The user's auth code should be deleted.
+        with self.assertRaises(AuthCode.DoesNotExist):
+            AuthCode.objects.get(id=self.auth.id)
 
     def test_create_apple_test_user(self):
-        phone_number = '+15555555555'
-        self.create_already_created(phone_number)
+        # This is the phone number we let the Apple test user log in with.
+        phone = '+15555555555'
+        self.mock_user(phone)
+
+        data = {'phone': unicode(self.auth.phone), 'code': self.auth.code}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create a token.
+        token = Token.objects.get(user=self.user)
+
+        # The response should have the same user object
+        data = {'authtoken': token.key}
+        serializer = UserSerializer(self.user, context=data)
+        user_json = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, user_json)
+
+        # The number of users in the database should still be 1
+        self.assertEqual(User.objects.count(), 1)
 
         # The user's auth code should still exist.
         AuthCode.objects.get(id=self.auth.id)
+
+    @mock.patch('down.apps.auth.views.get_facebook_friends')
+    def test_create_already_has_social_account(self, mock_get_facebook_friends):
+        self.mock_user()
+
+        token = Token(user=self.user)
+        token.save()
+
+        # Mock the user's social account.
+        user_social = SocialAccount(user=self.user,
+                                    provider=SocialAccount.FACEBOOK,
+                                    uid='10101293050283881',
+                                    profile={'access_token': '1234asdf'})
+        user_social.save()
+
+        # Mock the user's friend / facebook friend.
+        friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
+                       image_url='http://imgur.com/jcke',
+                       location='POINT(40.7545645 -73.9813595)')
+        friend1.save()
+        friendship = Friendship(user=self.user, friend=friend1)
+        friendship.save()
+        facebook_friends = User.objects.filter(id=friend1.id)
+        mock_get_facebook_friends.return_value = facebook_friends
+
+        data = {'phone': unicode(self.auth.phone), 'code': self.auth.code}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # The response should have the same user object.
+        data = {
+            'authtoken': token.key,
+            'facebook_friends': facebook_friends,
+        }
+        serializer = UserSerializer(self.user, context=data)
+        user_json = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, user_json)
+
+        # The number of users in the database should still be 2.
+        self.assertEqual(User.objects.count(), 2)
+
+        # The user's auth code should be deleted.
+        with self.assertRaises(AuthCode.DoesNotExist):
+            AuthCode.objects.get(id=self.auth.id)
 
     @httpretty.activate
     def test_create_bad_meteor_response(self):

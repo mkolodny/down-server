@@ -42,14 +42,36 @@ class SocialAccountSyncSerializer(serializers.Serializer):
     provider = serializers.IntegerField(default=SocialAccount.FACEBOOK)
 
 
-class UserSerializer(GeoModelSerializer):
-    authtoken = serializers.ReadOnlyField(required=False)
-    firebase_token = serializers.ReadOnlyField(required=False)
-    updated_at = UnixEpochDateField(read_only=True)
+class FriendSerializer(GeoModelSerializer):
 
     class Meta:
         model = User
-        exclude = ('password', 'date_joined', 'last_login')
+        depth = 1
+        fields = ('email', 'name', 'image_url', 'username', 'location')
+
+
+class UserSerializer(GeoModelSerializer):
+    updated_at = UnixEpochDateField(read_only=True)
+    authtoken = serializers.ReadOnlyField(source='get_authtoken', required=False)
+    friends = FriendSerializer(read_only=True, many=True)
+    facebook_friends = serializers.SerializerMethodField(read_only=True,
+                                                         required=False)
+
+    class Meta:
+        model = User
+        fields = ('email', 'name', 'image_url', 'username', 'location', 'friends',
+                  'updated_at', 'authtoken', 'facebook_friends')
+
+    def get_authtoken(self):
+        return self.context.get('authtoken')
+
+    def get_facebook_friends(self, obj):
+        facebook_friends = self.context.get('facebook_friends')
+        if facebook_friends is not None:
+            serializer = FriendSerializer(facebook_friends, many=True)
+            return serializer.data
+        else:
+            return None
 
 
 class PhoneSerializer(serializers.Serializer):
