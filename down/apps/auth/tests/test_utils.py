@@ -79,7 +79,7 @@ class FacebookFriendsTests(TestCase):
         httpretty.register_uri(httpretty.GET, next_url, body=body,
                                content_type='application/json')
 
-        friends = get_facebook_friends(self.user)
+        friends = get_facebook_friends(self.user_social)
         
         # It should return a queryset of the users facebook friends.
         self.assertEqual(list(friends), [friend1, friend2])
@@ -92,7 +92,7 @@ class FacebookFriendsTests(TestCase):
                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
         
         with self.assertRaises(ServiceUnavailable):
-            get_facebook_friends(self.user)
+            get_facebook_friends(self.user_social)
 
     @httpretty.activate
     def test_facebook_friends_expired_token(self):
@@ -101,7 +101,7 @@ class FacebookFriendsTests(TestCase):
                                status=status.HTTP_400_BAD_REQUEST)
         
         with self.assertRaises(ParseError):
-            get_facebook_friends(self.user)
+            get_facebook_friends(self.user_social)
 
     @httpretty.activate
     def test_facebook_friends_no_content(self):
@@ -111,7 +111,7 @@ class FacebookFriendsTests(TestCase):
                                status=status.HTTP_200_OK)
         
         with self.assertRaises(ServiceUnavailable):
-            get_facebook_friends(self.user)
+            get_facebook_friends(self.user_social)
 
     @httpretty.activate
     def test_facebook_friends_no_data(self):
@@ -120,4 +120,4 @@ class FacebookFriendsTests(TestCase):
                                status=status.HTTP_200_OK)
         
         with self.assertRaises(ServiceUnavailable):
-            get_facebook_friends(self.user)
+            get_facebook_friends(self.user_social)

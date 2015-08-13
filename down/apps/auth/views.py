@@ -67,9 +67,14 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         """
         Get a list of the user's facebook friends.
         """
-        friends = get_facebook_friends(request.user)
-        serializer = FriendSerializer(friends, many=True)
-        return Response(serializer.data)
+        try:
+            social_account = SocialAccount.objects.get(user=request.user)
+            friends = get_facebook_friends(social_account)
+            serializer = FriendSerializer(friends, many=True)
+            return Response(serializer.data)
+        except SocialAccount.DoesNotExist:
+            friends = []
+            return Response(friends)
 
     @list_route(methods=['get'])
     def invitations(self, request):
@@ -129,7 +134,7 @@ class SocialAccountSync(APIView):
                                 uid=profile['id'], profile=profile)
         account.save()
 
-        facebook_friends = get_facebook_friends(request.user)
+        facebook_friends = get_facebook_friends(account)
         data = {'facebook_friends': facebook_friends}
         serializer = UserSerializer(request.user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

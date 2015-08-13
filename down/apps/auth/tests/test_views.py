@@ -276,9 +276,26 @@ class UserTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # It should request the user's facebook friends with their social account.
+        user_social = SocialAccount.objects.get(user=self.user)
+        mock_get_facebook_friends.assert_called_once_with(user_social)
+
         # It should return a list of the users facebook friends.
         serializer = FriendSerializer(facebook_friends, many=True)
         json_friends = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_friends)
+
+    @mock.patch('down.apps.auth.views.get_facebook_friends')
+    def test_facebook_friends_no_social(self, mock_get_facebook_friends):
+        # Mock the user having no social account yet.
+        self.user_social.delete()
+
+        url = reverse('user-facebook-friends')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the users facebook friends.
+        json_friends = json.dumps([])
         self.assertEqual(response.content, json_friends)
 
 
@@ -360,6 +377,10 @@ class SocialAccountTests(APITestCase):
         params = {'access_token': [self.facebook_token]}
         self.assertEqual(httpretty.last_request().querystring, params)
 
+        # It should request the user's facebook friends with their social account.
+        social_account = SocialAccount.objects.get(user=self.user)
+        mock_get_facebook_friends.assert_called_once_with(social_account)
+
         # It should return the user.
         data = {'facebook_friends': facebook_friends}
         serializer = UserSerializer(user, context=data)
@@ -406,6 +427,10 @@ class SocialAccountTests(APITestCase):
         # It should give Facebook the access token.
         params = {'access_token': [self.facebook_token]}
         self.assertEqual(httpretty.last_request().querystring, params)
+
+        # It should request the user's facebook friends with their social account.
+        social_account = SocialAccount.objects.get(user=self.user)
+        mock_get_facebook_friends.assert_called_once_with(social_account)
 
         # It should return the user.
         data = {'facebook_friends': facebook_friends}

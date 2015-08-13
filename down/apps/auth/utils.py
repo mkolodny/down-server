@@ -7,8 +7,7 @@ from .models import SocialAccount, User
 from .exceptions import ServiceUnavailable
 
 
-def get_facebook_friends(user):
-    user_facebook_account = SocialAccount.objects.get(user=user)
+def get_facebook_friends(user_facebook_account):
     params = {'access_token': user_facebook_account.profile['access_token']}
     url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
     facebook_friend_ids = []
