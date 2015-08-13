@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from urllib import urlencode
 import requests
 from rest_framework import status
+from rest_framework.exceptions import ParseError
 from .models import SocialAccount, User
 from .exceptions import ServiceUnavailable
 
@@ -13,7 +14,9 @@ def get_facebook_friends(user):
     facebook_friend_ids = []
     while True:
         response = requests.get(url)
-        if response.status_code != status.HTTP_200_OK:
+        if response.status_code == status.HTTP_400_BAD_REQUEST:
+            raise ParseError(response.content)
+        elif response.status_code != status.HTTP_200_OK:
             raise ServiceUnavailable(response.content)
         try:
             facebook_json = response.json()

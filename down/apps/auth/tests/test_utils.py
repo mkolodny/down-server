@@ -4,6 +4,7 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 import httpretty
 from rest_framework import status
+from rest_framework.exceptions import ParseError
 from down.apps.auth.exceptions import ServiceUnavailable
 from down.apps.auth.models import SocialAccount, User
 from down.apps.auth.utils import get_facebook_friends
@@ -84,13 +85,22 @@ class FacebookFriendsTests(TestCase):
         self.assertEqual(list(friends), [friend1, friend2])
 
     @httpretty.activate
-    def test_facebook_friends_bad_response(self):
+    def test_facebook_friends_error(self):
         # Mock a bad response from Facebook when requesting the user's facebook
         # friends.
         httpretty.register_uri(httpretty.GET, self.friends_url,
                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
         
         with self.assertRaises(ServiceUnavailable):
+            get_facebook_friends(self.user)
+
+    @httpretty.activate
+    def test_facebook_friends_expired_token(self):
+        # Mock Facebook telling us that the user's access token has expired.
+        httpretty.register_uri(httpretty.GET, self.friends_url,
+                               status=status.HTTP_400_BAD_REQUEST)
+        
+        with self.assertRaises(ParseError):
             get_facebook_friends(self.user)
 
     @httpretty.activate
