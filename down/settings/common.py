@@ -114,7 +114,7 @@ REST_FRAMEWORK = {
 # CORS
 CORS_ORIGIN_ALLOW_ALL = True
 
-# Meteor Server
+# Meteor server
 METEOR_KEY = os.environ['METEOR_KEY']
 METEOR_URL = os.environ['METEOR_URL']
 
