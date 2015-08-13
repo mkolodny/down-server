@@ -207,7 +207,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_friends(self):
-        url = reverse('user-friends', kwargs={'pk': self.user.id})
+        url = reverse('user-friends')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -272,7 +272,7 @@ class UserTests(APITestCase):
         facebook_friends = [self.friend1]
         mock_get_facebook_friends.return_value = facebook_friends
 
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
+        url = reverse('user-facebook-friends')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

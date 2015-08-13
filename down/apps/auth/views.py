@@ -56,14 +56,13 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @detail_route(methods=['get'])
+    @list_route(methods=['get'])
     def friends(self, request, pk=None):
         # TODO: Handle when the user doesn't exist.
-        user = User.objects.get(id=pk)
-        serializer = FriendSerializer(user.friends, many=True)
+        serializer = FriendSerializer(request.user.friends, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=['get'])
+    @list_route(methods=['get'])
     def facebook_friends(self, request, pk=None):
         """
         Get a list of the user's facebook friends.
