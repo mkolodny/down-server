@@ -130,7 +130,9 @@ class SocialAccountSync(APIView):
                                 uid=profile['id'], profile=profile)
         account.save()
 
-        serializer = UserSerializer(request.user)
+        facebook_friends = get_facebook_friends(request.user)
+        data = {'facebook_friends': facebook_friends}
+        serializer = UserSerializer(request.user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get_profile(self, provider, access_token):
@@ -222,17 +224,12 @@ class SessionView(APIView):
         # Get or create the user
         try:
             # Init the user's facebook friends.
-            facebook_friends = None
-
             phone = serializer.data['phone']
             user_number = UserPhone.objects.get(phone=phone)
 
             # User exists
             user = user_number.user
             token, created = Token.objects.get_or_create(user=user)
-
-            if not created:
-                facebook_friends = get_facebook_friends(user)
         except UserPhone.DoesNotExist:
             # User doesn't already exist, so create a blank new user and phone
             # number.
@@ -264,8 +261,6 @@ class SessionView(APIView):
             auth.delete()
 
         data = {'authtoken': token.key}
-        if facebook_friends is not None:
-            data['facebook_friends'] = facebook_friends
         serializer = UserSerializer(user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
