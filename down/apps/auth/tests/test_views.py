@@ -565,8 +565,8 @@ class SessionTests(APITestCase):
                          'application/json')
 
         # It should return the user.
-        user.authtoken = token.key
-        serializer = UserSerializer(user)
+        data = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=data)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
