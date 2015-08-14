@@ -41,12 +41,12 @@ class CreateEventInvitationSerializer(serializers.ModelSerializer):
 
 
 class EventSerializer(serializers.ModelSerializer):
-    created_at = UnixEpochDateField(read_only=True)
-    updated_at = UnixEpochDateField(read_only=True)
     place = PlaceSerializer(required=False)
     datetime = UnixEpochDateField(required=False)
     invitations = CreateEventInvitationSerializer(write_only=True, required=False,
                                                   many=True)
+    created_at = UnixEpochDateField(read_only=True)
+    updated_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Event

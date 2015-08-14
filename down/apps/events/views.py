@@ -38,6 +38,12 @@ class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
+    def create(self, request, *args, **kwargs):
+        # Set the event creator to be the current user.
+        request.data['creator'] = request.user.id
+
+        return super(EventViewSet, self).create(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         """
         Set the event to canceled.

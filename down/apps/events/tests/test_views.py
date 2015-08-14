@@ -114,10 +114,9 @@ class EventTests(APITestCase):
             'to_user': self.friend1.id,
         }
         self.post_data = {
-            'title': 'rat fishing with the boys over at the place!',
-            'creator': self.user.id,
-            'canceled': False,
+            'title': 'rat fishing with the boys!',
             'datetime': int(time.mktime(timezone.now().timetuple())),
+            'comment': 'they\'re everywhere!!!',
             'place': {
                 'name': 'Atlantic-Barclays Station',
                 'geo': 'POINT(40.685339 -73.979361)',
