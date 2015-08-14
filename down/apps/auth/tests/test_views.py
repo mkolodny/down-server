@@ -438,6 +438,36 @@ class SocialAccountTests(APITestCase):
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
+    @mock.patch('down.apps.auth.views.get_facebook_friends')
+    def test_create_already_exists(self, mock_get_facebook_friends):
+        # Mock the user's social account.
+        profile = {'access_token': 'old-access-token'}
+        account = SocialAccount(user=self.user, provider=SocialAccount.FACEBOOK,
+                                uid=self.facebook_user_id, profile=profile)
+        account.save()
+
+        # Mock the user's facebook friends.
+        facebook_friends = []
+        mock_get_facebook_friends.return_value = facebook_friends
+
+        response = self.client.post(self.url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should update the user's social account.
+        account = SocialAccount.objects.get(id=account.id)
+        access_token = self.post_data['access_token']
+        self.assertEqual(account.profile['access_token'], access_token)
+
+        # It should request the user's facebook friends with their social account.
+        social_account = SocialAccount.objects.get(user=self.user)
+        mock_get_facebook_friends.assert_called_once_with(social_account)
+
+        # It should return the user.
+        data = {'facebook_friends': facebook_friends}
+        serializer = UserSerializer(self.user, context=data)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
     def test_create_not_logged_in(self):
         # Log the user out.
         self.client.credentials()

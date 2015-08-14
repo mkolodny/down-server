@@ -118,21 +118,27 @@ class SocialAccountSync(APIView):
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
         access_token = serializer.data['access_token']
-        profile = self.get_profile(provider, access_token)
 
-        # Update the user.
-        # TODO: Remove the default email after updating the client to handle the
-        # case where the user has synced with Facebook, but doesn't have an email
-        # set.
-        request.user.email = profile.get('email', 'no.email@down.life')
-        request.user.name = profile['name']
-        request.user.image_url = profile['image_url']
-        request.user.save()
+        try:
+            account = SocialAccount.objects.get(user=request.user)
+            account.profile['access_token'] = access_token
+            account.save()
+        except SocialAccount.DoesNotExist:
+            profile = self.get_profile(provider, access_token)
 
-        # Create the user's social account.
-        account = SocialAccount(user_id=request.user.id, provider=provider,
-                                uid=profile['id'], profile=profile)
-        account.save()
+            # Update the user.
+            # TODO: Remove the default email after updating the client to handle the
+            # case where the user has synced with Facebook, but doesn't have an email
+            # set.
+            request.user.email = profile.get('email', 'no.email@down.life')
+            request.user.name = profile['name']
+            request.user.image_url = profile['image_url']
+            request.user.save()
+
+            # Create the user's social account.
+            account = SocialAccount(user_id=request.user.id, provider=provider,
+                                    uid=profile['id'], profile=profile)
+            account.save()
 
         facebook_friends = get_facebook_friends(account)
         data = {'facebook_friends': facebook_friends}
