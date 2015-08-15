@@ -234,6 +234,7 @@ class InvitationSerializer(serializers.ModelSerializer):
     to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
     created_at = UnixEpochDateField(read_only=True)
     updated_at = UnixEpochDateField(read_only=True)
+    last_viewed = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
@@ -277,6 +278,7 @@ class MyInvitationSerializer(serializers.ModelSerializer):
     to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
     created_at = UnixEpochDateField(read_only=True)
     updated_at = UnixEpochDateField(read_only=True)
+    last_viewed = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
@@ -288,6 +290,7 @@ class EventInvitationSerializer(serializers.ModelSerializer):
     to_user = UserSerializer()
     created_at = UnixEpochDateField(read_only=True)
     updated_at = UnixEpochDateField(read_only=True)
+    last_viewed = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
