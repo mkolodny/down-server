@@ -27,7 +27,7 @@ from down.apps.auth.serializers import (
     UserSerializer,
     UserPhoneSerializer,
 )
-from down.apps.events.models import AllFriendsInvitation, Event, Invitation
+from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import (
     EventSerializer,
     InvitationSerializer,

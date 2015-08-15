@@ -38,7 +38,7 @@ from .serializers import (
     UserPhoneSerializer,
 )
 from .utils import get_facebook_friends
-from down.apps.events.models import AllFriendsInvitation, Event, Invitation
+from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import (
     EventSerializer,
     InvitationSerializer,

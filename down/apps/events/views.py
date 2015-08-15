@@ -12,9 +12,8 @@ from push_notifications.models import APNSDevice
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import User, UserPhone
 from .filters import EventFilter
-from .models import AllFriendsInvitation, Event, Invitation, LinkInvitation
+from .models import Event, Invitation, LinkInvitation
 from .permissions import (
-    AllFriendsInviterWasInvited,
     InviterWasInvited,
     IsCreator,
     IsInvitationsFromUser,
@@ -23,7 +22,6 @@ from .permissions import (
     WasInvited,
 )
 from .serializers import (
-    AllFriendsInvitationSerializer,
     EventSerializer,
     InvitationSerializer,
     EventInvitationSerializer,
@@ -155,25 +153,6 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
             kwargs['many'] = True
 
         return super(InvitationViewSet, self).get_serializer(*args, **kwargs)
-
-
-class AllFriendsInvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    authentication_classes = (authentication.TokenAuthentication,)
-    permission_classes = (IsAuthenticated, AllFriendsInviterWasInvited)
-    queryset = AllFriendsInvitation.objects.all()
-    serializer_class = AllFriendsInvitationSerializer
-
-    def create(self, request, *args, **kwargs):
-        # Set the from_user to the currently logged in user.
-        data = request.data
-        data['from_user'] = request.user.id
-
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED,
-                        headers=headers)
 
 
 class LinkInvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,

@@ -17,7 +17,6 @@ from down.apps.auth.views import (
     UserPhoneViewSet,
 )
 from down.apps.events.views import (
-    AllFriendsInvitationViewSet,
     EventViewSet,
     InvitationViewSet,
     LinkInvitationViewSet,
@@ -31,8 +30,6 @@ from down.apps.notifications.views import APNSDeviceViewSet
 # API
 # With trailing slash appended:
 router = routers.SimpleRouter()
-router.register(r'all-friends-invitations', AllFriendsInvitationViewSet,
-                base_name='all-friends-invitation')
 router.register(r'apnsdevices', APNSDeviceViewSet)
 router.register(r'authcodes', AuthCodeViewSet)
 router.register(r'events', EventViewSet)

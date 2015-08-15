@@ -18,7 +18,6 @@ from rest_framework.test import APITestCase
 from twilio import TwilioRestException
 from down.apps.auth.models import User, UserPhone
 from down.apps.events.models import (
-    AllFriendsInvitation,
     Event,
     Invitation,
     LinkInvitation,
@@ -26,7 +25,6 @@ from down.apps.events.models import (
     get_event_date,
 )
 from down.apps.events.serializers import (
-    AllFriendsInvitationSerializer,
     EventSerializer,
     InvitationSerializer,
     EventInvitationSerializer,
@@ -881,7 +879,6 @@ class InvitationTests(APITestCase):
                     'to_user': self.user4.id,
                     'event': self.event.id,
                     'response': Invitation.NO_RESPONSE,
-                    'open': True,
                 },
             ],
         }
@@ -1138,126 +1135,6 @@ class InvitationTests(APITestCase):
         response = self.client.put(url, data)
         self.assertEqual(response.status_code,
                          status.HTTP_503_SERVICE_UNAVAILABLE)
-
-
-class AllFriendsInvitationTests(APITestCase):
-
-    def setUp(self):
-        # Mock two users.
-        self.user1 = User(email='aturing@gmail.com', name='Alan Tdog Turing',
-                          username='tdog')
-        self.user1.save()
-        registration_id = ('1ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.user1_device = APNSDevice(registration_id=registration_id,
-                                       device_id=device_id, name='iPhone, 8.2',
-                                       user=self.user1)
-        self.user1_device.save()
-
-        self.user2 = User(email='rfeynman@gmail.com', name='Richard Feynman',
-                          username='partickle')
-        self.user2.save()
-        registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.user2_device = APNSDevice(registration_id=registration_id,
-                                       device_id=device_id, name='iPhone, 8.2',
-                                       user=self.user2)
-        self.user2_device.save()
-
-        # Authorize the requests with the user's token.
-        self.token = Token(user=self.user1)
-        self.token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
-
-        # Mock an event.
-        self.event = Event(title='bars?!?!!', creator=self.user1)
-        self.event.save()
-
-        # Invite the first user to the event.
-        self.invitation1 = Invitation(event=self.event, from_user=self.user1,
-                                      to_user=self.user1)
-        self.invitation1.save()
-
-        # Create an open invitation for the second user.
-        self.invitation2 = Invitation(event=self.event, from_user=self.user1,
-                                      to_user=self.user2, open=True)
-        self.invitation2.save()
-
-        # Save URLs.
-        self.list_url = reverse('all-friends-invitation-list')
-
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_create(self, mock_apns):
-        data = {
-            'event': self.event.id,
-        }
-        response = self.client.post(self.list_url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # It should create the all friends invitation.
-        all_friends_invitation = AllFriendsInvitation.objects.get(
-                event=self.event, from_user=self.user1)
-
-        # It should send users push notifications.
-        token = self.user2_device.registration_id
-        message = '{name} is down for {activity}'.format(
-                name=self.user1.name,
-                activity=self.event.title)
-        mock_apns.assert_any_call(registration_ids=[token], alert=message,
-                                  badge=1)
-
-        # It should return the invitation.
-        serializer = AllFriendsInvitationSerializer(all_friends_invitation)
-        json_all_friends_invitation = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_all_friends_invitation)
-
-    def test_create_by_invited_user(self):
-        # Log the second user in.
-        token = Token(user=self.user2)
-        token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
-
-        data = {
-            'event': self.event.id,
-        }
-        response = self.client.post(self.list_url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # It should create the all friends invitation.
-        all_friends_invitation = AllFriendsInvitation.objects.get(
-                event=self.event, from_user=self.user2)
-
-        # It should return the invitation.
-        serializer = AllFriendsInvitationSerializer(all_friends_invitation)
-        json_all_friends_invitation = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_all_friends_invitation)
-
-    def test_create_not_invited(self):
-        # Delete the second user's invitation.
-        self.invitation2.delete()
-
-        # Log the second user in.
-        token = Token(user=self.user2)
-        token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
-
-        data = {
-            'event': self.event.id,
-        }
-        response = self.client.post(self.list_url, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_create_not_logged_in(self):
-        # Log the user out.
-        self.client.credentials()
-
-        data = {
-            'event': self.event.id,
-        }
-        response = self.client.post(self.list_url, data)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class SuggestedEventsTests(APITestCase):

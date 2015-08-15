@@ -166,11 +166,9 @@ class InvitationQuerySet(models.query.QuerySet):
         })
         requests.patch(url, json_invitations)
 
-        # Don't notify the user who is sending the invitations, or users with
-        # open invitations.
+        # Don't notify the user who is sending the invitations.
         invitations = [invitation for invitation in self
-                       if invitation.to_user_id != from_user.id
-                       and not invitation.open]
+                       if invitation.to_user_id != from_user.id]
 
         # Send users with devices push notifications.
         message = '{name} invited you to {activity}'.format(name=from_user.name,
@@ -209,7 +207,6 @@ class Invitation(models.Model):
     response = models.SmallIntegerField(choices=RESPONSE_CHOICES,
                                         default=NO_RESPONSE)
     previously_accepted = models.BooleanField(default=False)
-    open = models.BooleanField(default=False)
     to_user_messaged = models.BooleanField(default=False)
     muted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -287,33 +284,6 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
                 activity=event.title)
         devices = APNSDevice.objects.filter(user_id=invitation.from_user_id)
         devices.send_message(message)
-
-
-class AllFriendsInvitation(models.Model):
-    event = models.ForeignKey(Event)
-    from_user = models.ForeignKey(User)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('event', 'from_user')
-
-@receiver(post_save, sender=AllFriendsInvitation)
-def send_open_invitation_notification(sender, instance, created, **kwargs):
-    """
-    Notify users with an open invitation to the event that the user is down for
-    something.
-    """
-    all_friends_invitation = instance
-    event = all_friends_invitation.event
-    from_user = all_friends_invitation.from_user
-
-    invitations = Invitation.objects.filter(event=event, from_user=from_user,
-                                            open=True)
-    user_ids = [invitation.to_user_id for invitation in invitations]
-    devices = APNSDevice.objects.filter(user_id__in=user_ids)
-    message = '{name} is down for {activity}'.format(name=from_user.name,
-                                                     activity=event.title)
-    devices.send_message(message, badge=1)
 
 
 class LinkInvitation(models.Model):
