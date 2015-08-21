@@ -44,21 +44,21 @@ def get_invite_sms(from_user, event):
 
     if event.datetime and event.place:
         event_date = get_event_date(event, place.geo)
-        message = ('{name} invited you to {activity} at {place} on {date}'
+        message = ('{name} suggested: {activity} at {place} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, place=place.name,
                    date=event_date)
     elif event.place:
-        message = ('{name} invited you to {activity} at {place}'
+        message = ('{name} suggested: {activity} at {place}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, place=place.name)
     elif event.datetime:
         event_date = get_event_date(event, from_user.location)
-        message = ('{name} invited you to {activity} on {date}'
+        message = ('{name} suggested: {activity} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, date=event_date)
     else:
-        message = ('{name} invited you to {activity}'
+        message = ('{name} suggested: {activity}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title)
     return message
@@ -171,7 +171,7 @@ class InvitationQuerySet(models.query.QuerySet):
                        if invitation.to_user_id != from_user.id]
 
         # Send users with devices push notifications.
-        message = '{name} invited you to {activity}'.format(name=from_user.name,
+        message = '{name} suggested: {activity}'.format(name=from_user.name,
                                                             activity=event.title)
         user_ids = [invitation.to_user_id for invitation in invitations]
         devices = APNSDevice.objects.filter(user_id__in=user_ids)

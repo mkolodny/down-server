@@ -88,7 +88,7 @@ class InvitationTests(APITestCase):
         mock_get_local_dt.return_value = dt
 
         event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p')
-        expected_message = ('{name} invited you to {activity} at {place} on {date}'
+        expected_message = ('{name} suggested: {activity} at {place} on {date}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title,
                             place=self.place.name, date=event_date)
@@ -104,7 +104,7 @@ class InvitationTests(APITestCase):
         mock_get_local_dt.return_value = None
 
         event_date = self.event.datetime.strftime('%A, %b. %-d')
-        expected_message = ('{name} invited you to {activity} at {place} on {date}'
+        expected_message = ('{name} suggested: {activity} at {place} on {date}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title,
                             place=self.place.name, date=event_date)
@@ -119,7 +119,7 @@ class InvitationTests(APITestCase):
         self.event.datetime = None
         self.event.save()
 
-        expected_message = ('{name} invited you to {activity} at {place}'
+        expected_message = ('{name} suggested: {activity} at {place}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title,
                             place=self.place.name)
@@ -137,7 +137,7 @@ class InvitationTests(APITestCase):
         mock_get_local_dt.return_value = dt
 
         event_date = dt.strftime('%A, %b. %-d @ %-I:%M %p')
-        expected_message = ('{name} invited you to {activity} on {date}'
+        expected_message = ('{name} suggested: {activity} on {date}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title,
                             date=event_date)
@@ -158,7 +158,7 @@ class InvitationTests(APITestCase):
         mock_get_local_dt.return_value = None
 
         event_date = self.event.datetime.strftime('%A, %b. %-d')
-        expected_message = ('{name} invited you to {activity} on {date}'
+        expected_message = ('{name} suggested: {activity} on {date}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title,
                             date=event_date)
@@ -175,7 +175,7 @@ class InvitationTests(APITestCase):
         self.event.datetime = None
         self.event.save()
 
-        expected_message = ('{name} invited you to {activity}'
+        expected_message = ('{name} suggested: {activity}'
                             '\n--\nSent from Down (http://down.life/app)').format(
                             name=self.friend1.name, activity=self.event.title)
         message = get_invite_sms(self.friend1, self.event)
