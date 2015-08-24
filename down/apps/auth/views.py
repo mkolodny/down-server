@@ -69,12 +69,12 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         """
         try:
             social_account = SocialAccount.objects.get(user=request.user)
-            friends = get_facebook_friends(social_account)
-            serializer = FriendSerializer(friends, many=True)
-            return Response(serializer.data)
+            facebook_friends = get_facebook_friends(social_account)
+            serializer = FriendSerializer(facebook_friends, many=True)
+            friends = serializer.data
         except SocialAccount.DoesNotExist:
             friends = []
-            return Response(friends)
+        return Response(friends)
 
     @list_route(methods=['get'])
     def invitations(self, request):
