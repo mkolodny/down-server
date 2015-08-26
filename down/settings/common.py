@@ -107,6 +107,7 @@ LOGGING = {
 }
 
 # API
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning',
 }

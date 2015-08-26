@@ -3,7 +3,6 @@ from phonenumber_field import phonenumber
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework_gis.serializers import GeoModelSerializer
-from down.apps.utils.serializers import UnixEpochDateField
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
 
 
@@ -51,16 +50,15 @@ class FriendSerializer(GeoModelSerializer):
 
 
 class UserSerializer(GeoModelSerializer):
-    updated_at = UnixEpochDateField(read_only=True)
-    authtoken = serializers.SerializerMethodField(read_only=True, required=False)
-    friends = FriendSerializer(read_only=True, many=True)
-    facebook_friends = serializers.SerializerMethodField(read_only=True,
-                                                         required=False)
+    authtoken = serializers.SerializerMethodField(required=False)
+    friends = FriendSerializer(required=False, many=True)
+    facebook_friends = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = User
         fields = ('id', 'email', 'name', 'image_url', 'username', 'location',
                   'friends', 'updated_at', 'authtoken', 'facebook_friends')
+        read_only_fields = ('updated_at', 'friends', 'facebook_friends')
 
     def get_authtoken(self, obj):
         return self.context.get('authtoken')

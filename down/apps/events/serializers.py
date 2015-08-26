@@ -15,7 +15,6 @@ from down.apps.events.models import get_event_date
 from down.apps.utils.exceptions import ServiceUnavailable
 from down.apps.utils.serializers import (
     PkOnlyPrimaryKeyRelatedField,
-    UnixEpochDateField,
 )
 
 
@@ -35,14 +34,12 @@ class CreateEventInvitationSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     place = PlaceSerializer(required=False)
-    datetime = UnixEpochDateField(required=False)
     invitations = CreateEventInvitationSerializer(write_only=True, required=False,
                                                   many=True)
-    created_at = UnixEpochDateField(read_only=True)
-    updated_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Event
+        read_only_fields = ('created_at', 'updated_at')
 
     def create(self, validated_data):
         """
@@ -225,13 +222,11 @@ class InvitationSerializer(serializers.ModelSerializer):
     event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
     from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
     to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
-    created_at = UnixEpochDateField(read_only=True)
-    updated_at = UnixEpochDateField(read_only=True)
-    last_viewed = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
         list_serializer_class = InvitationListSerializer
+        read_only_fields = ('created_at', 'updated_at', 'last_viewed')
 
     def update(self, instance, validated_data):
         """
@@ -269,32 +264,27 @@ class MyInvitationSerializer(serializers.ModelSerializer):
     event = EventSerializer()
     from_user = UserSerializer()
     to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
-    created_at = UnixEpochDateField(read_only=True)
-    updated_at = UnixEpochDateField(read_only=True)
-    last_viewed = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
+        read_only_fields = ('created_at', 'updated_at', 'last_viewed')
 
 
 class EventInvitationSerializer(serializers.ModelSerializer):
     event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
     from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
     to_user = UserSerializer()
-    created_at = UnixEpochDateField(read_only=True)
-    updated_at = UnixEpochDateField(read_only=True)
-    last_viewed = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = Invitation
+        read_only_fields = ('created_at', 'updated_at', 'last_viewed')
 
 
 class LinkInvitationSerializer(GeoModelSerializer):
-    created_at = UnixEpochDateField(read_only=True)
 
     class Meta:
         model = LinkInvitation
-        read_only_fields = ('link_id',)
+        read_only_fields = ('link_id', 'created_at')
 
 
 class MessageSentSerializer(serializers.Serializer):

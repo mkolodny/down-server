@@ -82,10 +82,8 @@ class EventTests(APITestCase):
         self.place.save()
 
         # Mock an event.
-        timestamp = int(time.mktime(timezone.now().timetuple()))
-        dt = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
-        self.event = Event(title='bars?!?!!', creator=self.user, datetime=dt,
-                           place=self.place)
+        self.event = Event(title='bars?!?!!', creator=self.user,
+                           datetime=timezone.now(), place=self.place)
         self.event.save()
         self.user_invitation = Invitation(from_user=self.user, to_user=self.user,
                                           event=self.event,
@@ -113,7 +111,7 @@ class EventTests(APITestCase):
         }
         self.post_data = {
             'title': 'rat fishing with the boys!',
-            'datetime': int(time.mktime(timezone.now().timetuple())),
+            'datetime': timezone.now().strftime(settings.DATETIME_FORMAT),
             'comment': 'they\'re everywhere!!!',
             'place': {
                 'name': 'Atlantic-Barclays Station',
@@ -226,7 +224,7 @@ class EventTests(APITestCase):
             'title': self.event.title,
             'creator': self.event.creator_id,
             'canceled': self.event.canceled,
-            'datetime': int(time.mktime(timezone.now().timetuple())) + 1,
+            'datetime': timezone.now().strftime(settings.DATETIME_FORMAT),
             'place': {
                 'name': '540 State St',
                 'geo': 'POINT(40.685339 -73.979361)',
@@ -284,7 +282,7 @@ class EventTests(APITestCase):
             'title': self.event.title,
             'creator': self.event.creator_id,
             'canceled': self.event.canceled,
-            'datetime': int(time.mktime(self.event.datetime.timetuple())),
+            'datetime': self.event.datetime.strftime(settings.DATETIME_FORMAT),
             'place': {
                 'name': '540 State St',
                 'geo': 'POINT(40.685339 -73.979361)',
@@ -341,13 +339,13 @@ class EventTests(APITestCase):
         mock_client = mock.MagicMock()
         mock_twilio.return_value = mock_client
 
+        dt = timezone.now()
         coords = self.place.geo.coords
-        timestamp = int(time.mktime(timezone.now().timetuple())) + 1
         data = {
             'title': self.event.title,
             'creator': self.event.creator_id,
             'canceled': self.event.canceled,
-            'datetime': timestamp,
+            'datetime': dt.strftime(settings.DATE_FORMAT),
             'place': {
                 'name': self.place.name,
                 'geo': 'POINT({lat} {lng})'.format(lat=coords[0], lng=coords[1]),
@@ -358,7 +356,6 @@ class EventTests(APITestCase):
 
         # It should update the event.
         event = Event.objects.get(id=self.event.id)
-        dt = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
         self.assertEqual(event.datetime, dt)
 
         # It should notify the users who haven't declined their invitation about
@@ -402,19 +399,18 @@ class EventTests(APITestCase):
         mock_twilio.return_value = mock_client
 
         coords = self.place.geo.coords
-        timestamp = int(time.mktime(timezone.now().timetuple())) + 1
+        dt = timezone.now()
         data = {
             'title': self.event.title,
             'creator': self.event.creator_id,
             'canceled': self.event.canceled,
-            'datetime': timestamp,
+            'datetime': dt.strftime(settings.DATETIME_FORMAT),
         }
         response = self.client.put(self.detail_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should update the event.
         event = Event.objects.get(id=self.event.id)
-        dt = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
         self.assertEqual(event.datetime, dt)
         self.assertIsNone(event.place)
 
@@ -458,7 +454,7 @@ class EventTests(APITestCase):
             'title': self.event.title,
             'creator': self.event.creator_id,
             'canceled': self.event.canceled,
-            'datetime': int(time.mktime(self.event.datetime.timetuple())),
+            'datetime': self.event.datetime.strftime(settings.DATETIME_FORMAT),
         }
         response = self.client.put(self.detail_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -614,11 +610,12 @@ class EventTests(APITestCase):
         self.event.datetime = None
         self.event.save()
 
+        dt = timezone.now()
         data = {
             'title': self.event.title,
             'creator': self.event.creator_id,
             'canceled': self.event.canceled,
-            'datetime': int(time.mktime(timezone.now().timetuple())) + 1,
+            'datetime': dt.strftime(settings.DATETIME_FORMAT),
             'place': {
                 'name': '540 State St',
                 'geo': 'POINT(40.685339 -73.979361)',
@@ -634,7 +631,6 @@ class EventTests(APITestCase):
         # It should update the event.
         event = Event.objects.get(id=self.event.id)
         self.assertEqual(event.place_id, place.id)
-        dt = datetime.utcfromtimestamp(data['datetime']).replace(tzinfo=pytz.utc)
         self.assertEqual(event.datetime, dt)
 
         # It should notify the users who haven't declined their invitation about
