@@ -1155,15 +1155,22 @@ class InvitationTests(APITestCase):
         invitation.save()
 
         url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        dt = timezone.now()
         data = {
             'from_user': invitation.from_user_id,
             'to_user': invitation.to_user_id,
             'event': invitation.event_id,
             'response': invitation.response,
-            'last_viewed': timezone.now(),
+            'last_viewed': dt.strftime(settings.DATETIME_FORMAT),
         }
+        print data
         response = self.client.put(url, data)
+        print response.content
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the invitation.
+        invitation = Invitation.objects.get(id=invitation.id)
+        self.assertEqual(invitation.last_viewed, dt)
 
 
 class SuggestedEventsTests(APITestCase):

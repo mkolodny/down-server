@@ -222,6 +222,7 @@ class InvitationSerializer(serializers.ModelSerializer):
     event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
     from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
     to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
+    last_viewed = serializers.DateTimeField()
 
     class Meta:
         model = Invitation
@@ -247,13 +248,13 @@ class InvitationSerializer(serializers.ModelSerializer):
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
-        # Update the invitation.
+        # If the user edited their response, update the event's `updated_at` time.
         if (invitation.response != Invitation.NO_RESPONSE
                 and invitation.response != new_response):
-            # Update the event's `updated_at` time.
             Event.objects.filter(id=invitation.event_id).update()
 
         for attr, value in validated_data.items():
+            print attr
             setattr(invitation, attr, value)
         invitation.save()
 
