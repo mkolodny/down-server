@@ -10,7 +10,7 @@ from twilio.rest import TwilioRestClient
 from .models import Event, Invitation, LinkInvitation, Place
 from .utils import add_member, remove_member
 from down.apps.auth.models import User, UserPhone
-from down.apps.auth.serializers import UserSerializer
+from down.apps.auth.serializers import FriendSerializer
 from down.apps.events.models import get_event_date
 from down.apps.utils.exceptions import ServiceUnavailable
 from down.apps.utils.serializers import (
@@ -261,7 +261,7 @@ class InvitationSerializer(serializers.ModelSerializer):
 
 class MyInvitationSerializer(serializers.ModelSerializer):
     event = EventSerializer()
-    from_user = UserSerializer()
+    from_user = FriendSerializer()
     to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
@@ -272,7 +272,7 @@ class MyInvitationSerializer(serializers.ModelSerializer):
 class EventInvitationSerializer(serializers.ModelSerializer):
     event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
     from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
-    to_user = UserSerializer()
+    to_user = FriendSerializer()
 
     class Meta:
         model = Invitation
