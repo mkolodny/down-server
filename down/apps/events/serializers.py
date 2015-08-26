@@ -226,7 +226,7 @@ class InvitationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invitation
         list_serializer_class = InvitationListSerializer
-        read_only_fields = ('created_at', 'updated_at', 'last_viewed')
+        read_only_fields = ('created_at', 'updated_at')
 
     def update(self, instance, validated_data):
         """
