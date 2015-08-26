@@ -222,7 +222,6 @@ class InvitationSerializer(serializers.ModelSerializer):
     event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
     from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
     to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
-    last_viewed = serializers.DateTimeField()
 
     class Meta:
         model = Invitation
@@ -254,7 +253,6 @@ class InvitationSerializer(serializers.ModelSerializer):
             Event.objects.filter(id=invitation.event_id).update()
 
         for attr, value in validated_data.items():
-            print attr
             setattr(invitation, attr, value)
         invitation.save()
 
@@ -268,7 +266,7 @@ class MyInvitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Invitation
-        read_only_fields = ('created_at', 'updated_at', 'last_viewed')
+        read_only_fields = ('created_at', 'updated_at')
 
 
 class EventInvitationSerializer(serializers.ModelSerializer):
@@ -278,7 +276,7 @@ class EventInvitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Invitation
-        read_only_fields = ('created_at', 'updated_at', 'last_viewed')
+        read_only_fields = ('created_at', 'updated_at')
 
 
 class LinkInvitationSerializer(GeoModelSerializer):

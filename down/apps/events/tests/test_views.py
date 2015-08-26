@@ -1148,30 +1148,6 @@ class InvitationTests(APITestCase):
         self.assertEqual(response.status_code,
                          status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    def test_update_last_viewed(self):
-        # Mock an invitation.
-        invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                event=self.event, response=Invitation.NO_RESPONSE)
-        invitation.save()
-
-        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
-        dt = timezone.now()
-        data = {
-            'from_user': invitation.from_user_id,
-            'to_user': invitation.to_user_id,
-            'event': invitation.event_id,
-            'response': invitation.response,
-            'last_viewed': dt.strftime(settings.DATETIME_FORMAT),
-        }
-        print data
-        response = self.client.put(url, data)
-        print response.content
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should update the invitation.
-        invitation = Invitation.objects.get(id=invitation.id)
-        self.assertEqual(invitation.last_viewed, dt)
-
 
 class SuggestedEventsTests(APITestCase):
 

@@ -211,7 +211,6 @@ class Invitation(models.Model):
     muted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    last_viewed = models.DateTimeField(auto_now_add=True)
 
     objects = InvitationManager()
 
@@ -240,6 +239,8 @@ def send_invitation_accept_notification(sender, instance, created, **kwargs):
     Send a push notification to users who are already down for the event when
     a user accepts the invitation.
     """
+    # TODO: Move this to the serializer update method.
+
     if kwargs['update_fields'] == frozenset(['previously_accepted']):
         # if we're only updating the previously_accepted field, don't
         # send anything to anyone. Shhhhhhh
