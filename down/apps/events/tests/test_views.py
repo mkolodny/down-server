@@ -674,23 +674,7 @@ class EventTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('django.utils.timezone.now')
-    def test_create_message(self, mock_now, mock_send):
-        # Re-save the event after we've mocked the current time so that the
-        # event's updated_at time is what we expect.
-        now = pytz.utc.localize(datetime.now())
-        mock_now.return_value = now
-        self.event.save()
-
-        # Make now return a greater time so that when we update the event, the
-        # event's updated_at time is greater.
-        updated_at = pytz.utc.localize(datetime.now() + timedelta(seconds=1))
-        mock_now.return_value = updated_at
-
-        # Mark friend2 as having posted a message in the event's group chat.
-        self.friend2_invitation.to_user_messaged = True
-        self.friend2_invitation.save()
-
+    def test_create_message(self, mock_send):
         # Give friend2 a device so that we can send them a push notification.
         registration_id = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
                            '10df230567037dcc4')
@@ -699,6 +683,10 @@ class EventTests(APITestCase):
                                     device_id=device_id, name='iPhone, 8.2',
                                     user=self.friend2)
         friend2_device.save()
+
+        # Accept the invitation.
+        self.friend2_invitation.response = Invitation.ACCEPTED
+        self.friend2_invitation.save()
 
         data = {'text': 'So down!'}
         response = self.client.post(self.create_message_url, data)
@@ -718,15 +706,6 @@ class EventTests(APITestCase):
         message = '{name} to {activity}: {text}'.format(
                 name=self.user.name, activity=activity, text=data['text'])
         mock_send.assert_any_call(registration_ids=tokens, alert=message)
-
-        # It should set a flag on the invitation marking that the user has posted
-        # a message in the group chat.
-        invitation = Invitation.objects.get(id=self.user_invitation.id)
-        self.assertTrue(invitation.to_user_messaged)
-
-        # It should update the time the event was updated.
-        event = Event.objects.get(id=self.event.id)
-        self.assertEqual(event.updated_at, updated_at)
 
     def test_create_message_not_invited(self):
         # Uninvite the logged in user. (You can't actually do that)

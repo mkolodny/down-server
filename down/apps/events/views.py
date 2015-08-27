@@ -103,20 +103,14 @@ class EventViewSet(viewsets.ModelViewSet):
                     name=request.user.name, activity=activity,
                     text=serializer.data['text'])
             responses = [Invitation.ACCEPTED, Invitation.MAYBE]
-            invitations = Invitation.objects.filter(event=event) \
-                    .filter(Q(response__in=responses)
-                            | Q(to_user_messaged=True)) \
+            invitations = Invitation.objects.filter(event=event,
+                                                    response__in=responses) \
                     .exclude(to_user=request.user) \
                     .exclude(muted=True)
             member_ids = [invitation.to_user_id for invitation in invitations]
             devices = APNSDevice.objects.filter(user_id__in=member_ids)
             # TODO: Catch exception if sending the message fails.
             devices.send_message(message)
-
-            # Set a flag on the user's invitation marking that they've posted a
-            # message on this event's group chat.
-            Invitation.objects.filter(event=event, to_user=request.user) \
-                    .update(to_user_messaged=True)
 
             # Update the datetime the event was modified.
             event.save()
