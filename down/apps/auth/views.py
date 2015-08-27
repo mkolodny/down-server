@@ -8,7 +8,6 @@ from django.contrib.gis.measure import D
 from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import render
-from django.utils import timezone
 from django.views.generic.base import RedirectView, TemplateView
 import pytz
 import requests
@@ -78,7 +77,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
     @list_route(methods=['get'])
     def invitations(self, request):
-        twenty_four_hrs_ago = timezone.now() - timedelta(hours=24)
+        twenty_four_hrs_ago = datetime.now() - timedelta(hours=24)
         invitations = Invitation.objects.filter(to_user=request.user) \
                 .select_related('event') \
                 .filter(Q(event__datetime__isnull=True,
