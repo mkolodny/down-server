@@ -77,7 +77,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
     @list_route(methods=['get'])
     def invitations(self, request):
-        twenty_four_hrs_ago = datetime.now() - timedelta(hours=24)
+        twenty_four_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=24)
         invitations = Invitation.objects.filter(to_user=request.user) \
                 .select_related('event') \
                 .filter(Q(event__datetime__isnull=True,
