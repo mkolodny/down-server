@@ -10,11 +10,10 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 class User(AbstractBaseUser):
     email = models.EmailField(null=True, blank=True, unique=True)
-    #name = models.TextField(null=True, blank=True)
-    # Temporarily give users a default name so that the app doesn't
-    # crash when users add from their address book.
-    # TODO: Remove the default after next release.
-    name = models.TextField(default='Down User')
+    name = models.TextField(null=True, blank=True)
+    # Users who were added from contacts don't have first/last names.
+    first_name = models.TextField(null=True, blank=True)
+    last_name = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
     username = models.TextField(null=True, blank=True, unique=True)
     # Location can only be null from the time the user logs in to the

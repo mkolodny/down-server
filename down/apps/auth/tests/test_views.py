@@ -329,7 +329,9 @@ class SocialAccountTests(APITestCase):
         self.facebook_token = 'asdf123'
         self.facebook_user_id = 1207059
         self.email = 'aturing@gmail.com'
-        self.name = 'Alan Tdog Turing'
+        self.name = 'Alan Turing'
+        self.first_name = 'Alan'
+        self.last_name = 'Turing'
         self.image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
                 id=self.facebook_user_id)
         self.hometown = 'Paddington, London'
@@ -343,6 +345,8 @@ class SocialAccountTests(APITestCase):
             'id': self.facebook_user_id,
             'email': self.email,
             'name': self.name,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
             'hometown': self.hometown,
         })
         httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
@@ -357,7 +361,9 @@ class SocialAccountTests(APITestCase):
 
         # It should update the user.
         user = User.objects.get(id=self.user.id, email=self.email,
-                                name=self.name, image_url=self.image_url)
+                                name=self.name, first_name=self.first_name,
+                                last_name=self.last_name,
+                                image_url=self.image_url)
 
         # It should create the user's social account.
         profile = {
@@ -365,6 +371,8 @@ class SocialAccountTests(APITestCase):
             'id': self.facebook_user_id,
             'email': self.email,
             'name': self.name,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
             'image_url': self.image_url,
             'hometown': self.hometown,
         }
@@ -394,6 +402,8 @@ class SocialAccountTests(APITestCase):
         body = json.dumps({
             'id': self.facebook_user_id,
             'name': self.name,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
             'hometown': self.hometown,
         })
         httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
@@ -409,13 +419,17 @@ class SocialAccountTests(APITestCase):
         # It should update the user with a default email.
         default_email = 'no.email@down.life'
         user = User.objects.get(id=self.user.id, name=self.name,
-                                email=default_email, image_url=self.image_url)
+                                email=default_email, first_name=self.first_name,
+                                last_name=self.last_name,
+                                image_url=self.image_url)
 
         # It should create the user's social account.
         profile = {
             'access_token': self.facebook_token,
             'id': self.facebook_user_id,
             'name': self.name,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
             'image_url': self.image_url,
             'hometown': self.hometown,
         }
