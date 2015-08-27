@@ -233,60 +233,6 @@ class Invitation(models.Model):
             event.save()
 
 
-@receiver(post_save, sender=Invitation)
-def send_invitation_accept_notification(sender, instance, created, **kwargs):
-    """
-    Send a push notification to users who are already down for the event when
-    a user accepts the invitation.
-    """
-    # TODO: Move this to the serializer update method.
-
-    if kwargs['update_fields'] == frozenset(['previously_accepted']):
-        # if we're only updating the previously_accepted field, don't
-        # send anything to anyone. Shhhhhhh
-        return
-
-    invitation = instance
-    # Since we're using PkOnlyPrimaryKeyRelatedFields, `invitation.to_user` and
-    # `invitation.event` are objects with only primary keys. So we need to use
-    # querysets to fetch the full objects.
-    # TODO: Update the tests - move the notification tests to `test_views.py`.
-    user = User.objects.get(id=invitation.to_user_id)
-    event = Event.objects.get(id=invitation.event_id)
-
-    # Don't notify the event creator that they accepted their own invitation.
-    if user.id == event.creator_id:
-        return
-
-    if invitation.response == Invitation.ACCEPTED:
-        message = '{name} is also down for {activity}'.format(
-                name=user.name,
-                activity=event.title)
-
-        # Get all other members who have accepted their invitation, or haven't
-        # responded yet, who've added the user as a friend. Always notify the
-        # creator.
-        invitations = Invitation.objects.filter(event=event) \
-                .exclude(response=Invitation.DECLINED) \
-                .exclude(to_user=user)
-        member_ids = [invitation.to_user_id for invitation in invitations]
-        added_me = Friendship.objects.filter(friend=user, user_id__in=member_ids)
-        to_user_ids = [friendship.user_id for friendship in added_me]
-        to_user_ids.append(event.creator_id)
-
-        # This filter operation will only return unique devices.
-        devices = APNSDevice.objects.filter(user_id__in=to_user_ids)
-        devices.send_message(message)
-    elif (invitation.response == Invitation.DECLINED
-            and invitation.previously_accepted):
-        # Only notify the user who invited them.
-        message = '{name} isn\'t down for {activity}'.format(
-                name=user.name,
-                activity=event.title)
-        devices = APNSDevice.objects.filter(user_id=invitation.from_user_id)
-        devices.send_message(message)
-
-
 class LinkInvitation(models.Model):
     event = models.ForeignKey(Event)
     from_user = models.ForeignKey(User)

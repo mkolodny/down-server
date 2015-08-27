@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from django.conf import settings
+from django.db.models import Q
 from push_notifications.models import APNSDevice
 import requests
 from rest_framework import serializers
@@ -7,11 +8,11 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework_gis.serializers import GeoModelSerializer
 from twilio.rest import TwilioRestClient
-from .models import Event, Invitation, LinkInvitation, Place
+from .models import get_event_date, Event, Invitation, LinkInvitation, Place
 from .utils import add_member, remove_member
 from down.apps.auth.models import User, UserPhone
 from down.apps.auth.serializers import FriendSerializer
-from down.apps.events.models import get_event_date
+from down.apps.friends.models import Friendship
 from down.apps.utils.exceptions import ServiceUnavailable
 from down.apps.utils.serializers import (
     PkOnlyPrimaryKeyRelatedField,
@@ -247,10 +248,42 @@ class InvitationSerializer(serializers.ModelSerializer):
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
-        # If the user edited their response, update the event's `updated_at` time.
-        if (invitation.response != Invitation.NO_RESPONSE
-                and invitation.response != new_response):
-            Event.objects.filter(id=invitation.event_id).update()
+        if invitation.response != new_response:
+            # Notify people who want to know.
+            user = User.objects.get(id=invitation.to_user_id)
+            event = Event.objects.get(id=invitation.event_id)
+
+            if new_response == Invitation.ACCEPTED:
+                message = '{name} is down for {event}'.format(name=user.name,
+                                                              event=event.title)
+            elif new_response == Invitation.MAYBE:
+                message = '{name} might be down for {event}'.format(
+                        name=user.name, event=event.title)
+            elif new_response == Invitation.DECLINED:
+                message = '{name} can\'t make it to {event}'.format(
+                        name=user.name, event=event.title)
+
+            member_responses = [Invitation.ACCEPTED, Invitation.MAYBE]
+            joining_event = (new_response in member_responses)
+            bailing = (invitation.response in member_responses)
+            if joining_event or bailing:
+                # Notify other members who've added the user as a friend. Always
+                # notify the person who invited the user.
+                invitations = Invitation.objects.filter(
+                        Q(response=Invitation.ACCEPTED) |
+                        Q(response=Invitation.MAYBE), event=event) \
+                        .exclude(to_user=user) \
+                        .exclude(muted=True)
+                member_ids = [_invitation.to_user_id for _invitation in invitations]
+                added_me = Friendship.objects.filter(friend=user,
+                                                     user_id__in=member_ids)
+                to_user_ids = [friendship.user_id for friendship in added_me]
+                to_user_ids.append(invitation.from_user_id)
+            elif new_response == Invitation.DECLINED:
+                to_user_ids = [invitation.from_user_id]
+
+            devices = APNSDevice.objects.filter(user_id__in=to_user_ids)
+            devices.send_message(message)
 
         for attr, value in validated_data.items():
             setattr(invitation, attr, value)

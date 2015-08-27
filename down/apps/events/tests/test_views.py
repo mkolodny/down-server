@@ -30,6 +30,7 @@ from down.apps.events.serializers import (
     EventInvitationSerializer,
     LinkInvitationSerializer,
 )
+from down.apps.friends.models import Friendship
 
 
 class EventTests(APITestCase):
@@ -1016,19 +1017,39 @@ class InvitationTests(APITestCase):
     @mock.patch('down.apps.events.serializers.add_member')
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_accept(self, mock_send, mock_add_member):
-        # Mock an invitation.
-        invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                event=self.event, response=Invitation.NO_RESPONSE)
-        invitation.save()
+        # Log in as user2.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
-        # Save the most recent time the event was updated.
-        updated_at = self.event.updated_at
+        # Mock invitations with every response.
+        invitation1 = Invitation(from_user=self.user1, to_user=self.user1,
+                                 event=self.event, response=Invitation.MAYBE)
+        invitation1.save()
+        invitation2 = Invitation(from_user=self.user1, to_user=self.user2,
+                                 event=self.event, response=Invitation.NO_RESPONSE)
+        invitation2.save()
+        invitation3 = Invitation(from_user=self.user1, to_user=self.user3,
+                                 event=self.event, response=Invitation.DECLINED)
+        invitation3.save()
+        invitation4 = Invitation(from_user=self.user1, to_user=self.user4,
+                                 event=self.event, response=Invitation.ACCEPTED)
+        invitation4.save()
 
-        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        # Add user2 as a friend.
+        friendship = Friendship(user=self.user1, friend=self.user2)
+        friendship.save()
+        friendship = Friendship(user=self.user4, friend=self.user2)
+        friendship.save()
+
+        # Clear the mock's call count
+        mock_send.reset_mock()
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation2.id})
         data = {
-            'from_user': invitation.from_user_id,
-            'to_user': invitation.to_user_id,
-            'event': invitation.event_id,
+            'from_user': invitation2.from_user_id,
+            'to_user': invitation2.to_user_id,
+            'event': invitation2.event_id,
             'response': Invitation.ACCEPTED,
         }
         response = self.client.put(url, data)
@@ -1037,29 +1058,57 @@ class InvitationTests(APITestCase):
         # It should update the invitation.
         invitation = Invitation.objects.get(**data)
 
-        # It should update the event.
-        event = Event.objects.get(id=invitation.event_id)
-        self.assertGreater(event.updated_at, updated_at)
-
         # It should add the user to the meteor server members list.
-        mock_add_member.assert_called_once_with(event.id, invitation.to_user_id)
+        mock_add_member.assert_called_once_with(self.event.id,
+                                                invitation.to_user_id)
+
+        # It should notify users who are either down or might be down, and
+        # haven't muted their notifications.
+        message = '{name} is down for {event}'.format(
+                name=self.user2.name,
+                event=self.event.title)
+        tokens = [
+            self.user1_device.registration_id, # maybe
+            self.user4_device.registration_id, # accepted
+        ]
+        mock_send.assert_called_with(registration_ids=tokens, alert=message)
 
     @mock.patch('down.apps.events.serializers.add_member')
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_maybe(self, mock_send, mock_add_member):
-        # Mock an invitation.
-        invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                event=self.event, response=Invitation.NO_RESPONSE)
-        invitation.save()
+        # Log in as user2.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
-        # Save the most recent time the event was updated.
-        updated_at = self.event.updated_at
+        # Mock invitations with every response.
+        invitation1 = Invitation(from_user=self.user1, to_user=self.user1,
+                                 event=self.event, response=Invitation.MAYBE)
+        invitation1.save()
+        invitation2 = Invitation(from_user=self.user1, to_user=self.user2,
+                                 event=self.event, response=Invitation.NO_RESPONSE)
+        invitation2.save()
+        invitation3 = Invitation(from_user=self.user1, to_user=self.user3,
+                                 event=self.event, response=Invitation.DECLINED)
+        invitation3.save()
+        invitation4 = Invitation(from_user=self.user1, to_user=self.user4,
+                                 event=self.event, response=Invitation.ACCEPTED)
+        invitation4.save()
 
-        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        # Add user2 as a friend.
+        friendship = Friendship(user=self.user1, friend=self.user2)
+        friendship.save()
+        friendship = Friendship(user=self.user4, friend=self.user2)
+        friendship.save()
+
+        # Clear the mock's call count
+        mock_send.reset_mock()
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation2.id})
         data = {
-            'from_user': invitation.from_user_id,
-            'to_user': invitation.to_user_id,
-            'event': invitation.event_id,
+            'from_user': invitation2.from_user_id,
+            'to_user': invitation2.to_user_id,
+            'event': invitation2.event_id,
             'response': Invitation.MAYBE,
         }
         response = self.client.put(url, data)
@@ -1068,23 +1117,36 @@ class InvitationTests(APITestCase):
         # It should update the invitation.
         invitation = Invitation.objects.get(**data)
 
-        # It should update the event.
-        event = Event.objects.get(id=invitation.event_id)
-        self.assertGreater(event.updated_at, updated_at)
-
         # It should add the user to the meteor server members list.
-        mock_add_member.assert_called_once_with(event.id, invitation.to_user_id)
+        mock_add_member.assert_called_once_with(self.event.id,
+                                                invitation.to_user_id)
+
+        # It should notify users who are either down or might be down, and
+        # haven't muted their notifications.
+        message = '{name} might be down for {event}'.format(
+                name=self.user2.name,
+                event=self.event.title)
+        tokens = [
+            self.user1_device.registration_id, # maybe
+            self.user4_device.registration_id, # accepted
+        ]
+        mock_send.assert_called_with(registration_ids=tokens, alert=message)
 
     @mock.patch('down.apps.events.serializers.remove_member')
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_decline(self, mock_send, mock_remove_member):
+        # Log in as user2.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
         # Mock an invitation.
         invitation = Invitation(from_user=self.user1, to_user=self.user2,
                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
-        # Save the most recent time the event was updated.
-        updated_at = self.event.updated_at
+        # Clear the mock's call count
+        mock_send.reset_mock()
 
         url = reverse('invitation-detail', kwargs={'pk': invitation.id})
         data = {
@@ -1099,12 +1161,75 @@ class InvitationTests(APITestCase):
         # It should update the invitation.
         invitation = Invitation.objects.get(**data)
 
-        # It should update the event.
-        event = Event.objects.get(id=invitation.event_id)
-        self.assertGreater(event.updated_at, updated_at)
+        # It should add the user to the meteor server members list.
+        mock_remove_member.assert_called_once_with(self.event.id,
+                                                   invitation.to_user_id)
+
+        # It should notify the person who invited them.
+        message = '{name} can\'t make it to {event}'.format(
+                name=self.user2.name,
+                event=self.event.title)
+        tokens = [self.user1_device.registration_id] # from_user
+        mock_send.assert_called_with(registration_ids=tokens, alert=message)
+
+    @mock.patch('down.apps.events.serializers.remove_member')
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    def test_accept_then_decline(self, mock_send, mock_remove_member):
+        # Log in as user2.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        # Mock invitations.
+        invitation1 = Invitation(from_user=self.user1, to_user=self.user1,
+                                 event=self.event, response=Invitation.MAYBE)
+        invitation1.save()
+        invitation2 = Invitation(from_user=self.user1, to_user=self.user2,
+                                 event=self.event, response=Invitation.ACCEPTED)
+        invitation2.save()
+        invitation3 = Invitation(from_user=self.user1, to_user=self.user3,
+                                 event=self.event, response=Invitation.DECLINED)
+        invitation3.save()
+        invitation4 = Invitation(from_user=self.user1, to_user=self.user4,
+                                 event=self.event, response=Invitation.ACCEPTED)
+        invitation4.save()
+
+        # Add user2 as a friend.
+        friendship = Friendship(user=self.user1, friend=self.user2)
+        friendship.save()
+        friendship = Friendship(user=self.user4, friend=self.user2)
+        friendship.save()
+
+        # Clear the mock's call count
+        mock_send.reset_mock()
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation2.id})
+        data = {
+            'from_user': invitation2.from_user_id,
+            'to_user': invitation2.to_user_id,
+            'event': invitation2.event_id,
+            'response': Invitation.DECLINED,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the invitation.
+        invitation = Invitation.objects.get(**data)
 
         # It should add the user to the meteor server members list.
-        mock_remove_member.assert_called_once_with(event.id, invitation.to_user_id)
+        mock_remove_member.assert_called_once_with(self.event.id,
+                                                   invitation.to_user_id)
+
+        # It should notify users who are either down or might be down, and
+        # haven't muted their notifications.
+        message = '{name} can\'t make it to {event}'.format(
+                name=self.user2.name,
+                event=self.event.title)
+        tokens = [
+            self.user1_device.registration_id, # maybe
+            self.user4_device.registration_id, # accepted
+        ]
+        mock_send.assert_called_with(registration_ids=tokens, alert=message)
 
     @mock.patch('down.apps.events.serializers.add_member')
     def test_accept_bad_meteor_response(self, mock_add_member):
