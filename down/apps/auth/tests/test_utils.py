@@ -5,10 +5,10 @@ from django.test import TestCase
 import httpretty
 from rest_framework import status
 from rest_framework.exceptions import ParseError
-from down.apps.auth.exceptions import ServiceUnavailable
 from down.apps.auth.models import SocialAccount, User
 from down.apps.auth.utils import get_facebook_friends
 from down.apps.friends.models import Friendship
+from down.apps.utils.exceptions import ServiceUnavailable
 
 
 class FacebookFriendsTests(TestCase):
