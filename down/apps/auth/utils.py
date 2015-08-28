@@ -4,7 +4,7 @@ import requests
 from rest_framework import status
 from rest_framework.exceptions import ParseError
 from .models import SocialAccount, User
-from .exceptions import ServiceUnavailable
+from down.apps.utils.exceptions import ServiceUnavailable
 
 
 def get_facebook_friends(user_facebook_account):
