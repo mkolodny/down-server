@@ -21,7 +21,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
-from .exceptions import ServiceUnavailable
 from .filters import UserFilter
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
 from .permissions import IsCurrentUserOrReadOnly
@@ -44,6 +43,7 @@ from down.apps.events.serializers import (
     MyInvitationSerializer,
 )
 from down.apps.friends.models import Friendship
+from down.apps.utils.exceptions import ServiceUnavailable
 
 
 class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
