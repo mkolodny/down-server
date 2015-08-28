@@ -72,7 +72,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             serializer = FriendSerializer(facebook_friends, many=True)
             friends = serializer.data
         except SocialAccount.DoesNotExist:
-            friends = []
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(friends)
 
     @list_route(methods=['get'])

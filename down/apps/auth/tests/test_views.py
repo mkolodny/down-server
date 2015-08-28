@@ -292,11 +292,7 @@ class UserTests(APITestCase):
 
         url = reverse('user-facebook-friends')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return a list of the users facebook friends.
-        json_friends = json.dumps([])
-        self.assertEqual(response.content, json_friends)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class SocialAccountTests(APITestCase):
