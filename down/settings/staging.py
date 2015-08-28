@@ -2,7 +2,7 @@ import os
 from .common import *
 
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = False
 
 # DB
