@@ -79,7 +79,7 @@ class PhoneSerializer(serializers.Serializer):
 
 
 class UserPhoneSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = FriendSerializer(read_only=True)
     phone = PhoneNumberField()
 
     class Meta:
