@@ -133,6 +133,9 @@ class EventTests(APITestCase):
         self.invitations_url = reverse('event-invitations', kwargs={
             'pk': self.event.id
         })
+        self.invited_ids_url = reverse('event-invited-ids', kwargs={
+            'pk': self.event.id
+        })
     
     def tearDown(self):
         self.patcher.stop()
@@ -773,6 +776,16 @@ class EventTests(APITestCase):
 
         response = self.client.get(self.invitations_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_invited_ids(self):
+        response = self.client.get(self.invited_ids_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of ids of users the user invited.
+        invited_users = [self.friend1, self.friend2]
+        invited_ids = [user.id for user in invited_users]
+        content = json.loads(response.content)
+        self.assertEqual(content, invited_ids)
 
 
 class InvitationTests(APITestCase):

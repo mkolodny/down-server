@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import json
 from django.conf import settings
 from django.db.models import Q
 from django.views.generic.base import TemplateView
@@ -133,6 +134,14 @@ class EventViewSet(viewsets.ModelViewSet):
         invitations.select_related('to_user')
         serializer = EventInvitationSerializer(invitations, many=True)
         return Response(serializer.data)
+
+    @detail_route(methods=['get'])
+    def invited_ids(self, request, pk=None):
+        invited_ids = Invitation.objects.filter(event_id=pk,
+                                                from_user=request.user) \
+                .exclude(to_user=request.user) \
+                .values_list('to_user', flat=True)
+        return Response(list(invited_ids))
 
 
 class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
