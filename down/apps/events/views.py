@@ -135,7 +135,7 @@ class EventViewSet(viewsets.ModelViewSet):
         serializer = EventInvitationSerializer(invitations, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=['get'])
+    @detail_route(methods=['get'], url_path='invited-ids')
     def invited_ids(self, request, pk=None):
         invited_ids = Invitation.objects.filter(event_id=pk,
                                                 from_user=request.user) \
