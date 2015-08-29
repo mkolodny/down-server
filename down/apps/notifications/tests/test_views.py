@@ -25,9 +25,21 @@ class APNSDeviceTests(APITestCase):
             'user': self.user.id,
         }
 
+        # Save URLs.
+        self.create_url = reverse('apnsdevice-list')
+
     def test_create(self):
-        url = reverse('apnsdevice-list')
-        response = self.client.post(url, self.post_data)
+        response = self.client.post(self.create_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         APNSDevice.objects.get(**self.post_data)
+
+    def test_create_already_exists(self):
+        # Create the APNSDevice.
+        data = self.post_data.copy()
+        data['user'] = self.user
+        device = APNSDevice(**data)
+        device.save()
+
+        response = self.client.post(self.create_url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
