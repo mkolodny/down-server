@@ -61,7 +61,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         serializer = FriendSerializer(request.user.friends, many=True)
         return Response(serializer.data)
 
-    @list_route(methods=['get'])
+    @list_route(methods=['get'], url_path='facebook-friends')
     def facebook_friends(self, request, pk=None):
         """
         Get a list of the user's facebook friends.
