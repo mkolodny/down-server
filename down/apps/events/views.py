@@ -123,7 +123,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
     @detail_route(methods=['get'])
     def invitations(self, request, pk=None):
-        responses = [Invitation.ACCEPTED, Invitation.MAYBE]
+        responses = [Invitation.ACCEPTED, Invitation.MAYBE, Invitation.DECLINED]
         invitations = Invitation.objects.filter(event_id=pk, response__in=responses)
 
         # Only users who have responded accepted, or maybe can view other user's

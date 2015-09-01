@@ -759,11 +759,18 @@ class EventTests(APITestCase):
         self.assertEqual(response.content, json_event)
 
     def test_get_invitations(self):
+        self.friend2_invitation.response = Invitation.DECLINED
+        self.friend2_invitation.save()
+
         response = self.client.get(self.invitations_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return the invitations of users who are down or might be down.
-        invitations = [self.user_invitation, self.friend1_invitation]
+        # It should return the invitations of users who have responded.
+        invitations = [
+            self.user_invitation,
+            self.friend1_invitation,
+            self.friend2_invitation,
+        ]
         serializer = EventInvitationSerializer(invitations, many=True)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
