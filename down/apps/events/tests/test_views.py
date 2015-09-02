@@ -865,32 +865,17 @@ class InvitationTests(APITestCase):
         self.list_url = reverse('invitation-list')
 
         # Save POST data.
-        # TODO: Only send the to user and the event.
         self.post_data = {
+            'event': self.event.id,
             'invitations': [
                 {
-                    'from_user': self.user1.id,
-                    'to_user': self.user1.id,
-                    'event': self.event.id,
-                    'response': Invitation.ACCEPTED,
-                },
-                {
-                    'from_user': self.user1.id,
                     'to_user': self.user2.id,
-                    'event': self.event.id,
-                    'response': Invitation.NO_RESPONSE,
                 },
                 {
-                    'from_user': self.user1.id,
                     'to_user': self.user3.id,
-                    'event': self.event.id,
-                    'response': Invitation.NO_RESPONSE,
                 },
                 {
-                    'from_user': self.user1.id,
                     'to_user': self.user4.id,
-                    'event': self.event.id,
-                    'response': Invitation.NO_RESPONSE,
                 },
             ],
         }
@@ -900,6 +885,11 @@ class InvitationTests(APITestCase):
 
     @mock.patch('down.apps.events.models.Invitation.objects.bulk_create')
     def test_bulk_create(self, mock_bulk_create):
+        # Invite the current user.
+        invitation = Invitation(to_user=self.user1, from_user=self.user1,
+                                event=self.event, response=Invitation.MAYBE)
+        invitation.save()
+
         response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -913,20 +903,6 @@ class InvitationTests(APITestCase):
 
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_bulk_create_not_logged_in_user(self):
-        # Log the second user in.
-        token = Token(user=self.user2)
-        token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token '+token.key)
-
-        # Invite the second user.
-        invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                event=self.event)
-        invitation.save()
-
-        response = self.client.post(self.list_url, self.post_data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     @mock.patch('down.apps.events.models.TwilioRestClient')
@@ -956,11 +932,10 @@ class InvitationTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token '+token.key)
 
         data = {
+            'event': self.event.id,
             'invitations': [
                 {
-                    'from_user': self.user2.id,
                     'to_user': self.user3.id,
-                    'event': self.event.id,
                 },
             ],
         }
@@ -974,44 +949,15 @@ class InvitationTests(APITestCase):
             Event.objects.get(id=event_id)
 
         data = {
+            'event': event_id,
             'invitations': [
                 {
-                    'from_user': self.user1.id,
                     'to_user': self.user1.id,
-                    'event': event_id,
                 }, 
             ],
         }
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_bulk_create_mixed_events(self):
-        # Append an invitation with a different event id.
-        self.post_data['invitations'].append({
-            'from_user': self.user1.id,
-            'to_user': self.user1.id,
-            'event': 0,
-        })
-        response = self.client.post(self.list_url, self.post_data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_bulk_create_mixed_from_user(self):
-        # Give the last invitation a different from_user id.
-        self.post_data['invitations'][-1] = {
-            'from_user': self.user2.id,
-            'to_user': self.user3.id,
-            'event': self.event.id,
-        }
-        response = self.client.post(self.list_url, self.post_data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_bulk_create_others_down(self):
-        # Set another user's response other than the user who sent the
-        # invitations to "down".
-        self.post_data['invitations'][1]['response'] = Invitation.ACCEPTED
-
-        response = self.client.post(self.list_url, self.post_data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     @mock.patch('down.apps.events.serializers.add_member')
     @mock.patch('push_notifications.apns.apns_send_bulk_message')

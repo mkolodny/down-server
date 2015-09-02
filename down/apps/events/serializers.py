@@ -196,21 +196,11 @@ class InvitationListSerializer(serializers.ListSerializer):
         # Save the new invitations.
         invitations = [Invitation(**obj) for obj in validated_data]
 
-        # Make sure all of the events we're creating invitations for are the
-        # same.
-        event_id = invitations[0].event.id
-        if not all((invitation.event.id == event_id) for invitation in invitations):
-            raise ValidationError('Not all events are the same')
-
-        # Make sure all of the from_users are the same.
-        from_user_id = invitations[0].from_user.id
-        if not all((invitation.from_user.id == from_user_id)
-                   for invitation in invitations):
-            raise ValidationError('Not all `from_user` are the same')
-
         # Make sure the event exists.
         try:
-            event = Event.objects.get(id=event_id)
+            if len(invitations) > 0:
+                event_id = invitations[0].event_id
+                event = Event.objects.get(id=event_id)
         except Event.DoesNotExist:
             raise ValidationError('Event doesn\'t exist')
 

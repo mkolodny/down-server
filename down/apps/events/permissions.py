@@ -21,7 +21,8 @@ class InviterWasInvited(permissions.BasePermission):
         try:
             invitations = request.data['invitations']
             # TODO: Handle when no invitations are sent.
-            event_id = invitations[0]['event']
+            # TODO: Handle when the event id wasn't sent.
+            event_id = request.data['event']
             Invitation.objects.get(event_id=event_id, to_user=request.user)
             return True
         except Invitation.DoesNotExist:
@@ -48,51 +49,6 @@ class WasInvited(permissions.BasePermission):
             return True
         except Invitation.DoesNotExist:
             return False
-
-
-class IsInvitationsFromUser(permissions.BasePermission):
-    """
-    Global permission to only allow the logged in user to be the `from_user` when
-    bulk creating invitations.
-    """
-
-    def has_permission(self, request, view):
-        # This permission is only focused on creating an event.
-        if request.method != 'POST':
-            return True
-
-        # We're only allowing bulk creating invitations right now.
-        if not request.data.has_key('invitations'):
-            return False
-
-        invitations = request.data['invitations']
-        # TODO: Handle when no invitations are sent.
-        from_user_id = invitations[0]['from_user']
-        return request.user.id == from_user_id
-
-
-class OtherUsersNotDown(permissions.BasePermission):
-    """
-    Global permission to make sure that only the user can set their invitation
-    response to "accepted".
-    """
-
-    def has_permission(self, request, view):
-        # This permission is only focused on creating an event.
-        if request.method != 'POST':
-            return True
-
-        # We're only allowing bulk creating invitations right now.
-        if not request.data.has_key('invitations'):
-            return False
-
-        invitations = request.data['invitations']
-        for invitation in invitations:
-            to_user = invitation.get('to_user', request.user.id)
-            response = invitation.get('response', Invitation.NO_RESPONSE)
-            if to_user != request.user.id and response == Invitation.ACCEPTED:
-                return False
-        return True
 
 
 class IsCreator(permissions.BasePermission):

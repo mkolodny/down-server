@@ -17,9 +17,7 @@ from .models import Event, Invitation, LinkInvitation
 from .permissions import (
     InviterWasInvited,
     IsCreator,
-    IsInvitationsFromUser,
     LinkInviterWasInvited,
-    OtherUsersNotDown,
     WasInvited,
 )
 from .serializers import (
@@ -147,15 +145,20 @@ class EventViewSet(viewsets.ModelViewSet):
 class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
-    permission_classes = (IsAuthenticated, IsInvitationsFromUser, InviterWasInvited,
-                          OtherUsersNotDown)
+    permission_classes = (IsAuthenticated, InviterWasInvited)
     queryset = Invitation.objects.all()
     serializer_class = InvitationSerializer
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get('data')
         if 'invitations' in data:
-            kwargs['data'] = data['invitations']
+            invitations = data['invitations']
+            event_id = data['event']
+            for invitation in invitations:
+                invitation['event'] = event_id
+                invitation['from_user'] = self.request.user.id
+                invitation['response'] = Invitation.NO_RESPONSE # TODO: test
+            kwargs['data'] = invitations
             kwargs['many'] = True
 
         return super(InvitationViewSet, self).get_serializer(*args, **kwargs)
