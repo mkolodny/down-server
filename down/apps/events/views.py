@@ -129,9 +129,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
     @detail_route(methods=['get'], url_path='invited-ids')
     def invited_ids(self, request, pk=None):
-        invited_ids = Invitation.objects.filter(event_id=pk,
-                                                from_user=request.user) \
-                .exclude(to_user=request.user) \
+        invited_ids = Invitation.objects.filter(event_id=pk) \
                 .values_list('to_user', flat=True)
         return Response(list(invited_ids))
 

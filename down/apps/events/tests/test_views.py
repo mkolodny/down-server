@@ -775,8 +775,9 @@ class EventTests(APITestCase):
         response = self.client.get(self.invited_ids_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return a list of ids of users the user invited.
-        invited_users = [self.friend1, self.friend2]
+        # It should return a list of ids of the users who were invited to the
+        # event.
+        invited_users = [self.user, self.friend1, self.friend2]
         invited_ids = [user.id for user in invited_users]
         content = json.loads(response.content)
         self.assertEqual(content, invited_ids)
