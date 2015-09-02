@@ -130,7 +130,7 @@ class EventTests(APITestCase):
         self.create_message_url = reverse('event-messages', kwargs={
             'pk': self.event.id,
         })
-        self.invitations_url = reverse('event-invitations', kwargs={
+        self.member_invitations_url = reverse('event-member-invitations', kwargs={
             'pk': self.event.id
         })
         self.invited_ids_url = reverse('event-invited-ids', kwargs={
@@ -758,31 +758,18 @@ class EventTests(APITestCase):
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
 
-    def test_get_invitations(self):
-        self.friend2_invitation.response = Invitation.DECLINED
-        self.friend2_invitation.save()
-
-        response = self.client.get(self.invitations_url)
+    def test_get_member_invitations(self):
+        response = self.client.get(self.member_invitations_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return the invitations of users who have responded.
+        # It should return users' who've responded accepted/maybe invitations.
         invitations = [
             self.user_invitation,
             self.friend1_invitation,
-            self.friend2_invitation,
         ]
         serializer = EventInvitationSerializer(invitations, many=True)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
-
-    def test_get_invitations_not_member(self):
-        # You should only be able to get the invitations for an event that you
-        # are either down, or might be down for.
-        self.user_invitation.response = Invitation.NO_RESPONSE
-        self.user_invitation.save()
-
-        response = self.client.get(self.invitations_url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_invited_ids(self):
         response = self.client.get(self.invited_ids_url)

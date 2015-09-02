@@ -119,16 +119,10 @@ class EventViewSet(viewsets.ModelViewSet):
             # TODO: Test for when the data is invalid.
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    @detail_route(methods=['get'])
-    def invitations(self, request, pk=None):
-        responses = [Invitation.ACCEPTED, Invitation.MAYBE, Invitation.DECLINED]
+    @detail_route(methods=['get'], url_path='member-invitations')
+    def member_invitations(self, request, pk=None):
+        responses = [Invitation.ACCEPTED, Invitation.MAYBE]
         invitations = Invitation.objects.filter(event_id=pk, response__in=responses)
-
-        # Only users who have responded accepted, or maybe can view other user's
-        # invitations.
-        if invitations.filter(to_user=request.user).count() < 1:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
         invitations.select_related('to_user')
         serializer = EventInvitationSerializer(invitations, many=True)
         return Response(serializer.data)
