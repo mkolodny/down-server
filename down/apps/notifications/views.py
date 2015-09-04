@@ -2,9 +2,9 @@ from __future__ import unicode_literals
 from django.shortcuts import render
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from push_notifications.models import APNSDevice
+from push_notifications.models import APNSDevice, GCMDevice
 from rest_framework import mixins, status, viewsets
-from .serializers import APNSDeviceSerializer
+from .serializers import APNSDeviceSerializer, GCMDeviceSerializer
 
 
 class APNSDeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -24,3 +24,8 @@ class APNSDeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
                 headers = self.get_success_headers(serializer.data)
                 return Response(status=status.HTTP_200_OK, headers=headers)
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class GCMDeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    serializer_class = GCMDeviceSerializer
+    queryset = GCMDevice.objects.all()

@@ -23,7 +23,7 @@ from down.apps.events.views import (
     SuggestedEventsView,
 )
 from down.apps.friends.views import FriendshipViewSet
-from down.apps.notifications.views import APNSDeviceViewSet
+from down.apps.notifications.views import APNSDeviceViewSet, GCMDeviceViewSet
 
 # TODO: Figure out how to split up the router urls into the individual apps.
 
@@ -31,6 +31,7 @@ from down.apps.notifications.views import APNSDeviceViewSet
 # With trailing slash appended:
 router = routers.SimpleRouter()
 router.register(r'devices/apns', APNSDeviceViewSet, base_name='apns')
+router.register(r'devices/gcm', GCMDeviceViewSet, base_name='gcm')
 router.register(r'authcodes', AuthCodeViewSet)
 router.register(r'events', EventViewSet)
 router.register(r'friendships', FriendshipViewSet)
