@@ -1,4 +1,4 @@
-
+from __future__ import unicode_literals
 from datetime import datetime, timedelta
 import json
 from urllib import urlencode
@@ -336,32 +336,6 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         return Response(serializer.data, status=status_code)
 
 
-class TermsView(TemplateView):
-    template_name = 'terms.html'
-
-
-class LandingView(TemplateView):
-    template_name = 'landing.html'
-
-
 class LinfootFunnelViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = LinfootFunnel.objects.all()
     serializer_class = LinfootFunnelSerializer
-
-
-class AppStoreView(RedirectView):
-    url = ('https://itunes.apple.com/us/app/down-connect-people-around/id'
-           '969040287?mt=8')
-    permanent = False
-
-
-class ArticleView(TemplateView):
-    template_name = 'festivals.html'
-
-
-class FellowshipFoundersView(TemplateView):
-    template_name = 'founders.html'
-
-
-class FellowshipDemoView(TemplateView):
-    template_name = 'demo.html'

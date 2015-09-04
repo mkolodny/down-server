@@ -2,19 +2,21 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from rest_framework import routers
 from down.apps.auth.views import (
-    AppStoreView,
-    ArticleView,
     AuthCodeViewSet,
-    FellowshipDemoView,
-    FellowshipFoundersView,
-    LandingView,
     LinfootFunnelViewSet,
     SessionView,
     SocialAccountSync,
-    TermsView,
     UserUsernameDetail,
     UserViewSet,
     UserPhoneViewSet,
+)
+from down.apps.client.views import (
+    AppStoreView,
+    ArticleView,
+    FellowshipDemoView,
+    FellowshipFoundersView,
+    LandingView,
+    TermsView,
 )
 from down.apps.events.views import (
     EventViewSet,

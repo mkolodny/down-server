@@ -18,6 +18,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'down.apps.auth',
+    'down.apps.client',
     'down.apps.events',
     'down.apps.friends',
     'down.apps.notifications',
