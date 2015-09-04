@@ -1,7 +1,6 @@
 require 'coffee-script/register'
 autoprefixer = require 'gulp-autoprefixer'
 browserify = require 'browserify'
-bower = require 'bower'
 childProcess = require 'child_process'
 del = require 'del'
 concat = require 'gulp-concat'
@@ -22,7 +21,7 @@ uglify = require 'gulp-uglify'
 watchify = require 'watchify'
 protractor = require('gulp-protractor').protractor
 
-buildDir = './www'
+buildDir = './build'
 appDir = './app'
 dataDir = './data'
 testDir = './tests'

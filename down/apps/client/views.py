@@ -26,3 +26,7 @@ class FellowshipFoundersView(TemplateView):
 
 class FellowshipDemoView(TemplateView):
     template_name = 'demo.html'
+
+
+class WebAppView(TemplateView):
+    template_name = 'web-app.html'

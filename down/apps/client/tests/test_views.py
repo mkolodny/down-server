@@ -68,3 +68,12 @@ class FellowshipDemoTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTemplateUsed(response, 'demo.html')
+
+
+class AppTests(APITestCase):
+
+    def test_get(self):
+        url = reverse('web-app')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'web-app.html')
