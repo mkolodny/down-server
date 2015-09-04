@@ -191,7 +191,6 @@ gulp.task 'watch', [
   gulp.watch "#{dataDir}/**/*", ['data']
   gulp.watch "#{vendorDir}/**/*", ['vendor']
   gulp.watch "#{appDir}/**/*.html", ['templates']
-  childProcess.spawn 'serve', ['www', '--no-logs'], stdio: 'inherit'
   livereload.listen()
   gulp.watch "#{buildDir}/**/*"
     .on 'change', livereload.changed

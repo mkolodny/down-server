@@ -67,6 +67,7 @@ STATICFILES_DIRS = (
 # Templates
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'down/templates'),
+    os.path.join(BASE_DIR, 'down/client/app'),
 )
 
 # Auth

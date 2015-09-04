@@ -77,3 +77,15 @@ class AppTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTemplateUsed(response, 'web-app.html')
+
+
+class PartialTestCase(APITestCase):
+
+    def test_get(self):
+        response = self.client.get('/partials/event/event.html')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'event/event.html')
+
+    def test_get_404(self):
+        response = self.client.get('/partials/blah')
+        self.assertEqual(response.status_code, 404)

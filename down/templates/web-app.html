@@ -12,9 +12,10 @@
   <link href="http://fonts.googleapis.com/css?family=Viga" rel="stylesheet">
 
   <link href="{% static 'app/main.css' %}" rel="stylesheet">
-  <link href="{% static 'app/bundle.js' %}" rel="stylesheet">
+  <script src="{% static 'app/bundle.js' %}"></script>
 </head>
 <body>
+  <base href="/event/">
   <div ui-view></div>
 </body>
 </html>

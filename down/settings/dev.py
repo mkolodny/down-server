@@ -14,3 +14,8 @@ REST_FRAMEWORK['TEST_REQUEST_DEFAULT_FORMAT'] = 'json'
 PUSH_NOTIFICATIONS_SETTINGS = {
     'APNS_CERTIFICATE': os.path.join(BASE_DIR, 'config/apns/dev/certkey.pem'),
 }
+
+# Static files
+STATICFILES_DIRS += (
+    os.path.join(BASE_DIR, 'down/client/build'),
+)
