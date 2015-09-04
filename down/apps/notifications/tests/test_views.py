@@ -26,7 +26,7 @@ class APNSDeviceTests(APITestCase):
         }
 
         # Save URLs.
-        self.create_url = reverse('apnsdevice-list')
+        self.create_url = reverse('apns-list')
 
     def test_create(self):
         response = self.client.post(self.create_url, self.post_data)
