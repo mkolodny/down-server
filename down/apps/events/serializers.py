@@ -255,10 +255,10 @@ class InvitationSerializer(serializers.ModelSerializer):
 
             member_responses = [Invitation.ACCEPTED, Invitation.MAYBE]
             joining_event = (new_response in member_responses)
-            bailing = (invitation.response in member_responses)
+            bailing = (invitation.response in member_responses
+                       and new_response == Invitation.DECLINED)
             if joining_event or bailing:
-                # Notify other members who've added the user as a friend. Always
-                # notify the person who invited the user.
+                # Notify other members who've added the user as a friend.
                 invitations = Invitation.objects.filter(
                         Q(response=Invitation.ACCEPTED) |
                         Q(response=Invitation.MAYBE), event=event) \
@@ -268,7 +268,11 @@ class InvitationSerializer(serializers.ModelSerializer):
                 added_me = Friendship.objects.filter(friend=user,
                                                      user_id__in=member_ids)
                 to_user_ids = [friendship.user_id for friendship in added_me]
-                to_user_ids.append(invitation.from_user_id)
+
+                # Always notify the person who sent the invitation... Unless they
+                # invited themselves (i.e. they created the event).
+                if invitation.from_user_id != user.id:
+                    to_user_ids.append(invitation.from_user_id)
             elif new_response == Invitation.DECLINED:
                 to_user_ids = [invitation.from_user_id]
 

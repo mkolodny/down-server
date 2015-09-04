@@ -956,16 +956,16 @@ class InvitationTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
         # Mock invitations with every response.
-        invitation1 = Invitation(from_user=self.user1, to_user=self.user1,
+        invitation1 = Invitation(from_user=self.user2, to_user=self.user1,
                                  event=self.event, response=Invitation.MAYBE)
         invitation1.save()
-        invitation2 = Invitation(from_user=self.user1, to_user=self.user2,
-                                 event=self.event, response=Invitation.NO_RESPONSE)
+        invitation2 = Invitation(from_user=self.user2, to_user=self.user2,
+                                 event=self.event, response=Invitation.MAYBE)
         invitation2.save()
-        invitation3 = Invitation(from_user=self.user1, to_user=self.user3,
-                                 event=self.event, response=Invitation.DECLINED)
+        invitation3 = Invitation(from_user=self.user2, to_user=self.user3,
+                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation3.save()
-        invitation4 = Invitation(from_user=self.user1, to_user=self.user4,
+        invitation4 = Invitation(from_user=self.user2, to_user=self.user4,
                                  event=self.event, response=Invitation.ACCEPTED)
         invitation4.save()
 
@@ -1019,10 +1019,10 @@ class InvitationTests(APITestCase):
                                  event=self.event, response=Invitation.MAYBE)
         invitation1.save()
         invitation2 = Invitation(from_user=self.user1, to_user=self.user2,
-                                 event=self.event, response=Invitation.NO_RESPONSE)
+                                 event=self.event, response=Invitation.ACCEPTED)
         invitation2.save()
         invitation3 = Invitation(from_user=self.user1, to_user=self.user3,
-                                 event=self.event, response=Invitation.DECLINED)
+                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation3.save()
         invitation4 = Invitation(from_user=self.user1, to_user=self.user4,
                                  event=self.event, response=Invitation.ACCEPTED)
@@ -1068,13 +1068,8 @@ class InvitationTests(APITestCase):
     @mock.patch('down.apps.events.serializers.remove_member')
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_decline(self, mock_send, mock_remove_member):
-        # Log in as user2.
-        token = Token(user=self.user2)
-        token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
-
         # Mock an invitation.
-        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+        invitation = Invitation(from_user=self.user2, to_user=self.user1,
                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
@@ -1100,47 +1095,47 @@ class InvitationTests(APITestCase):
 
         # It should notify the person who invited them.
         message = '{name} can\'t make it to {event}'.format(
-                name=self.user2.name,
+                name=self.user1.name,
                 event=self.event.title)
-        tokens = [self.user1_device.registration_id] # from_user
+        tokens = [self.user2_device.registration_id] # from_user
         mock_send.assert_called_with(registration_ids=tokens, alert=message)
 
     @mock.patch('down.apps.events.serializers.remove_member')
     @mock.patch('push_notifications.apns.apns_send_bulk_message')
     def test_accept_then_decline(self, mock_send, mock_remove_member):
-        # Log in as user2.
-        token = Token(user=self.user2)
+        # Log in as user3.
+        token = Token(user=self.user3)
         token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
         # Mock invitations.
-        invitation1 = Invitation(from_user=self.user1, to_user=self.user1,
+        invitation1 = Invitation(from_user=self.user2, to_user=self.user1,
                                  event=self.event, response=Invitation.MAYBE)
         invitation1.save()
-        invitation2 = Invitation(from_user=self.user1, to_user=self.user2,
-                                 event=self.event, response=Invitation.ACCEPTED)
+        invitation2 = Invitation(from_user=self.user2, to_user=self.user2,
+                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation2.save()
-        invitation3 = Invitation(from_user=self.user1, to_user=self.user3,
-                                 event=self.event, response=Invitation.DECLINED)
+        invitation3 = Invitation(from_user=self.user2, to_user=self.user3,
+                                 event=self.event, response=Invitation.MAYBE)
         invitation3.save()
-        invitation4 = Invitation(from_user=self.user1, to_user=self.user4,
+        invitation4 = Invitation(from_user=self.user2, to_user=self.user4,
                                  event=self.event, response=Invitation.ACCEPTED)
         invitation4.save()
 
         # Add user2 as a friend.
-        friendship = Friendship(user=self.user1, friend=self.user2)
+        friendship = Friendship(user=self.user1, friend=self.user3)
         friendship.save()
-        friendship = Friendship(user=self.user4, friend=self.user2)
+        friendship = Friendship(user=self.user4, friend=self.user3)
         friendship.save()
 
         # Clear the mock's call count
         mock_send.reset_mock()
 
-        url = reverse('invitation-detail', kwargs={'pk': invitation2.id})
+        url = reverse('invitation-detail', kwargs={'pk': invitation3.id})
         data = {
-            'from_user': invitation2.from_user_id,
-            'to_user': invitation2.to_user_id,
-            'event': invitation2.event_id,
+            'from_user': invitation3.from_user_id,
+            'to_user': invitation3.to_user_id,
+            'event': invitation3.event_id,
             'response': Invitation.DECLINED,
         }
         response = self.client.put(url, data)
@@ -1156,10 +1151,11 @@ class InvitationTests(APITestCase):
         # It should notify users who are either down or might be down, and
         # haven't muted their notifications.
         message = '{name} can\'t make it to {event}'.format(
-                name=self.user2.name,
+                name=self.user3.name,
                 event=self.event.title)
         tokens = [
-            self.user1_device.registration_id, # maybe
+            self.user1_device.registration_id, # from user
+            self.user2_device.registration_id, # maybe
             self.user4_device.registration_id, # accepted
         ]
         mock_send.assert_called_with(registration_ids=tokens, alert=message)
