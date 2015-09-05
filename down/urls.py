@@ -4,7 +4,7 @@ from rest_framework import routers
 from down.apps.auth.views import (
     AuthCodeViewSet,
     LinfootFunnelViewSet,
-    SessionView,
+    SessionViewSet,
     SocialAccountSync,
     UserUsernameDetail,
     UserViewSet,
@@ -43,6 +43,7 @@ router.register(r'invitations', InvitationViewSet)
 router.register(r'link-invitations', LinkInvitationViewSet,
                 base_name='link-invitation')
 router.register(r'phonenumbers', LinfootFunnelViewSet, base_name='phonenumbers')
+router.register(r'sessions', SessionViewSet, base_name='session')
 router.register(r'userphones', UserPhoneViewSet, base_name='userphone')
 router.register(r'users', UserViewSet)
 # Prints the (url, viewset, base_name) for each route.
@@ -57,7 +58,6 @@ urlpatterns = patterns('',
         name='social-account-login'),
     url(r'^api/users/username/(?P<username>\w+)/?$', UserUsernameDetail.as_view(),
         name='user-username-detail'),
-    url(r'^api/sessions/?$', SessionView.as_view(), name='session'),
     url(r'^api/', include(slashless_router.urls)),
     url(r'^api/', include(router.urls)),
     #url(r'^$', LandingView.as_view(), name='landing'),

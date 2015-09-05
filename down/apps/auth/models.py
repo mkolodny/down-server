@@ -9,7 +9,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 
 class User(AbstractBaseUser):
-    email = models.EmailField(null=True, blank=True, unique=True)
+    email = models.EmailField(null=True, blank=True)
     name = models.TextField(null=True, blank=True)
     # Users who were added from contacts don't have first/last names.
     first_name = models.TextField(null=True, blank=True)
@@ -25,8 +25,7 @@ class User(AbstractBaseUser):
                                      related_name='related_friends+')
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Use name for the username field, since `self.username` might not be set.
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = 'username'
 
 
 def default_auth_code():

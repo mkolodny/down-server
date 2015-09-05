@@ -8,7 +8,9 @@ angular.module 'down', [
   ]
   .config ($httpProvider, $locationProvider, $urlRouterProvider, $stateProvider) ->
     # Use html5 push state.
-    $locationProvider.html5Mode true
+    $locationProvider.html5Mode
+      enabled: true
+      requireBase: false
 
     # Set a catch-all state.
     $urlRouterProvider.otherwise '/'

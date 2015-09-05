@@ -100,3 +100,7 @@ class UserPhoneSerializer(serializers.ModelSerializer):
 class ContactSerializer(serializers.Serializer):
     phone = PhoneNumberField()
     name = serializers.CharField()
+
+
+class FacebookSessionSerializer(serializers.Serializer):
+    access_token = serializers.CharField()

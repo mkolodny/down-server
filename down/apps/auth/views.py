@@ -27,6 +27,7 @@ from .permissions import IsCurrentUserOrReadOnly
 from .serializers import (
     AuthCodeSerializer,
     ContactSerializer,
+    FacebookSessionSerializer,
     FriendSerializer,
     LinfootFunnelSerializer,
     PhoneSerializer,
@@ -125,6 +126,10 @@ class SocialAccountSync(APIView):
         except SocialAccount.DoesNotExist:
             profile = get_facebook_profile(access_token)
 
+            # TODO: Check whether a social account already exists with that
+            # facebook id. If it does, log in as the user from that social account.
+            # Update the userphone to point to that user. Delete the current user.
+
             # Update the user.
             # Facebook users might not have emails.
             request.user.email = profile.get('email')
@@ -189,9 +194,9 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             raise ServiceUnavailable('Twilio\'s shitting the bed...')
     
 
-class SessionView(APIView):
+class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
-    def post(self, request):
+    def create(self, request, *args, **kwargs):
         # TODO: Handle when the data is invalid.
         serializer = SessionSerializer(data=request.data)
         serializer.is_valid()
@@ -243,6 +248,32 @@ class SessionView(APIView):
 
         data = {'authtoken': token.key}
         serializer = UserSerializer(user, context=data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @list_route(methods=['post'])
+    def facebook(self, request):
+        # TODO: Handle when the data is invalid.
+        serializer = FacebookSessionSerializer(data=request.data)
+        serializer.is_valid()
+
+        access_token = serializer.data['access_token']
+        profile = get_facebook_profile(access_token)
+
+        try:
+            social_account = SocialAccount.objects.get(uid=profile['id'])
+            user = social_account.user
+        except SocialAccount.DoesNotExist:
+            user = User(email=profile.get('email'), name=profile['name'],
+                        first_name=profile['first_name'],
+                        last_name=profile['last_name'],
+                        image_url=profile['image_url'])
+            user.save()
+            social_account = SocialAccount(user=user,
+                                           provider=SocialAccount.FACEBOOK,
+                                           uid=profile['id'], profile=profile)
+            social_account.save()
+
+        serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 

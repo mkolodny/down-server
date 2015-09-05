@@ -522,8 +522,24 @@ class AuthCodeTests(APITestCase):
 class SessionTests(APITestCase):
 
     def setUp(self):
+        # Mock data.
+        self.access_token = 'asdf1234'
+        facebook_id = '10101293050283881'
+        self.fb_profile = {
+            'id': facebook_id,
+            'email': 'aturing@gmail.com',
+            'name': 'Alan Turing',
+            'first_name': 'Alan',
+            'last_name': 'Turing',
+            'hometown': 'Paddington, London',
+            'image_url': 'https://graph.facebook.com/v2.2/{id}/picture'.format(
+                         id=facebook_id),
+            'access_token': self.access_token,
+        }
+
         # Save URLs.
-        self.list_url = reverse('session')
+        self.list_url = reverse('session-list')
+        self.facebook_url = reverse('session-facebook')
         self.meteor_url = '{meteor_url}/users'.format(
                 meteor_url=settings.METEOR_URL)
 
@@ -660,6 +676,64 @@ class SessionTests(APITestCase):
 
         # The auth code should still exist.
         AuthCode.objects.get(code=auth.code, phone=auth.phone)
+
+    @mock.patch('down.apps.auth.views.get_facebook_profile')
+    def test_create_facebook(self, mock_get_facebook_profile):
+        profile = self.fb_profile
+
+        # Mock requesting the user's profile.
+        mock_get_facebook_profile.return_value = profile
+
+        data = {'access_token': self.access_token}
+        response = self.client.post(self.facebook_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the user.
+        user = User.objects.get(email=profile['email'], name=profile['name'],
+                                first_name=profile['first_name'],
+                                last_name=profile['last_name'],
+                                image_url=profile['image_url'])
+
+        # It should create the user's social account.
+        social_account = SocialAccount.objects.get(user=user,
+                                                   provider=SocialAccount.FACEBOOK,
+                                                   uid=profile['id'])
+        self.assertEqual(social_account.profile, profile)
+
+        # It should give Facebook the access token.
+        mock_get_facebook_profile.assert_called_once_with(self.access_token)
+
+        # It should return the user.
+        serializer = UserSerializer(user)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
+    @mock.patch('down.apps.auth.views.get_facebook_profile')
+    def test_create_facebook_user_exists(self, mock_get_facebook_profile):
+        profile = self.fb_profile
+
+        # Mock the user and their social account.
+        user = User(email=profile['email'], name=profile['name'],
+                    first_name=profile['first_name'],
+                    last_name=profile['last_name'],
+                    image_url=profile['image_url'])
+        user.save()
+        social_account = SocialAccount(user=user,
+                                       provider=SocialAccount.FACEBOOK,
+                                       uid=profile['id'])
+        social_account.save()
+
+        # Mock requesting the user's profile.
+        mock_get_facebook_profile.return_value = profile
+
+        data = {'access_token': self.access_token}
+        response = self.client.post(self.facebook_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should return the user.
+        serializer = UserSerializer(user)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
 
 
 class UserPhoneTests(APITestCase):
