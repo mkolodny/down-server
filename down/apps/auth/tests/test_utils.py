@@ -6,7 +6,7 @@ import httpretty
 from rest_framework import status
 from rest_framework.exceptions import ParseError
 from down.apps.auth.models import SocialAccount, User
-from down.apps.auth.utils import get_facebook_friends
+from down.apps.auth import utils
 from down.apps.friends.models import Friendship
 from down.apps.utils.exceptions import ServiceUnavailable
 
@@ -79,7 +79,7 @@ class FacebookFriendsTests(TestCase):
         httpretty.register_uri(httpretty.GET, next_url, body=body,
                                content_type='application/json')
 
-        friends = get_facebook_friends(self.user_social)
+        friends = utils.get_facebook_friends(self.user_social)
         
         # It should return a queryset of the users facebook friends.
         self.assertEqual(list(friends), [friend1, friend2])
@@ -92,7 +92,7 @@ class FacebookFriendsTests(TestCase):
                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
         
         with self.assertRaises(ServiceUnavailable):
-            get_facebook_friends(self.user_social)
+            utils.get_facebook_friends(self.user_social)
 
     @httpretty.activate
     def test_facebook_friends_expired_token(self):
@@ -101,7 +101,7 @@ class FacebookFriendsTests(TestCase):
                                status=status.HTTP_400_BAD_REQUEST)
         
         with self.assertRaises(ParseError):
-            get_facebook_friends(self.user_social)
+            utils.get_facebook_friends(self.user_social)
 
     @httpretty.activate
     def test_facebook_friends_no_content(self):
@@ -111,7 +111,7 @@ class FacebookFriendsTests(TestCase):
                                status=status.HTTP_200_OK)
         
         with self.assertRaises(ServiceUnavailable):
-            get_facebook_friends(self.user_social)
+            utils.get_facebook_friends(self.user_social)
 
     @httpretty.activate
     def test_facebook_friends_no_data(self):
@@ -120,4 +120,66 @@ class FacebookFriendsTests(TestCase):
                                status=status.HTTP_200_OK)
         
         with self.assertRaises(ServiceUnavailable):
-            get_facebook_friends(self.user_social)
+            utils.get_facebook_friends(self.user_social)
+
+
+class FacebookProfileTests(TestCase):
+
+    def setUp(self):
+        # Mock a user.
+        self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
+                         first_name='Alan', last_name='Turing', username='tdog',
+                         image_url='http://imgur.com/tdog',
+                         location='POINT(50.7545645 -73.9813595)')
+        self.user.save()
+        """
+        self.user_social = SocialAccount(user=self.user,
+                                         provider=SocialAccount.FACEBOOK,
+                                         uid='10101293050283881',
+                                         profile={'access_token': '1234asdf'})
+        self.user_social.save()
+        """
+
+        # Save Facebook data.
+        self.fb_profile = {
+            'id': 10101293050283881,
+            'email': self.user.email,
+            'name': self.user.name,
+            'first_name': self.user.first_name,
+            'last_name': self.user.last_name,
+            'hometown': 'New York, NY',
+        }
+        self.access_token = 'asdf123'
+
+        # Save URLs.
+        self.profile_url = 'https://graph.facebook.com/v2.2/me'
+
+    @httpretty.activate
+    def test_get_facebook_profile(self):
+        # Mock requesting the user's profile.
+        body = json.dumps(self.fb_profile)
+        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
+                               content_type='application/json')
+
+        profile = utils.get_facebook_profile(self.access_token)
+
+        # It should make the request to Facebook with the access token.
+        params = {'access_token': [self.access_token]}
+        self.assertEqual(httpretty.last_request().querystring, params)
+
+        # It should return the user's facebook profile.
+        expected_profile = self.fb_profile
+        expected_profile['image_url'] = ('https://graph.facebook.com/v2.2/{id}/'
+                                         'picture').format(id=self.fb_profile['id'])
+        expected_profile['access_token'] = self.access_token
+        self.assertEqual(profile, expected_profile)
+
+    @httpretty.activate
+    def test_get_facebook_profile_bad_status(self):
+        # Mock a bad response from Facebook when requesting the user's facebook
+        # profile.
+        httpretty.register_uri(httpretty.GET, self.profile_url,
+                               status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        with self.assertRaises(ServiceUnavailable):
+            utils.get_facebook_profile(self.access_token)

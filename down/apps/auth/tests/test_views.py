@@ -319,7 +319,6 @@ class SocialAccountTests(APITestCase):
 
         # Save URLs.
         self.url = reverse('social-account-login')
-        self.profile_url = 'https://graph.facebook.com/v2.2/me'
 
         # Save request data.
         self.facebook_token = 'asdf123'
@@ -334,19 +333,20 @@ class SocialAccountTests(APITestCase):
         self.post_data = {'access_token': self.facebook_token}
 
     @httpretty.activate
+    @mock.patch('down.apps.auth.views.get_facebook_profile')
     @mock.patch('down.apps.auth.views.get_facebook_friends')
-    def test_create(self, mock_get_facebook_friends):
+    def test_create(self, mock_get_facebook_friends, mock_get_facebook_profile):
         # Mock requesting the user's profile.
-        body = json.dumps({
+        mock_get_facebook_profile.return_value = {
             'id': self.facebook_user_id,
             'email': self.email,
             'name': self.name,
             'first_name': self.first_name,
             'last_name': self.last_name,
             'hometown': self.hometown,
-        })
-        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
-                               content_type='application/json')
+            'image_url': self.image_url,
+            'access_token': self.facebook_token,
+        }
 
         # Mock the user's facebook friends.
         facebook_friends = User.objects.filter(id=self.friend.id)
@@ -378,65 +378,7 @@ class SocialAccountTests(APITestCase):
         self.assertEqual(account.profile, profile)
 
         # It should give Facebook the access token.
-        params = {'access_token': [self.facebook_token]}
-        self.assertEqual(httpretty.last_request().querystring, params)
-
-        # It should request the user's facebook friends with their social account.
-        social_account = SocialAccount.objects.get(user=self.user)
-        mock_get_facebook_friends.assert_called_once_with(social_account)
-
-        # It should return the user.
-        data = {'facebook_friends': facebook_friends}
-        serializer = UserSerializer(user, context=data)
-        json_user = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_user)
-
-    @httpretty.activate
-    @mock.patch('down.apps.auth.views.get_facebook_friends')
-    def test_create_no_email(self, mock_get_facebook_friends):
-        # Request the user's profile.
-        body = json.dumps({
-            'id': self.facebook_user_id,
-            'name': self.name,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'hometown': self.hometown,
-        })
-        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
-                               content_type='application/json')
-
-        # Mock the user's facebook friends.
-        facebook_friends = []
-        mock_get_facebook_friends.return_value = facebook_friends
-
-        response = self.client.post(self.url, self.post_data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # It should update the user with a default email.
-        default_email = 'no.email@down.life'
-        user = User.objects.get(id=self.user.id, name=self.name,
-                                email=default_email, first_name=self.first_name,
-                                last_name=self.last_name,
-                                image_url=self.image_url)
-
-        # It should create the user's social account.
-        profile = {
-            'access_token': self.facebook_token,
-            'id': self.facebook_user_id,
-            'name': self.name,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'image_url': self.image_url,
-            'hometown': self.hometown,
-        }
-        account = SocialAccount.objects.get(user=self.user,
-                                            provider=SocialAccount.FACEBOOK,
-                                            uid=self.facebook_user_id)
-        self.assertEqual(account.profile, profile)
-
-        # It should give Facebook the access token.
-        params = {'access_token': [self.facebook_token]}
-        self.assertEqual(httpretty.last_request().querystring, params)
+        mock_get_facebook_profile.assert_called_once_with(self.facebook_token)
 
         # It should request the user's facebook friends with their social account.
         social_account = SocialAccount.objects.get(user=self.user)

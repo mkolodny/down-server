@@ -35,7 +35,7 @@ from .serializers import (
     UserSerializer,
     UserPhoneSerializer,
 )
-from .utils import get_facebook_friends
+from .utils import get_facebook_friends, get_facebook_profile
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import (
     EventSerializer,
@@ -123,13 +123,11 @@ class SocialAccountSync(APIView):
             account.profile['access_token'] = access_token
             account.save()
         except SocialAccount.DoesNotExist:
-            profile = self.get_profile(provider, access_token)
+            profile = get_facebook_profile(access_token)
 
             # Update the user.
-            # TODO: Remove the default email after updating the client to handle the
-            # case where the user has synced with Facebook, but doesn't have an
-            # email set.
-            request.user.email = profile.get('email', 'no.email@down.life')
+            # Facebook users might not have emails.
+            request.user.email = profile.get('email')
             request.user.name = profile['name']
             request.user.first_name = profile['first_name']
             request.user.last_name = profile['last_name']
@@ -145,34 +143,6 @@ class SocialAccountSync(APIView):
         data = {'facebook_friends': facebook_friends}
         serializer = UserSerializer(request.user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def get_profile(self, provider, access_token):
-        """
-        Request the user's profile from `provider`, and return a dictionary with
-        any info the provider gives us.
-        """
-        if provider == SocialAccount.FACEBOOK:
-            profile = self.get_facebook_profile(access_token)
-
-        # Set the access_token on the profile in case we need to re-auth the user.
-        profile['access_token'] = access_token
-
-        return profile
-
-    def get_facebook_profile(self, access_token):
-        """
-        Return a dictionary with the user's Facebook profile.
-        """
-        params = {'access_token': access_token}
-        url = 'https://graph.facebook.com/v2.2/me?' + urlencode(params)
-        r = requests.get(url)
-        if r.status_code != 200:
-            raise ServiceUnavailable(r.content)
-        # TODO: Handle bad data.
-        profile = r.json()
-        profile['image_url'] = ('https://graph.facebook.com/v2.2/{id}/'
-                                'picture').format(id=profile['id'])
-        return profile
 
 
 class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):

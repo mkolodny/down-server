@@ -40,3 +40,19 @@ def get_facebook_friends(user_facebook_account):
     friend_ids = [account.user_id for account in social_accounts]
     friends = User.objects.filter(id__in=friend_ids)
     return friends
+
+def get_facebook_profile(access_token):
+    """
+    Return a dictionary with the user's Facebook profile.
+    """
+    params = {'access_token': access_token}
+    url = 'https://graph.facebook.com/v2.2/me?' + urlencode(params)
+    r = requests.get(url)
+    if r.status_code != 200:
+        raise ServiceUnavailable(r.content)
+    # TODO: Handle bad data.
+    profile = r.json()
+    profile['image_url'] = ('https://graph.facebook.com/v2.2/{id}/'
+                            'picture').format(id=profile['id'])
+    profile['access_token'] = access_token
+    return profile
