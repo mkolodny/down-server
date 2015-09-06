@@ -36,7 +36,7 @@ from .serializers import (
     UserSerializer,
     UserPhoneSerializer,
 )
-from .utils import get_facebook_friends, get_facebook_profile
+from . import utils
 from down.apps.events.models import Event, Invitation
 from down.apps.events.serializers import (
     EventSerializer,
@@ -69,7 +69,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         """
         try:
             social_account = SocialAccount.objects.get(user=request.user)
-            facebook_friends = get_facebook_friends(social_account)
+            facebook_friends = utils.get_facebook_friends(social_account)
             serializer = FriendSerializer(facebook_friends, many=True)
             friends = serializer.data
         except SocialAccount.DoesNotExist:
@@ -119,34 +119,55 @@ class SocialAccountSync(APIView):
         provider = serializer.data['provider']
         access_token = serializer.data['access_token']
 
+        # Save the user's current auth token and user object.
+        token = request.auth
+        user = request.user
+
         try:
-            account = SocialAccount.objects.get(user=request.user)
-            account.profile['access_token'] = access_token
-            account.save()
+            social_account = SocialAccount.objects.get(user=request.user)
+            social_account.profile['access_token'] = access_token
+            social_account.save()
         except SocialAccount.DoesNotExist:
-            profile = get_facebook_profile(access_token)
+            profile = utils.get_facebook_profile(access_token)
 
-            # TODO: Check whether a social account already exists with that
-            # facebook id. If it does, log in as the user from that social account.
-            # Update the userphone to point to that user. Delete the current user.
+            try:
+                # When a user has logged into the web view, and just installed the
+                # app, they'll have a social account tied to a different user
+                # object.
+                social_account = SocialAccount.objects.get(uid=profile['id'])
 
-            # Update the user.
-            # Facebook users might not have emails.
-            request.user.email = profile.get('email')
-            request.user.name = profile['name']
-            request.user.first_name = profile['first_name']
-            request.user.last_name = profile['last_name']
-            request.user.image_url = profile['image_url']
-            request.user.save()
+                # The user has logged into the web view, and just installed the
+                # app. Return the user's token from that social account.
+                user = social_account.user
+                token = Token.objects.get(user=user)
 
-            # Create the user's social account.
-            account = SocialAccount(user_id=request.user.id, provider=provider,
-                                    uid=profile['id'], profile=profile)
-            account.save()
+                # Then update their userphone to point to that user
+                UserPhone.objects.filter(user=request.user).update(user=user)
 
-        facebook_friends = get_facebook_friends(account)
-        data = {'facebook_friends': facebook_friends}
-        serializer = UserSerializer(request.user, context=data)
+                # Delete the current user.
+                request.user.delete()
+
+                # Log in to the meteor server as the new user.
+                utils.meteor_login(user.id, token)
+            except SocialAccount.DoesNotExist:
+                # Update the user with the new data from Facebook.
+                # Facebook users might not have emails.
+                request.user.email = profile.get('email')
+                request.user.name = profile['name']
+                request.user.first_name = profile['first_name']
+                request.user.last_name = profile['last_name']
+                request.user.image_url = profile['image_url']
+                request.user.save()
+
+                # Create the user's social account.
+                social_account = SocialAccount(user_id=request.user.id,
+                                               provider=provider,
+                                               uid=profile['id'], profile=profile)
+                social_account.save()
+
+        facebook_friends = utils.get_facebook_friends(social_account)
+        data = {'facebook_friends': facebook_friends, 'authtoken': token.key}
+        serializer = UserSerializer(user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -228,19 +249,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             token = Token.objects.create(user=user)
 
         # Authenticate the user on the meteor server.
-        url = '{meteor_url}/users'.format(meteor_url=settings.METEOR_URL)
-        data = json.dumps({
-            'user_id': user.id,
-            'password': token.key,
-        })
-        auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
-        headers = {
-            'Authorization': auth_header,
-            'Content-Type': 'application/json',
-        }
-        response = requests.post(url, data=data, headers=headers)
-        if response.status_code != 200:
-            return Response(status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        utils.meteor_login(user.id, token)
 
         # If the user is the Apple test user, don't delete the auth code.
         if serializer.data['phone'] != '+15555555555':
@@ -257,7 +266,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer.is_valid()
 
         access_token = serializer.data['access_token']
-        profile = get_facebook_profile(access_token)
+        profile = utils.get_facebook_profile(access_token)
 
         try:
             social_account = SocialAccount.objects.get(uid=profile['id'])
@@ -272,6 +281,10 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
                                            provider=SocialAccount.FACEBOOK,
                                            uid=profile['id'], profile=profile)
             social_account.save()
+
+        # Log in to the meteor server.
+        token, created = Token.objects.get_or_create(user=user)
+        utils.meteor_login(user.id, token)
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

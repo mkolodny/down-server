@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 import json
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 import httpretty
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ParseError
 from down.apps.auth.models import SocialAccount, User
 from down.apps.auth import utils
@@ -155,7 +157,7 @@ class FacebookProfileTests(TestCase):
         self.profile_url = 'https://graph.facebook.com/v2.2/me'
 
     @httpretty.activate
-    def test_get_facebook_profile(self):
+    def test_get(self):
         # Mock requesting the user's profile.
         body = json.dumps(self.fb_profile)
         httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
@@ -175,7 +177,7 @@ class FacebookProfileTests(TestCase):
         self.assertEqual(profile, expected_profile)
 
     @httpretty.activate
-    def test_get_facebook_profile_bad_status(self):
+    def test_get_bad_status(self):
         # Mock a bad response from Facebook when requesting the user's facebook
         # profile.
         httpretty.register_uri(httpretty.GET, self.profile_url,
@@ -183,3 +185,45 @@ class FacebookProfileTests(TestCase):
         
         with self.assertRaises(ServiceUnavailable):
             utils.get_facebook_profile(self.access_token)
+
+
+class MeteorLoginTests(TestCase):
+
+    def setUp(self):
+        self.user = User()
+        self.user.save()
+        self.token = Token(user=self.user)
+        self.token.save()
+
+        # Save URLs.
+        self.meteor_url = '{meteor_url}/users'.format(
+                meteor_url=settings.METEOR_URL)
+
+    @httpretty.activate
+    def test_meteor_login(self):
+        # Mock a successful meteor server response.
+        httpretty.register_uri(httpretty.POST, self.meteor_url,
+                               content_type='application/json')
+
+        utils.meteor_login(self.user.id, self.token)
+
+        # It should authenticate the user on the meteor server.
+        self.assertEqual(httpretty.last_request().body, json.dumps({
+            'user_id': self.user.id,
+            'password': self.token.key,
+        }))
+        auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
+        self.assertEqual(httpretty.last_request().headers['Authorization'],
+                         auth_header)
+        self.assertEqual(httpretty.last_request().headers['Content-Type'],
+                         'application/json')
+
+    @httpretty.activate
+    def test_meteor_login_bad_status(self):
+        # Mock an unsuccessful meteor server response.
+        httpretty.register_uri(httpretty.POST, self.meteor_url,
+                               content_type='application/json',
+                               status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        with self.assertRaises(ServiceUnavailable):
+            utils.meteor_login(self.user.id, self.token)

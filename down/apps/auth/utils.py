@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
+import json
 from urllib import urlencode
+from django.conf import settings
 import requests
 from rest_framework import status
 from rest_framework.exceptions import ParseError
@@ -56,3 +58,23 @@ def get_facebook_profile(access_token):
                             'picture').format(id=profile['id'])
     profile['access_token'] = access_token
     return profile
+
+def meteor_login(user_id, token):
+    """
+    Authenticate the user on the meteor server.
+    """
+    url = '{meteor_url}/users'.format(meteor_url=settings.METEOR_URL)
+    data = json.dumps({
+        'user_id': user_id,
+        'password': token.key,
+    })
+    auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
+    headers = {
+        'Authorization': auth_header,
+        'Content-Type': 'application/json',
+    }
+    response = requests.post(url, data=data, headers=headers)
+    if response.status_code != 200:
+        error_msg = '{status} response from the meteor server'.format(
+                status=response.status_code)
+        raise ServiceUnavailable(error_msg)
