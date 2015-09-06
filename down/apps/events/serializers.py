@@ -307,6 +307,17 @@ class EventInvitationSerializer(serializers.ModelSerializer):
 
 
 class LinkInvitationSerializer(GeoModelSerializer):
+    event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
+    from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = LinkInvitation
+        read_only_fields = ('link_id', 'created_at')
+
+
+class LinkInvitationFkObjectsSerializer(GeoModelSerializer):
+    event = EventSerializer()
+    from_user = FriendSerializer()
 
     class Meta:
         model = LinkInvitation

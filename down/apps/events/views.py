@@ -24,6 +24,7 @@ from .serializers import (
     EventSerializer,
     InvitationSerializer,
     EventInvitationSerializer,
+    LinkInvitationFkObjectsSerializer,
     LinkInvitationSerializer,
     MessageSentSerializer,
 )
@@ -181,6 +182,12 @@ class LinkInvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
             link_invitation = LinkInvitation.objects.get(link_id=link_id)
             serializer = self.get_serializer(link_invitation)
             return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, *args, **kwargs):
+        # Return foreign keys as objects.
+        self.serializer_class = LinkInvitationFkObjectsSerializer
+
+        return super(LinkInvitationViewSet, self).retrieve(request, *args, **kwargs)
 
 
 class SuggestedEventsView(TemplateView):
