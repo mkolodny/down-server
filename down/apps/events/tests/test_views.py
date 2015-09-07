@@ -855,6 +855,10 @@ class InvitationTests(APITestCase):
 
         # Save POST data.
         self.post_data = {
+            'to_user': self.user2.id,
+            'event': self.event.id,
+        }
+        self.bulk_create_data = {
             'event': self.event.id,
             'invitations': [
                 {
@@ -872,6 +876,43 @@ class InvitationTests(APITestCase):
     def tearDown(self):
         self.patcher.stop()
 
+    def test_create(self):
+        # Invite the logged in user.
+        invitation = Invitation(from_user=self.user1, to_user=self.user1,
+                                event=self.event)
+        invitation.save()
+
+        response = self.client.post(self.list_url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create an invitation.
+        invitation = Invitation.objects.get(from_user=self.user1,
+                                            to_user=self.user2, event=self.event)
+
+        # It should return the created invitation.
+        serializer = InvitationSerializer(invitation)
+        json_invitation = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitation)
+
+    def test_create_already_exists(self):
+        # Invite the logged in user.
+        invitation = Invitation(from_user=self.user1, to_user=self.user1,
+                                event=self.event)
+        invitation.save()
+
+        # Mock the invitation already being created.
+        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                event=self.event)
+        invitation.save()
+
+        response = self.client.post(self.list_url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the already created invitation.
+        serializer = InvitationSerializer(invitation)
+        json_invitation = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitation)
+
     @mock.patch('down.apps.events.models.Invitation.objects.bulk_create')
     def test_bulk_create(self, mock_bulk_create):
         # Invite the current user.
@@ -879,7 +920,7 @@ class InvitationTests(APITestCase):
                                 event=self.event, response=Invitation.MAYBE)
         invitation.save()
 
-        response = self.client.post(self.list_url, self.post_data)
+        response = self.client.post(self.list_url, self.bulk_create_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should bulk create the invitations.
@@ -898,6 +939,8 @@ class InvitationTests(APITestCase):
     @mock.patch('down.apps.events.models.get_invite_sms')
     def test_bulk_create_as_creator_not_invited(self, mock_sms, mock_twilio,
                                                 mock_send):
+        data = self.bulk_create_data
+
         # Mock the sms message.
         mock_sms.return_value = '<user> invited you to <event>'
 
@@ -905,14 +948,13 @@ class InvitationTests(APITestCase):
         mock_client = mock.MagicMock()
         mock_twilio.return_value = mock_client
 
-        response = self.client.post(self.list_url, self.post_data)
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the invitations.
         invitations = Invitation.objects.filter(from_user=self.user1,
                                                 event=self.event)
-        self.assertEqual(invitations.count(),
-                         len(self.post_data['invitations']))
+        self.assertEqual(invitations.count(), len(data['invitations']))
 
     def test_bulk_create_not_invited(self):
         # Log the second user in.

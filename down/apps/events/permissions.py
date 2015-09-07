@@ -14,15 +14,15 @@ class InviterWasInvited(permissions.BasePermission):
         if request.method != 'POST':
             return True
 
-        # We're only allowing bulk creating invitations right now.
-        if not request.data.has_key('invitations'):
-            return False
-
-        try:
-            invitations = request.data['invitations']
+        if request.data.has_key('invitations'):
             # TODO: Handle when no invitations are sent.
             # TODO: Handle when the event id wasn't sent.
+            invitations = request.data['invitations']
             event_id = request.data['event']
+        else:
+            event_id = request.data['event']
+
+        try:
             Invitation.objects.get(event_id=event_id, to_user=request.user)
             return True
         except Invitation.DoesNotExist:

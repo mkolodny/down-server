@@ -6,6 +6,7 @@ from django.views.generic.base import TemplateView
 from hashids import Hashids
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -144,7 +145,7 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get('data')
-        if 'invitations' in data:
+        if data is not None and 'invitations' in data:
             invitations = data['invitations']
             event_id = data['event']
             for invitation in invitations:
@@ -155,6 +156,31 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
             kwargs['many'] = True
 
         return super(InvitationViewSet, self).get_serializer(*args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        if type(data) is dict:
+            # Make the current user the inviter.
+            data['from_user'] = request.user.id
+
+        serializer = self.get_serializer(data=data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            status_code = status.HTTP_201_CREATED
+        except ValidationError as error:
+            try:
+                event_id = request.data.get('event')
+                to_user_id = request.data.get('to_user')
+                invitation = Invitation.objects.get(event_id=event_id,
+                                                    to_user_id=to_user_id)
+                serializer = self.get_serializer(invitation)
+                status_code = status.HTTP_200_OK
+            except Invitation.DoesNotExist:
+                # TODO: Test this
+                raise error
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status_code, headers=headers)
 
 
 class LinkInvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
