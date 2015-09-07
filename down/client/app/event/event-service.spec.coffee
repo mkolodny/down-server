@@ -141,6 +141,7 @@ describe 'event service', ->
                 event: event
                 fromUser: fromUser
                 invitation: invitation
+                linkId: linkId
                 redirectView: 'invitation'
 
 
@@ -158,6 +159,7 @@ describe 'event service', ->
                 event: event
                 fromUser: fromUser
                 invitation: invitation
+                linkId: linkId
                 redirectView: 'invitation'
 
 
@@ -179,6 +181,7 @@ describe 'event service', ->
               event: event
               fromUser: fromUser
               invitation: invitation
+              linkId: linkId
               redirectView: 'login'
 
 

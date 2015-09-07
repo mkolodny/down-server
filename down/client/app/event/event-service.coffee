@@ -20,6 +20,7 @@ class EventService
           event: linkInvitation.event
           fromUser: linkInvitation.fromUser
           invitation: linkInvitation.invitation
+          linkId: @$stateParams.linkId
         @Auth.isAuthenticated()
       .then (isAuthenticated) =>
         if isAuthenticated
