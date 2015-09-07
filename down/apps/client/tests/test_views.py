@@ -72,8 +72,20 @@ class FellowshipDemoTests(APITestCase):
 
 class AppTests(APITestCase):
 
-    def test_get(self):
-        url = reverse('web-app')
+    def test_get_event(self):
+        url = reverse('web-app-event')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'web-app.html')
+
+    def test_get_login(self):
+        url = reverse('web-app-login')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTemplateUsed(response, 'web-app.html')
+
+    def test_get_invitation(self):
+        url = reverse('web-app-invitation')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTemplateUsed(response, 'web-app.html')
