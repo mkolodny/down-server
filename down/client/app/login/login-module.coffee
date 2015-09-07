@@ -1,11 +1,13 @@
 require 'angular'
 require 'angular-ui-router'
 require 'down-ionic/app/common/auth/auth-module'
+require '../event/event-module'
 LoginCtrl = require './login-controller'
 
 angular.module 'down.login', [
     'ui.router'
     'down.auth'
+    'down.event'
   ]
   .config ($stateProvider) ->
     $stateProvider
@@ -17,5 +19,4 @@ angular.module 'down.login', [
         	event: null
           fromUser: null
           linkId: null
-          invitation: null
   .controller 'LoginCtrl', LoginCtrl
