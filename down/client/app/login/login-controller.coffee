@@ -36,14 +36,11 @@ class LoginCtrl
           @meteorLogin user
 
   meteorLogin: (user) ->
-    console.log user
     @Asteroid.login().then =>
-      console.log "SUCCESS"
       # Persist the user to local storage.
       @Auth.setUser user
       @getLinkData()
     , =>
-      console.log "SOMETHING WRONG"
       @error = 'Oops, something went wrong.'
 
   getLinkData: ->
