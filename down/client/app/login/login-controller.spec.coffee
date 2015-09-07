@@ -52,11 +52,30 @@ describe 'login controller', ->
   it 'should set the event on the controller', ->
     expect(ctrl.fromUser).toEqual fromUser
 
+  describe 'initializing the facebook sdk', ->
+    fbAppId = null
+
+    beforeEach ->
+      fbAppId = '864552050271610'
+      $window.fbAppId = '864552050271610'
+      $window.FB =
+        init: jasmine.createSpy 'FB.init'
+
+      $window.fbAsyncInit()
+
+    it 'should call FB.init', ->
+      initOptions =
+        appId: fbAppId
+        xfbml: true
+        version: 'v2.3'
+      expect($window.FB.init).toHaveBeenCalledWith initOptions
+
+
   describe 'logging in', ->
 
     beforeEach ->
       $window.FB =
-        login: jasmine.createSpy('FB.login')
+        login: jasmine.createSpy 'FB.login'
       ctrl.login()
 
     it 'should call login with the Facebook SDK', ->
