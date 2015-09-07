@@ -132,3 +132,8 @@ TWILIO_PHONE = os.environ['TWILIO_PHONE']
 
 # Hashids
 HASHIDS_SALT = os.environ['HASHIDS_SALT']
+
+# Push notifications
+PUSH_NOTIFICATIONS_SETTINGS = {
+    'GCM_API_KEY': os.environ['GCM_API_KEY'],
+}
