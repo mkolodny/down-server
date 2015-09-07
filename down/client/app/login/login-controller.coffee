@@ -1,5 +1,6 @@
 class LoginCtrl
-  constructor: (@$state, @$stateParams, @$window, @Auth, @EventService) ->
+  constructor: (@$state, @$stateParams, @$window, @Auth, @Asteroid,
+                @EventService) ->
     @event = @$stateParams.event
     @fromUser = @$stateParams.fromUser
 
@@ -31,12 +32,24 @@ class LoginCtrl
     accessToken = response.authResponse?.accessToken
     if accessToken
       @Auth.authWithFacebook(accessToken)
-        .then =>
-          @EventService.getData()
-        .then (data) =>
-          nextState = data.redirect or 'event'
-          @$state.go nextState, data
+        .then (user) =>
+          @meteorLogin user
 
+  meteorLogin: (user) ->
+    console.log user
+    @Asteroid.login().then =>
+      console.log "SUCCESS"
+      # Persist the user to local storage.
+      @Auth.setUser user
+      @getLinkData()
+    , =>
+      console.log "SOMETHING WRONG"
+      @error = 'Oops, something went wrong.'
 
+  getLinkData: ->
+    @EventService.getData()
+      .then (data) =>
+        nextState = data.redirect or 'event'
+        @$state.go nextState, data
 
 module.exports = LoginCtrl
