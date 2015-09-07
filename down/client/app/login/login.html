@@ -1,8 +1,32 @@
 {% verbatim %}
-
-<div id="fb-root"></div>
-<button ng-click="login.login()">
-  Login With Facebook
-</button>
-
+<div id="login">
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#">Down.</a>
+      </div>
+    </div>
+  </nav>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+        <div id="content">
+          <img id="from-image"
+               src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=150&height=150">
+          <h1 id="event-title">
+            bars?!?!?
+          </h1>
+          <h2 id="suggested-by">
+            Suggested by Andrew Linfoot
+          </h2>
+          <p>Log in to respond, see who's down, and join the group chat.</p>
+          <div id="fb-root"></div>
+          <button id="fb-login" class="btn" ng-click="login.login()">
+            <i class="fa fa-facebook-square fa-lg"></i> Log in
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endverbatim %}

@@ -1,2 +1,30 @@
-// Imports
+/* Bootstrap */
+
+// Colors
+$brand-primary: #6a38ab;
+
+// Scaffolding
+$body-bg: #fafafa;
+
+// Navbar
+$navbar-height: 77px;
+$navbar-default-color: #fff;
+$navbar-default-bg: $brand-primary;
+$navbar-default-border: $brand-primary;
+$navbar-border-radius: 0;
+$navbar-default-link-color: #fff;
+
 @import "sass/bootstrap-custom";
+
+
+/* App-specific app-wide sass */
+
+// Navbar
+.navbar-brand {
+  font-size: 36px;
+  font-family: 'Viga', 'Helvetica Neue', sans-serif;
+}
+
+
+/* View styles */
+@import "login/login";
