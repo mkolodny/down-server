@@ -20,6 +20,7 @@ class EventService
           event: linkInvitation.event
           fromUser: linkInvitation.fromUser
           invitation: linkInvitation.invitation
+          linkId: @$stateParams.linkId
         @Auth.isAuthenticated()
       .then (isAuthenticated) =>
         if isAuthenticated
@@ -32,7 +33,7 @@ class EventService
               redirectView: 'login'
         deferred.resolve params
       , ->
-        deferred.reject()
+        deferred.resolve null
 
     deferred.promise
 

@@ -79,7 +79,7 @@ describe 'event service', ->
     describe 'when we don\'t have data yet', ->
       linkId = null
       deferredLinkInvitation = null
-      rejected = null
+      data = null
 
       beforeEach ->
         linkId = 1
@@ -91,8 +91,8 @@ describe 'event service', ->
 
         rejected = false
         EventService.getData()
-          .then null, ->
-            rejected = true
+          .then (_data_) ->
+            data = _data_
 
       afterEach ->
         delete $stateParams.linkId
@@ -102,7 +102,6 @@ describe 'event service', ->
 
       describe 'when the link invitation returns successfully', ->
         linkInvitation = null
-        data = null
 
         beforeEach ->
           linkInvitation =
@@ -142,6 +141,7 @@ describe 'event service', ->
                 event: event
                 fromUser: fromUser
                 invitation: invitation
+                linkId: linkId
                 redirectView: 'invitation'
 
 
@@ -159,6 +159,7 @@ describe 'event service', ->
                 event: event
                 fromUser: fromUser
                 invitation: invitation
+                linkId: linkId
                 redirectView: 'invitation'
 
 
@@ -180,6 +181,7 @@ describe 'event service', ->
               event: event
               fromUser: fromUser
               invitation: invitation
+              linkId: linkId
               redirectView: 'login'
 
 
@@ -189,8 +191,8 @@ describe 'event service', ->
             deferredAuth.reject()
             $rootScope.$apply()
 
-          it 'should reject the promise', ->
-            expect(rejected).toBe true
+          it 'should return null', ->
+            expect(data).toBeNull()
 
 
       describe 'when the link invitation request fails', ->
@@ -199,5 +201,5 @@ describe 'event service', ->
           deferredLinkInvitation.reject()
           $rootScope.$apply()
 
-        it 'should reject the promise', ->
-          expect(rejected).toBe true
+        it 'should return null', ->
+          expect(data).toBeNull()
