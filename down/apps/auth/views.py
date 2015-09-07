@@ -286,7 +286,8 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         token, created = Token.objects.get_or_create(user=user)
         utils.meteor_login(user.id, token)
 
-        serializer = UserSerializer(user)
+        context = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=context)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 

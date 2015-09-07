@@ -750,7 +750,8 @@ class SessionTests(APITestCase):
         mock_meteor_login.assert_called_once_with(user.id, token)
 
         # It should return the user.
-        serializer = UserSerializer(user)
+        context = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=context)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
@@ -784,7 +785,8 @@ class SessionTests(APITestCase):
         mock_meteor_login.assert_called_once_with(user.id, token)
 
         # It should return the user.
-        serializer = UserSerializer(user)
+        context = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=context)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
