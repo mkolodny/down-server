@@ -895,15 +895,15 @@ class InvitationTests(APITestCase):
         self.assertEqual(response.content, json_invitation)
 
     def test_create_already_exists(self):
-        # Invite the logged in user.
-        invitation = Invitation(from_user=self.user1, to_user=self.user1,
-                                event=self.event)
-        invitation.save()
-
         # Mock the invitation already being created.
         invitation = Invitation(from_user=self.user1, to_user=self.user2,
                                 event=self.event)
         invitation.save()
+
+        # Log in as user2 to mock the invitation being sent from another user.
+        token = Token(user=self.user2)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
         response = self.client.post(self.list_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
