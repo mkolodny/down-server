@@ -32,7 +32,7 @@ class EventService
               redirectView: 'login'
         deferred.resolve params
       , ->
-        deferred.reject()
+        deferred.resolve null
 
     deferred.promise
 
