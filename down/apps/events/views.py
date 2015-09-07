@@ -210,10 +210,10 @@ class LinkInvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
             return Response(serializer.data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, *args, **kwargs):
-        # Return foreign keys as objects.
-        self.serializer_class = LinkInvitationFkObjectsSerializer
-
-        return super(LinkInvitationViewSet, self).retrieve(request, *args, **kwargs)
+        instance = self.get_object()
+        context = {'to_user': request.user}
+        serializer = LinkInvitationFkObjectsSerializer(instance, context=context)
+        return Response(serializer.data)
 
 
 class SuggestedEventsView(TemplateView):

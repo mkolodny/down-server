@@ -1360,6 +1360,9 @@ class LinkInvitationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_by_link_id(self):
+        # Delete the user's invitation to make sure that we create it.
+        Invitation.objects.filter(event=self.event, to_user=self.user1).delete()
+
         # Mock a link invitation.
         link_invitation = LinkInvitation(event=self.event, from_user=self.user1)
         link_invitation.save()
@@ -1370,14 +1373,15 @@ class LinkInvitationTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # It should create an invitation.
+        Invitation.objects.get(from_user=link_invitation.from_user,
+                               to_user=self.user1, event=link_invitation.event)
+
         # It should return the link invitation.
-        serializer = LinkInvitationFkObjectsSerializer(link_invitation)
+        link_invitation = LinkInvitation.objects.get(id=link_invitation.id)
+        to_user = User.objects.get(id=self.user1.id)
+        context = {'to_user': to_user}
+        serializer = LinkInvitationFkObjectsSerializer(link_invitation,
+                                                       context=context)
         json_link_invitation = JSONRenderer().render(serializer.data)
-        link_invitation_dict = json.loads(json_link_invitation)
-        response_dict = json.loads(response.content)
-        # For some reason, the `updated_at` field insists on being different.
-        # TODO: Figure out why, and compare `json_link_invitation` to
-        # response.content.
-        del link_invitation_dict['event']['updated_at']
-        del response_dict['event']['updated_at']
-        self.assertEqual(response_dict, link_invitation_dict)
+        self.assertEqual(response.content, json_link_invitation)

@@ -41,6 +41,7 @@ class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         read_only_fields = ('created_at', 'updated_at')
+        exclude = ('members',)
 
     def create(self, validated_data):
         """
@@ -312,16 +313,30 @@ class LinkInvitationSerializer(GeoModelSerializer):
 
     class Meta:
         model = LinkInvitation
-        read_only_fields = ('link_id', 'created_at')
+        read_only_fields = ('invitation', 'link_id', 'created_at')
 
 
 class LinkInvitationFkObjectsSerializer(GeoModelSerializer):
     event = EventSerializer()
     from_user = FriendSerializer()
+    invitation = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = LinkInvitation
         read_only_fields = ('link_id', 'created_at')
+
+    def get_invitation(self, obj):
+        to_user = self.context['to_user']
+        try:
+            invitation = Invitation.objects.get(from_user=obj.from_user,
+                                                to_user=to_user,
+                                                event=obj.event)
+        except Invitation.DoesNotExist:
+            invitation = Invitation(from_user=obj.from_user, to_user=to_user,
+                                    event=obj.event)
+            invitation.save()
+        serializer = InvitationSerializer(invitation)
+        return serializer.data
 
 
 class MessageSentSerializer(serializers.Serializer):
