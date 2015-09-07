@@ -1,10 +1,12 @@
 require 'angular'
 require 'angular-ui-router'
 require './event/event-module'
+require './login/login-module'
 
 angular.module 'down', [
     'ui.router'
     'down.event'
+    'down.login'
   ]
   .config ($httpProvider, $locationProvider, $urlRouterProvider, $stateProvider) ->
     # Use html5 push state.

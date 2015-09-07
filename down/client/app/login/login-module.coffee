@@ -16,7 +16,7 @@ angular.module 'down.login', [
         templateUrl: '/partials/login/login.html'
         controller: 'LoginCtrl as login'
         params:
-        	event: null
+          event: null
           fromUser: null
           linkId: null
   .controller 'LoginCtrl', LoginCtrl

@@ -1,3 +1,5 @@
+{% verbatim %}
+
 <script>
   window.fbAsyncInit = function() {
     FB.init({
@@ -15,3 +17,8 @@
      fjs.parentNode.insertBefore(js, fjs);
    }(document, 'script', 'facebook-jssdk'));
 </script>
+<button ng-click="login.login()">
+  Login With Facebook
+</button>
+
+{% endverbatim %}
