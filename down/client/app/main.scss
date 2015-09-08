@@ -13,6 +13,12 @@ $navbar-default-bg: $brand-primary;
 $navbar-default-border: $brand-primary;
 $navbar-border-radius: 0;
 $navbar-default-link-color: #fff;
+$navbar-default-link-hover-color: #fff;
+$navbar-default-link-active-color: #fff;
+
+// Buttons
+$btn-default-color: $brand-primary;
+$btn-default-border: $brand-primary;
 
 @import "sass/bootstrap-custom";
 
@@ -25,6 +31,42 @@ $navbar-default-link-color: #fff;
   font-family: 'Viga', 'Helvetica Neue', sans-serif;
 }
 
+// Non-member views
+.non-member-view {
+  #content {
+    text-align: center;
+    background-color: #fff;
+    border: 1px solid #edeeee;
+    border-radius: $border-radius-large;
+    padding: 20px;
+    padding-bottom: 40px;
+  }
+  #from-image {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+  }
+  #event-title {
+    font-size: 26px;
+    color: $brand-primary;
+    margin-top: 15px;
+    margin-bottom: 0;
+  }
+  #suggested-by {
+    font-size: 14px;
+    font-weight: $headings-font-weight;
+    margin-top: 7px;
+  }
+  p {
+    color: $brand-primary;
+    max-width: 256px;
+    text-align: center;
+    margin: auto;
+    margin-top: 30px;
+  }
+}
+
 
 /* View styles */
 @import "login/login";
+@import "invitation/invitation";
