@@ -1,0 +1,54 @@
+#login {
+  .navbar-brand {
+    position: absolute;
+    width: 100%;
+    left: 0;
+    top: 0;
+    text-align: center;
+    margin: auto;
+  }
+  #content {
+    text-align: center;
+    background-color: #fff;
+    border: 1px solid #edeeee;
+    border-radius: $border-radius-large;
+    padding: 20px;
+    padding-bottom: 40px;
+  }
+  #from-image {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+  }
+  #event-title {
+    font-size: 26px;
+    color: $brand-primary;
+    margin-top: 15px;
+    margin-bottom: 0;
+  }
+  #suggested-by {
+    font-size: 14px;
+    font-weight: $headings-font-weight;
+    margin-top: 7px;
+  }
+  p {
+    color: $brand-primary;
+    max-width: 256px;
+    text-align: center;
+    margin: auto;
+    margin-top: 30px;
+  }
+  #fb-login {
+    color: #fff;
+    background-color: #4e69a2;
+    border-color: #435a8b #3c5488 #334c83;
+    margin-top: 15px;
+
+    &:hover {
+      background-color: darken(#4e69a2, 5%);
+    }
+  }
+  .fa-facebook-square {
+    margin-right: 5px;
+  }
+}
