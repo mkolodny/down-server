@@ -88,12 +88,59 @@ body,
     font-weight: $headings-font-weight;
     margin-top: 7px;
   }
+  #event-details {
+    width: 256px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: left;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+
+    i {
+      margin-right: 16px;
+    }
+    #event-comment {
+      max-height: 100px;
+      overflow: auto;
+    }
+  }
   p {
     color: $brand-primary;
     max-width: 256px;
     text-align: center;
     margin: auto;
     margin-top: 30px;
+  }
+}
+
+// Event details
+.event-detail {
+  display: flex;
+  margin-bottom: 7px;
+
+  i {
+    width: 15px;
+    margin-right: 10px;
+    font-size: 1.2em;
+  }
+  .fa-calendar-o {
+    margin-top: 10px;
+  }
+  .fa-map-marker {
+    width: 12px;
+    margin-left: 3px;
+    margin-top: 2px;
+  }
+  .fa-comment-o {
+    margin-top: 1px;
+  }
+  a {
+    text-decoration: none;
   }
 }
 

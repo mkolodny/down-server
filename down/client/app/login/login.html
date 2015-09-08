@@ -1,3 +1,5 @@
+{% load static from staticfiles %}
+
 {% verbatim %}
 <div id="login" class="non-member-view">
   <nav class="navbar navbar-default">
@@ -9,7 +11,7 @@
   </nav>
   <div class="container-fluid">
     <div class="row">
-      <div class="col-md-6 col-md-offset-3">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">
         <div id="content">
           <img id="from-image"
                src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=150&height=150">
@@ -19,11 +21,49 @@
           <h2 id="suggested-by">
             Suggested by Andrew Linfoot
           </h2>
-          <p>Log in to respond, see who's down, and join the group chat.</p>
-          <div id="fb-root"></div>
-          <button id="fb-login" class="btn" ng-click="login.login()">
-            <i class="fa fa-facebook-square fa-lg"></i> Log in
-          </button>
+          <div id="event-details">
+            <div class="event-detail">
+              <i class="fa fa-calendar-o"></i>
+              <div>
+                <div>Tuesday, Feb 16</div>
+                <div>3:31 pm</div>
+              </div>
+            </div>
+            <div class="event-detail">
+              <a href
+                ><i class="fa fa-map-marker"></i>169 Bar</a>
+            </div>
+            <div id="event-comment" class="event-detail">
+              <i class="fa fa-comment-o"></i>40's anyone?
+            </div>
+          </div>
+          <div id="fb-login-container" class="hidden-xs hidden-sm">
+            <p>Log in to respond, see who's down, and join the group chat.</p>
+            <div id="fb-root"></div>
+            <button id="fb-login" class="btn" ng-click="login.login()">
+              <i class="fa fa-facebook-square fa-lg"></i> Log in
+            </button>
+          </div>
+          <div id="download-links-container" class="hidden-md hidden-lg">
+            <p>Download the app to respond, see who's down, and join the group chat.</p>
+            <div>
+              <a href="">
+                {% endverbatim %}
+                <img class="download-image" src="{% static 'download-ios.png' %}"
+                     alt="Download on the App Store">
+                {% verbatim %}
+              </a>
+            </div>
+            <div>
+              <a href="">
+                {% endverbatim %}
+                <img class="download-image"
+                     src="{% static 'download-android.png' %}"
+                     alt="Get it on Google Play">
+                {% verbatim %}
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>

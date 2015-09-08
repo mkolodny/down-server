@@ -3,7 +3,7 @@
   <nav class="navbar navbar-default">
     <div class="container-fluid">
       <div class="row">
-        <div class="col-md-6 col-md-offset-3">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">
           <div class="navbar-header">
             <a class="navbar-brand" href="#">Down.</a>
           </div>
@@ -18,7 +18,7 @@
   </nav>
   <div class="container-fluid">
     <div class="row">
-      <div class="col-md-6 col-md-offset-3">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">
         <div id="content">
           <img id="from-image"
                src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=150&height=150">
@@ -28,6 +28,22 @@
           <h2 id="suggested-by">
             Suggested by Andrew Linfoot
           </h2>
+          <div id="event-details">
+            <div class="event-detail">
+              <i class="fa fa-calendar-o"></i>
+              <div>
+                <div>Tuesday, Feb 16</div>
+                <div>3:31 pm</div>
+              </div>
+            </div>
+            <div class="event-detail">
+              <a href
+                ><i class="fa fa-map-marker"></i>169 Bar</a>
+            </div>
+            <div id="event-comment" class="event-detail">
+              <i class="fa fa-comment-o"></i>40's anyone?
+            </div>
+          </div>
           <div id="respond-buttons">
             <button class="btn btn-default respond">
               Down
@@ -39,7 +55,7 @@
               Can't
             </button>
           </div>
-          <p>Respond "Down" or "Maybe" to join the group chat.</p>
+          <p class="hidden-xs hidden-sm">Respond "Down" or "Maybe" to join the group chat.</p>
         </div>
       </div>
     </div>
