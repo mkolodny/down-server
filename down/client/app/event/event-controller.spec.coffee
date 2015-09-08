@@ -43,6 +43,7 @@ describe 'login controller', ->
     $stateParams =
       event: event
       fromUser: fromUser
+      invitation: invitation
 
     ctrl = $controller EventCtrl,
       Auth: Auth
@@ -62,6 +63,14 @@ describe 'login controller', ->
         Auth: Auth
         $stateParams: $stateParams
 
-    fit 'should go to the redirect state', ->
+    it 'should go to the redirect state', ->
       expect($state.go).toHaveBeenCalledWith redirectView, $stateParams
+
+
+  it 'should set the event on the controller', ->
+    expect(ctrl.event).toBe event
+
+  it 'should set the invitation on the controller', ->
+    expect(ctrl.invitation).toBe invitation
+
 
