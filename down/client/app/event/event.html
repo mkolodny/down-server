@@ -1,0 +1,152 @@
+{% load static from staticfiles %}
+
+{% verbatim %}
+<div id="event">
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3">
+          <div class="navbar-header">
+            <a class="navbar-brand" href="#">Down.</a>
+          </div>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a class="current-user" href="#">Chris MacPherson</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="container-fluid" id="content">
+    <div class="row" id="content-row">
+      <div class="col-md-3 col-md-offset-2 col-sm-6 col-sm-offset-3">
+        <div id="event-details">
+          <img id="from-image"
+               src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=100&height=100">
+          <h1 id="event-title">
+            bars?!?!?
+          </h1>
+          <h2 id="suggested-by">
+            Suggested by Andrew Linfoot
+          </h2>
+          <div class="event-detail">
+            <i class="fa fa-calendar-o"></i>
+            <div>
+              <div>Tuesday, Feb 16</div>
+              <div>3:31 pm</div>
+            </div>
+          </div>
+          <div class="event-detail">
+            <a href
+              ><i class="fa fa-map-marker"></i>169 Bar</a>
+          </div>
+          <div id="event-comment" class="event-detail">
+            <i class="fa fa-comment-o"></i>40's anyone?
+          </div>
+        </div>
+        <div id="respond-buttons">
+          <button class="btn btn-default respond active">
+            Down
+          </button>
+          <button class="btn btn-default respond">
+            Maybe
+          </button>
+          <button class="btn btn-default respond">
+            Can't
+          </button>
+        </div>
+        <hr>
+        <div id="members">
+          <img class="member"
+               src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
+          <img class="member"
+               src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
+          <img class="member"
+               src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
+          <img class="member"
+               src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
+          <img class="member"
+               src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
+          <img class="member"
+               src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
+        </div>
+        <hr class="hidden-xs hidden-sm">
+        <div class="hidden-xs hidden-sm" id="phone-form-container">
+          Text yourself a link to download the app:
+          <form class="form-inline" id="phone-form">
+            <div class="form-group">
+              <input class="form-control" placeholder="(917) 622-7310">
+              <button type="submit" class="btn btn-primary"
+                      id="send-download-link">
+                Send
+              </button>
+            </div>
+          </form>
+        </div>
+        <hr>
+        <div id="download-images">
+          <div>
+            <a href="">
+              {% endverbatim %}
+              <img class="download-image" src="{% static 'download-ios.png' %}"
+                   alt="Download on the App Store">
+              {% verbatim %}
+            </a>
+          </div>
+          <div>
+            <a href="">
+              {% endverbatim %}
+              <img class="download-image"
+                   src="{% static 'download-android.png' %}"
+                   alt="Get it on Google Play">
+              {% verbatim %}
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 hidden-xs hidden-sm" id="group-chat-col">
+        <div id="group-chat">
+          <div id="messages-container">
+            <div id="messages">
+              <div class="action-message">
+                Christopher MacPherson is down
+              </div>
+              <div class="text-message mine">
+                <img class="avatar" src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=60&height=60">
+                <div class="text">This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope!</div>
+              </div>
+              <div class="text-message">
+                <img class="avatar" src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=60&height=60">
+                <div class="text">This is gonna be dope!</div>
+              </div>
+              <div class="text-message">
+                <img class="avatar" src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=60&height=60">
+                <div class="text">This is gonna be dope!</div>
+              </div>
+              <!--
+              <div ng-repeat="message in event.messages">
+                <div class="action-message" ng-if="event.isActionMessage(message)">
+                  {{message.text}}
+                </div>
+                <div class="text-message" ng-if="!event.isActionMessage(message)"
+                     ng-class="{'mine': event.isMyMessage(message)}">
+                  <img class="avatar" ng-src="{{message.creator.getImageUrl(72)}}">
+                  <div class="text">{{message.text}}</div>
+                </div>
+              </div>
+              -->
+            </div>
+          </div>
+          <form class="form-inline">
+            <div class="form-group" id="enter-message-container">
+              <input class="form-control" id="enter-message"
+                     placeholder="Type a message...">
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endverbatim %}

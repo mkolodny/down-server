@@ -2,6 +2,7 @@
 
 // Colors
 $brand-primary: #6a38ab;
+$link-color: darken(#428bca, 6.5%);
 
 // Scaffolding
 $body-bg: #fafafa;
@@ -25,10 +26,40 @@ $btn-default-border: $brand-primary;
 
 /* App-specific app-wide sass */
 
+// Global
+body {
+  -webkit-font-smoothing: antialiased;
+}
+html,
+body,
+#ui-view {
+  height: 100%;
+}
+
 // Navbar
+.navbar-header {
+  float: left;
+}
+.navbar-right {
+  float: right !important;
+}
 .navbar-brand {
   font-size: 36px;
   font-family: 'Viga', 'Helvetica Neue', sans-serif;
+  margin-left: -15px;
+}
+@media (max-width: 767px) {
+  .navbar-nav {
+    & > li {
+      & > a {
+        padding-top: 15px;
+      }
+    }
+  }
+}
+.current-user {
+  font-weight: 700;
+  cursor: default;
 }
 
 // Non-member views
@@ -70,3 +101,4 @@ $btn-default-border: $brand-primary;
 /* View styles */
 @import "login/login";
 @import "invitation/invitation";
+@import "event/event";
