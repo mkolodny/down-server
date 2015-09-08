@@ -21,6 +21,7 @@ angular.module 'down.event', [
           event: null
           fromUser: null
           invitation: null
+          redirectView: null
         resolve:
           data: ['EventService', (EventService) ->
             EventService.getData()

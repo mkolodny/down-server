@@ -6,6 +6,7 @@ require 'down-ionic/app/common/asteroid/asteroid-module'
 EventCtrl = require './event-controller'
 
 describe 'login controller', ->
+  $controller = null
   $state = null
   $stateParams = null
   $q = null
@@ -37,6 +38,8 @@ describe 'login controller', ->
       id: 123
     fromUser =
       id: 456
+    invitation =
+      id: 789
     $stateParams =
       event: event
       fromUser: fromUser
@@ -45,3 +48,20 @@ describe 'login controller', ->
       Auth: Auth
       $stateParams: $stateParams
   )
+
+  describe 'when there is a redirect', ->
+    redirectView = null
+
+    beforeEach ->
+      redirectView = 'login'
+      $stateParams.redirectView = redirectView
+
+      spyOn $state, 'go'
+
+      ctrl = $controller EventCtrl,
+        Auth: Auth
+        $stateParams: $stateParams
+
+    fit 'should go to the redirect state', ->
+      expect($state.go).toHaveBeenCalledWith redirectView, $stateParams
+
