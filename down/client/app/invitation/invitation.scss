@@ -1,0 +1,21 @@
+#invitation {
+  #current-user {
+    font-weight: 500;
+    cursor: default;
+  }
+  #respond-buttons {
+    padding-top: 5px;
+  }
+  .respond {
+    margin-left: 2px;
+    margin-right: 2px;
+    width: 76px;
+
+    &:active,
+    &.active {
+      color: $btn-primary-color;
+      background-color: $btn-primary-bg;
+      border-color: $btn-primary-border;
+    }
+  }
+}
