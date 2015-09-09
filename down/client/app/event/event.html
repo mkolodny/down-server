@@ -11,7 +11,7 @@
           </div>
           <ul class="nav navbar-nav navbar-right">
             <li>
-              <a class="current-user" href="#">Chris MacPherson</a>
+              <a class="current-user" href="#">{{event.currentUser.name}}</a>
             </li>
           </ul>
         </div>
@@ -26,24 +26,23 @@
             <img id="from-image"
                  src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=100&height=100">
             <h1 id="event-title">
-              bars?!?!?
+              {{event.event.title}}
             </h1>
             <h2 id="suggested-by">
-              Suggested by Andrew Linfoot
+              Suggested by {{event.fromUser.name}}
             </h2>
             <div class="event-detail">
               <i class="fa fa-calendar-o"></i>
               <div>
-                <div>Tuesday, Feb 16</div>
-                <div>3:31 pm</div>
+                <div>{{event.event.datetime | date:'EEEE, MMM d'}}</div>
+                <div>{{event.event.datetime | date:'shortTime' | lowercase}}</div>
               </div>
             </div>
             <div class="event-detail">
-              <a href
-                ><i class="fa fa-map-marker"></i>169 Bar</a>
+              <a href><i class="fa fa-map-marker"></i>{{event.event.place.name}}</a>
             </div>
             <div id="event-comment" class="event-detail">
-              <i class="fa fa-comment-o"></i>40's anyone?
+              <i class="fa fa-comment-o"></i>{{event.event.comment}}
             </div>
           </div>
           <div id="respond-buttons">
@@ -59,17 +58,7 @@
           </div>
           <hr>
           <div id="members">
-            <img class="member"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
-            <img class="member"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
-            <img class="member"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
-            <img class="member"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
-            <img class="member"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
-            <img class="member"
+            <img class="member" ng-repeat="member in event.members"
                  src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
           </div>
           <hr class="hidden-xs hidden-sm">
@@ -111,22 +100,6 @@
         <div id="group-chat">
           <div id="messages-container">
             <div id="messages">
-              <div class="action-message">
-                Christopher MacPherson is down
-              </div>
-              <div class="text-message mine">
-                <img class="avatar" src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=60&height=60">
-                <div class="text">This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope! This is gonna be dope!</div>
-              </div>
-              <div class="text-message">
-                <img class="avatar" src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=60&height=60">
-                <div class="text">This is gonna be dope!</div>
-              </div>
-              <div class="text-message">
-                <img class="avatar" src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=60&height=60">
-                <div class="text">This is gonna be dope!</div>
-              </div>
-              <!--
               <div ng-repeat="message in event.messages">
                 <div class="action-message" ng-if="event.isActionMessage(message)">
                   {{message.text}}
@@ -137,7 +110,6 @@
                   <div class="text">{{message.text}}</div>
                 </div>
               </div>
-              -->
             </div>
           </div>
           <form class="form-inline">
