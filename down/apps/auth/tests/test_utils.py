@@ -76,7 +76,7 @@ class FacebookFriendsTests(TestCase):
                 'id': friend2_social.uid,
             }],
             'paging': {
-            }
+            },
         })
         httpretty.register_uri(httpretty.GET, next_url, body=body,
                                content_type='application/json')
@@ -114,6 +114,16 @@ class FacebookFriendsTests(TestCase):
         
         with self.assertRaises(ServiceUnavailable):
             utils.get_facebook_friends(self.user_social)
+
+    @httpretty.activate
+    def test_facebook_friends_no_friends(self):
+        # Mock Facebook response data with no friends.
+        body = json.dumps({'data': []})
+        httpretty.register_uri(httpretty.GET, self.friends_url, body=body,
+                               status=status.HTTP_200_OK)
+        
+        friends = utils.get_facebook_friends(self.user_social)
+        self.assertEqual(list(friends), [])
 
     @httpretty.activate
     def test_facebook_friends_no_data(self):

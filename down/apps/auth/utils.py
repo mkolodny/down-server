@@ -29,10 +29,10 @@ def get_facebook_friends(user_facebook_account):
                 for facebook_friend in facebook_json['data']
             ]
             facebook_friend_ids.extend(new_friend_ids)
-            paging = facebook_json['paging']
+            paging = facebook_json.get('paging')
             if len(new_friend_ids) < 25 or 'next' not in paging:
                 break
-            url = paging['next']
+            url = paging.get('next')
         except KeyError:
             raise ServiceUnavailable('Facebook response did not contain data.')
 
