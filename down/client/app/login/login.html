@@ -16,25 +16,24 @@
           <img id="from-image"
                src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=150&height=150">
           <h1 id="event-title">
-            bars?!?!?
+            {{login.event.title}}
           </h1>
           <h2 id="suggested-by">
-            Suggested by Andrew Linfoot
+            Suggested by {{login.fromUser.name}}
           </h2>
           <div id="event-details">
-            <div class="event-detail">
+            <div class="event-detail" ng-if="event.event.datetime">
               <i class="fa fa-calendar-o"></i>
               <div>
-                <div>Tuesday, Feb 16</div>
-                <div>3:31 pm</div>
+                <div>{{login.event.datetime | date:'EEEE, MMM d'}}</div>
+                <div>{{login.event.datetime | date:'shortTime' | lowercase}}</div>
               </div>
             </div>
-            <div class="event-detail">
-              <a href
-                ><i class="fa fa-map-marker"></i>169 Bar</a>
+            <div class="event-detail" ng-if="event.event.place">
+              <a href><i class="fa fa-map-marker"></i>{{login.event.place.name}}</a>
             </div>
-            <div id="event-comment" class="event-detail">
-              <i class="fa fa-comment-o"></i>40's anyone?
+            <div id="event-comment" class="event-detail" ng-if="login.event.comment">
+              <i class="fa fa-comment-o"></i>{{login.event.comment}}
             </div>
           </div>
           <div id="fb-login-container" class="hidden-xs hidden-sm">
