@@ -11,29 +11,19 @@ class EventService
         invitation: @$stateParams.invitation
       }
 
-    linkInvitation = null
-    params = null
-    @LinkInvitation.getByLinkId {linkId: @$stateParams.linkId}
-      .$promise.then (_linkInvitation_) =>
-        linkInvitation = _linkInvitation_
-        params =
-          event: linkInvitation.event
-          fromUser: linkInvitation.fromUser
-          invitation: linkInvitation.invitation
-          linkId: @$stateParams.linkId
-        @Auth.isAuthenticated()
+    @Auth.isAuthenticated()
       .then (isAuthenticated) =>
         if isAuthenticated
-          nonMemberResponses = [@Invitation.noResponse, @Invitation.declined]
-          if linkInvitation.invitation.response in nonMemberResponses
-            angular.extend params,
-              redirectView: 'invitation'
+          @LinkInvitation.getByLinkId {linkId: @$stateParams.linkId}
         else
-            angular.extend params,
-              redirectView: 'login'
-        deferred.resolve params
+          {redirectView: 'login'}
+      .then (data) =>
+        nonMemberResponses = [@Invitation.noResponse, @Invitation.declined]
+        if data.invitation?.response in nonMemberResponses
+          data.redirectView = 'invitation'
+        deferred.resolve data
       , ->
-        deferred.resolve null
+        deferred.resolve {error: true}
 
     deferred.promise
 

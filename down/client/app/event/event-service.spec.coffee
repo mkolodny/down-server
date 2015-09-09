@@ -77,129 +77,128 @@ describe 'event service', ->
 
 
     describe 'when we don\'t have data yet', ->
-      linkId = null
-      deferredLinkInvitation = null
       data = null
 
       beforeEach ->
-        linkId = 1
-        $stateParams.linkId = linkId
-        deferredLinkInvitation = $q.defer()
-        spyOn(LinkInvitation, 'getByLinkId').and.returnValue
-          $promise: deferredLinkInvitation.promise
         deferredAuth = $q.defer()
 
-        rejected = false
         EventService.getData()
           .then (_data_) ->
             data = _data_
 
-      afterEach ->
-        delete $stateParams.linkId
+      it 'should check if the user is logged in', ->
+        expect(Auth.isAuthenticated).toHaveBeenCalled()
 
-      it 'should get the link invitation', ->
-        expect(LinkInvitation.getByLinkId).toHaveBeenCalledWith {linkId: linkId}
-
-      describe 'when the link invitation returns successfully', ->
-        linkInvitation = null
+      describe 'when the user is logged in', ->
+        linkId = null
+        deferredLinkInvitation = null
 
         beforeEach ->
-          linkInvitation =
-            event: event
-            eventId: event.id
-            fromUser: fromUser
-            fromUserId: fromUser.id
-            invitation: invitation
-            invitationId: invitation.id
-          deferredLinkInvitation.resolve linkInvitation
+          linkId = '123'
+          $stateParams.linkId = linkId
+
+          deferredLinkInvitation = $q.defer()
+          spyOn(LinkInvitation, 'getByLinkId').and.returnValue \
+              deferredLinkInvitation.promise
+
+          deferredAuth.resolve true
           $rootScope.$apply()
 
-        it 'should check whether the user is logged in', ->
-          expect(Auth.isAuthenticated).toHaveBeenCalled()
+        afterEach ->
+          delete $stateParams.linkId
 
-        describe 'when the user is logged in', ->
+        it 'should get the link invitation', ->
+          expect(LinkInvitation.getByLinkId).toHaveBeenCalledWith {linkId: linkId}
+
+        describe 'getting the link invitation successfully', ->
+          linkInvitation = null
 
           beforeEach ->
-            deferredLinkInvitation = $q.defer()
-            deferredAuth = $q.defer()
+            linkInvitation =
+              event:
+                id: 1
+              fromUser:
+                id: 2
+              invitation:
+                id: 3
 
-            EventService.getData()
-              .then (_data_) ->
-                data = _data_
+          describe 'when the user accepted their invitation', ->
 
-          describe 'and the user hasn\'t responded yet', ->
+            beforeEach ->
+              linkInvitation.invitation.response = Invitation.accepted
+
+              deferredLinkInvitation.resolve linkInvitation
+              $rootScope.$apply()
+
+            it 'should resolve the promise with the linkInvitation', ->
+              expect(data).toEqual linkInvitation
+
+
+          describe 'when the user responded maybe to their invitation', ->
+
+            beforeEach ->
+              linkInvitation.invitation.response = Invitation.maybe
+
+              deferredLinkInvitation.resolve linkInvitation
+              $rootScope.$apply()
+
+            it 'should resolve the promise with the linkInvitation', ->
+              expect(data).toEqual linkInvitation
+
+
+          describe 'when the user declined their invitation', ->
+
+            beforeEach ->
+              linkInvitation.invitation.response = Invitation.declined
+
+              deferredLinkInvitation.resolve linkInvitation
+              $rootScope.$apply()
+
+            it 'should resolve the promise with a redirect view', ->
+              expectedData = angular.copy linkInvitation
+              expectedData.redirectView = 'invitation'
+              expect(data).toEqual expectedData
+
+
+          describe 'when the user hasn\'t responded to their invitation', ->
 
             beforeEach ->
               linkInvitation.invitation.response = Invitation.noResponse
 
               deferredLinkInvitation.resolve linkInvitation
-              deferredAuth.resolve true
               $rootScope.$apply()
 
-            it 'should redirect to the invitation view', ->
-              expect(data).toEqual
-                event: event
-                fromUser: fromUser
-                invitation: invitation
-                linkId: linkId
-                redirectView: 'invitation'
+            it 'should resolve the promise with a redirect view', ->
+              expectedData = angular.copy linkInvitation
+              expectedData.redirectView = 'invitation'
+              expect(data).toEqual expectedData
 
 
-          describe 'and the user declined their invitation', ->
-
-            beforeEach ->
-              invitation.response = Invitation.declined
-
-              deferredLinkInvitation.resolve linkInvitation
-              deferredAuth.resolve true
-              $rootScope.$apply()
-
-            it 'should redirect to the invitation view', ->
-              expect(data).toEqual
-                event: event
-                fromUser: fromUser
-                invitation: invitation
-                linkId: linkId
-                redirectView: 'invitation'
-
-
-        describe 'when the user isn\'t logged in', ->
+        describe 'getting the link invitation fails', ->
 
           beforeEach ->
-            deferredLinkInvitation = $q.defer()
-            deferredAuth = $q.defer()
-
-            EventService.getData()
-              .then (_data_) ->
-                data = _data_
-            deferredLinkInvitation.resolve linkInvitation
-            deferredAuth.resolve false
+            deferredLinkInvitation.reject()
             $rootScope.$apply()
 
-          it 'should redirect to the login view', ->
-            expect(data).toEqual
-              event: event
-              fromUser: fromUser
-              invitation: invitation
-              linkId: linkId
-              redirectView: 'login'
+          it 'should resolve the promise with an error', ->
+            expect(data.error).toBe true
 
 
-        describe 'when the is authenticated request fails', ->
-
-          beforeEach ->
-            deferredAuth.reject()
-            $rootScope.$apply()
-
-          it 'should return null', ->
-            expect(data).toBeNull()
-
-
-      describe 'when the link invitation request fails', ->
+      describe 'when the user isn\'t logged in', ->
 
         beforeEach ->
-          deferredLinkInvitation.reject()
+          deferredAuth.resolve false
           $rootScope.$apply()
 
-        it 'should return null', ->
-          expect(data).toBeNull()
+        it 'should resolve the promise with a redirect view', ->
+          expect(data).toEqual {redirectView: 'login'}
+
+
+      describe 'when checking whether the user is logged in fails', ->
+
+        beforeEach ->
+          deferredAuth.reject()
+          $rootScope.$apply()
+
+        it 'should resolve the promise with an error', ->
+          expect(data.error).toBe true
