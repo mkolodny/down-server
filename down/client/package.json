@@ -8,7 +8,7 @@
     "angular": "1.3.13",
     "angular-ui-router": "0.2.13",
     "bootstrap-sass": "3.3.5",
-    "down-ionic": "git@github.com:mkolodny/down-ionic.git#9a411d6351e5dca146342acf17b394f2f311f872"
+    "down-ionic": "git@github.com:mkolodny/down-ionic.git#bff24e5315213a3bfe536d0e679a879025c3964f"
   },
   "devDependencies": {
     "angular-mocks": "1.3.13",

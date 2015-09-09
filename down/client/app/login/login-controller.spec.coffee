@@ -3,7 +3,7 @@ require 'angular-mocks'
 require 'angular-ui-router'
 require 'down-ionic/app/common/auth/auth-module'
 require 'down-ionic/app/common/asteroid/asteroid-module'
-require '../event/event-module'
+require 'down-ionic/app/common/resources/resources-module'
 LoginCtrl = require './login-controller'
 
 describe 'login controller', ->
@@ -14,7 +14,8 @@ describe 'login controller', ->
   $window = null
   Auth = null
   Asteroid = null
-  EventService = null
+  Invitation = null
+  LinkInvitation = null
   ctrl = null
   event = null
   fromUser = null
@@ -23,9 +24,9 @@ describe 'login controller', ->
 
   beforeEach angular.mock.module('down.auth')
 
-  beforeEach angular.mock.module('down.event')
-
   beforeEach angular.mock.module('down.asteroid')
+
+  beforeEach angular.mock.module('down.resources')
 
   beforeEach inject(($injector) ->
     $controller = $injector.get '$controller'
@@ -36,7 +37,8 @@ describe 'login controller', ->
     $window = $injector.get '$window'
     Auth = angular.copy $injector.get('Auth')
     Asteroid = $injector.get 'Asteroid'
-    EventService = $injector.get 'EventService'
+    Invitation = $injector.get 'Invitation'
+    LinkInvitation = $injector.get 'LinkInvitation'
 
     event =
       id: 123
@@ -91,7 +93,7 @@ describe 'login controller', ->
 
     describe 'when user completes facebook oauth', ->
       accessToken = null
-      defered = null
+      deferred = null
 
       beforeEach ->
         accessToken = '1234'
@@ -99,37 +101,46 @@ describe 'login controller', ->
           authResponse:
             accessToken: accessToken
 
-        defered = $q.defer()
-        spyOn(Auth, 'authWithFacebook').and.returnValue defered.promise
+        deferred = $q.defer()
+        spyOn(Auth, 'facebookLogin').and.returnValue deferred.promise
 
         ctrl.handleFBLogin response
 
-      it 'should auth user with accessToken', ->
-        expect(Auth.authWithFacebook).toHaveBeenCalledWith accessToken
+      it 'should log the user in with accessToken', ->
+        expect(Auth.facebookLogin).toHaveBeenCalledWith accessToken
 
       describe 'when authentication is successful', ->
         user = null
 
         beforeEach ->
           spyOn ctrl, 'meteorLogin'
-        
+
           user =
             id: 1
-          defered.resolve user
+          deferred.resolve user
           $rootScope.$apply()
 
         it 'should call meteorLogin', ->
           expect(ctrl.meteorLogin).toHaveBeenCalledWith user
 
 
-      describe 'on authentication fails', ->
+      describe 'when authentication fails', ->
 
-        xit 'should show an error', ->
+        beforeEach ->
+          deferred.reject()
+          $rootScope.$apply()
+
+        it 'should show an error', ->
+          expect(ctrl.loginFailed).toBe true
 
 
     describe 'when user cancels facebook login process', ->
 
-      xit 'should show an error', ->
+      beforeEach ->
+        ctrl.handleFBLogin {}
+
+      it 'should show an error', ->
+        expect(ctrl.fbLoginCanceled).toBe true
 
 
   describe 'logging into the meteor server', ->
@@ -173,63 +184,89 @@ describe 'login controller', ->
 
 
   describe 'getting the link data', ->
+    linkId = null
     deferred = null
 
     beforeEach ->
-      deferred= $q.defer()
-      spyOn(EventService, 'getData').and.returnValue deferred.promise
+      linkId = '123'
+      $stateParams.linkId = linkId
+      deferred = $q.defer()
+      spyOn(LinkInvitation, 'getByLinkId').and.returnValue deferred.promise
 
       ctrl.getLinkData()
 
     it 'should get the link invitation', ->
-      expect(EventService.getData).toHaveBeenCalled()
+      expect(LinkInvitation.getByLinkId).toHaveBeenCalledWith {linkId: linkId}
 
     describe 'when event data is returned successfully', ->
-      
-      describe 'when the user is a member of the event', ->
-        eventData = null
+      linkInvitation = null
+
+      beforeEach ->
+        linkInvitation =
+          event:
+            id: 1
+          fromUser:
+            id: 2
+          invitation:
+            id: 3
+
+      describe 'when the user accepted their invitation', ->
 
         beforeEach ->
-          eventData = 
-            event:
-              id: 1
-            fromUser:
-              id: 2
-            invitation:
-              id: 3
-
+          linkInvitation.invitation.response = Invitation.accepted
           spyOn $state, 'go'
 
-          deferred.resolve eventData
+          deferred.resolve linkInvitation
           $rootScope.$apply()
 
-        it 'should go to the event link view', ->
-          expect($state.go).toHaveBeenCalledWith 'event', eventData
+        it 'should go to the event view', ->
+          expect($state.go).toHaveBeenCalledWith 'event', linkInvitation
 
 
-      describe 'when the user is a member of the event', ->
-        eventData = null
+      describe 'when the user responded maybe to their invitation', ->
 
         beforeEach ->
-          eventData = 
-            event:
-              id: 1
-            fromUser:
-              id: 2
-            invitation:
-              id: 3
-            redirect:
-              'invitation'
-
+          linkInvitation.invitation.response = Invitation.maybe
           spyOn $state, 'go'
 
-          deferred.resolve eventData
+          deferred.resolve linkInvitation
+          $rootScope.$apply()
+
+        it 'should go to the event view', ->
+          expect($state.go).toHaveBeenCalledWith 'event', linkInvitation
+
+
+      describe 'when the user declined their invitation', ->
+
+        beforeEach ->
+          linkInvitation.invitation.response = Invitation.declined
+          spyOn $state, 'go'
+
+          deferred.resolve linkInvitation
           $rootScope.$apply()
 
         it 'should go to the invitation view', ->
-          expect($state.go).toHaveBeenCalledWith 'invitation', eventData
+          expect($state.go).toHaveBeenCalledWith 'invitation', linkInvitation
+
+
+      describe 'when the user hasn\'t responded to their invitation', ->
+
+        beforeEach ->
+          linkInvitation.invitation.response = Invitation.noResponse
+          spyOn $state, 'go'
+
+          deferred.resolve linkInvitation
+          $rootScope.$apply()
+
+        it 'should go to the invitation view', ->
+          expect($state.go).toHaveBeenCalledWith 'invitation', linkInvitation
 
 
     describe 'when there is an error getting event data', ->
 
-      xit 'should show an error', ->
+      beforeEach ->
+        deferred.reject()
+        $rootScope.$apply()
+
+      it 'should show an error', ->
+        expect(ctrl.fetchInvitationError).toBe true
