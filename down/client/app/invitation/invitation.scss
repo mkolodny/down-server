@@ -7,8 +7,7 @@
     margin-right: 2px;
     width: 76px;
 
-    &:active,
-    &.active {
+    &:disabled {
       color: $btn-primary-color;
       background-color: $btn-primary-bg;
       border-color: $btn-primary-border;

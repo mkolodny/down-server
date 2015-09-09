@@ -7,10 +7,10 @@ require 'down-ionic/app/common/resources/resources-module'
 LoginCtrl = require './login-controller'
 
 describe 'login controller', ->
-  $state = null
-  $stateParams = null
   $q = null
   $rootScope = null
+  $state = null
+  $stateParams = null
   $window = null
   Auth = null
   Asteroid = null
@@ -30,10 +30,10 @@ describe 'login controller', ->
 
   beforeEach inject(($injector) ->
     $controller = $injector.get '$controller'
-    $state = $injector.get '$state'
-    $stateParams = $injector.get '$stateParams'
     $q = $injector.get '$q'
     $rootScope = $injector.get '$rootScope'
+    $state = $injector.get '$state'
+    $stateParams = $injector.get '$stateParams'
     $window = $injector.get '$window'
     Auth = angular.copy $injector.get('Auth')
     Asteroid = $injector.get 'Asteroid'
@@ -53,10 +53,10 @@ describe 'login controller', ->
       $stateParams: $stateParams
   )
 
-  it 'should set the linkId on the controller', ->
+  it 'should set the event on the controller', ->
     expect(ctrl.event).toEqual event
 
-  it 'should set the event on the controller', ->
+  it 'should set the from user on the controller', ->
     expect(ctrl.fromUser).toEqual fromUser
 
   describe 'initializing the facebook sdk', ->

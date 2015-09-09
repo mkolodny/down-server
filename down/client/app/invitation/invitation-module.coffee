@@ -1,9 +1,13 @@
 require 'angular'
 require 'angular-ui-router'
+require 'down-ionic/app/common/auth/auth-module'
+require 'down-ionic/app/common/resources/resources-module'
 InvitationCtrl = require './invitation-controller'
 
 angular.module 'down.invitation', [
     'ui.router'
+    'down.auth'
+    'down.resources'
   ]
   .config ($stateProvider) ->
     $stateProvider
