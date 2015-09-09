@@ -28,13 +28,14 @@
     font-weight: 400;
   }
   #event-title,
-  #suggested-by,
-  .event-detail {
+  #suggested-by {
     padding-left: 60px;
   }
   .event-detail {
     font-size: 14px;
     font-weight: 500;
+    margin-bottom: 5px;
+    padding-left: 35px;
   }
   #event-comment {
     max-height: 50px;
