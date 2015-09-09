@@ -9,7 +9,7 @@
           </div>
           <ul class="nav navbar-nav navbar-right">
             <li>
-              <a class="current-user" href="#">Chris MacPherson</a>
+              <a class="current-user" href="#">{{invitation.currentUser.name}}</a>
             </li>
           </ul>
         </div>
@@ -23,25 +23,24 @@
           <img id="from-image"
                src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=150&height=150">
           <h1 id="event-title">
-            bars?!?!?
+            {{invitation.event.title}}
           </h1>
           <h2 id="suggested-by">
-            Suggested by Andrew Linfoot
+            Suggested by {{invitation.fromUser.name}}
           </h2>
           <div id="event-details">
             <div class="event-detail">
               <i class="fa fa-calendar-o"></i>
               <div>
-                <div>Tuesday, Feb 16</div>
-                <div>3:31 pm</div>
+                <div>{{invitation.event.datetime | date:'EEEE, MMM d'}}</div>
+                <div>{{invitation.event.datetime | date:'shortTime' | lowercase}}</div>
               </div>
             </div>
             <div class="event-detail">
-              <a href
-                ><i class="fa fa-map-marker"></i>169 Bar</a>
+              <a href><i class="fa fa-map-marker"></i>{{invitation.event.place.name}}</a>
             </div>
             <div id="event-comment" class="event-detail">
-              <i class="fa fa-comment-o"></i>40's anyone?
+              <i class="fa fa-comment-o"></i>{{invitation.event.comment}}
             </div>
           </div>
           <div id="respond-buttons">
