@@ -17,6 +17,7 @@ from .filters import EventFilter
 from .models import Event, Invitation, LinkInvitation
 from .permissions import (
     InviterWasInvited,
+    IsAuthenticatedOrReadOnly,
     IsCreator,
     LinkInviterWasInvited,
     WasInvited,
@@ -188,7 +189,7 @@ class LinkInvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
     authentication_classes = (authentication.TokenAuthentication,)
     lookup_field = 'link_id'
     lookup_value_regex = '[a-zA-Z0-9]{6,}'
-    permission_classes = (IsAuthenticated, LinkInviterWasInvited,)
+    permission_classes = (IsAuthenticatedOrReadOnly, LinkInviterWasInvited)
     queryset = LinkInvitation.objects.all()
     serializer_class = LinkInvitationSerializer
 
@@ -211,7 +212,10 @@ class LinkInvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        context = {'to_user': request.user}
+        if request.user.is_authenticated():
+            context = {'to_user': request.user}
+        else:
+            context = {}
         serializer = LinkInvitationFkObjectsSerializer(instance, context=context)
         return Response(serializer.data)
 

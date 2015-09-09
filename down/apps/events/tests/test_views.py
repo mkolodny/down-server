@@ -1385,3 +1385,26 @@ class LinkInvitationTests(APITestCase):
                                                        context=context)
         json_link_invitation = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_link_invitation)
+
+    def test_get_by_link_id_anon(self):
+        # Log the user out.
+        self.client.credentials()
+
+        # Delete the user's invitation to make sure that we don't create it.
+        Invitation.objects.filter(event=self.event, to_user=self.user1).delete()
+
+        # Mock a link invitation.
+        link_invitation = LinkInvitation(event=self.event, from_user=self.user1)
+        link_invitation.save()
+
+        url = reverse('link-invitation-detail', kwargs={
+            'link_id': link_invitation.link_id,
+        })
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the link invitation.
+        link_invitation = LinkInvitation.objects.get(id=link_invitation.id)
+        serializer = LinkInvitationFkObjectsSerializer(link_invitation)
+        json_link_invitation = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_link_invitation)

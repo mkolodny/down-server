@@ -118,3 +118,13 @@ class LinkInviterIsFromUser(permissions.BasePermission):
 
         from_user_id = request.data['from_user']
         return from_user_id == request.user.id
+
+
+class IsAuthenticatedOrReadOnly(permissions.BasePermission):
+    """
+    The request is authenticated as a user, or is a read-only request.
+    """
+
+    def has_permission(self, request, view):
+        safe_methods =  ['GET', 'HEAD', 'OPTIONS']
+        return request.method in safe_methods or request.user.is_authenticated()

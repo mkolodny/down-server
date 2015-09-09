@@ -326,7 +326,10 @@ class LinkInvitationFkObjectsSerializer(GeoModelSerializer):
         read_only_fields = ('link_id', 'created_at')
 
     def get_invitation(self, obj):
-        to_user = self.context['to_user']
+        to_user = self.context.get('to_user')
+        if to_user is None:
+            return None
+
         try:
             invitation = Invitation.objects.get(from_user=obj.from_user,
                                                 to_user=to_user,
