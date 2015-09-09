@@ -1,4 +1,5 @@
 require 'angular'
+require 'angularjs-scroll-glue'
 require 'angular-ui-router'
 require 'down-ionic/app/common/auth/auth-module'
 require 'down-ionic/app/common/resources/resources-module'
@@ -9,6 +10,7 @@ angular.module 'down.event', [
     'ui.router'
     'down.auth'
     'down.resources'
+    'luegg.directives'
   ]
   .config ($stateProvider) ->
     $stateProvider
@@ -23,8 +25,8 @@ angular.module 'down.event', [
           invitation: null
           redirectView: null
         resolve:
-          data: ['EventService', (EventService) ->
-            EventService.getData()
+          data: ['$stateParams', 'EventService', ($stateParams, EventService) ->
+            EventService.getData $stateParams
           ]
   .controller 'EventCtrl', EventCtrl
   .service 'EventService', EventService

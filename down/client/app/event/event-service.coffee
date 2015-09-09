@@ -1,26 +1,28 @@
 class EventService
-  constructor: (@$q, @$state, @$stateParams, @Auth, @Invitation, @LinkInvitation) ->
+  constructor: (@$q, @$state, @Auth, @Invitation, @LinkInvitation) ->
 
-  getData: ->
+  getData: (params) ->
     deferred = @$q.defer()
 
-    if (['event', 'fromUser', 'invitation'].every (key) => key of @$stateParams)
+    if (['event', 'fromUser', 'invitation'].every (key) => params[key] isnt null)
       return {
-        event: @$stateParams.event
-        fromUser: @$stateParams.fromUser
-        invitation: @$stateParams.invitation
+        event: params.event
+        fromUser: params.fromUser
+        invitation: params.invitation
+        linkId: params.linkId
       }
 
     @Auth.isAuthenticated()
       .then (isAuthenticated) =>
         if isAuthenticated
-          @LinkInvitation.getByLinkId {linkId: @$stateParams.linkId}
+          @LinkInvitation.getByLinkId {linkId: params.linkId}
         else
-          {redirectView: 'login'}
+          {redirectView: 'login', linkId: params.linkId}
       .then (data) =>
         nonMemberResponses = [@Invitation.noResponse, @Invitation.declined]
         if data.invitation?.response in nonMemberResponses
           data.redirectView = 'invitation'
+          data.linkId = params.linkId
         deferred.resolve data
       , ->
         deferred.resolve {error: true}

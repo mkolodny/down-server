@@ -98,17 +98,15 @@
       </div>
       <div class="col-md-5 hidden-xs hidden-sm" id="group-chat-col">
         <div id="group-chat">
-          <div id="messages-container">
-            <div id="messages">
-              <div ng-repeat="message in event.messages">
-                <div class="action-message" ng-if="event.isActionMessage(message)">
-                  {{message.text}}
-                </div>
-                <div class="text-message" ng-if="!event.isActionMessage(message)"
-                     ng-class="{'mine': event.isMyMessage(message)}">
-                  <img class="avatar" ng-src="{{message.creator.getImageUrl(72)}}">
-                  <div class="text">{{message.text}}</div>
-                </div>
+          <div id="messages" scroll-glue>
+            <div ng-repeat="message in event.messages">
+              <div class="action-message" ng-if="event.isActionMessage(message)">
+                {{message.text}}
+              </div>
+              <div class="text-message" ng-if="!event.isActionMessage(message)"
+                   ng-class="{'mine': event.isMyMessage(message)}">
+                <img class="avatar" ng-src="{{message.creator.getImageUrl(72)}}">
+                <div class="text">{{message.text}}</div>
               </div>
             </div>
           </div>

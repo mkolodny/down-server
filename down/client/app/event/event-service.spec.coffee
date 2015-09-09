@@ -7,7 +7,6 @@ require './event-module'
 describe 'event service', ->
   $q = null
   $rootScope = null
-  $stateParams = null
   Auth = null
   EventService = null
   Invitation = null
@@ -17,6 +16,7 @@ describe 'event service', ->
   event = null
   fromUser = null
   invitation = null
+  linkId = null
 
   beforeEach angular.mock.module('down.auth')
 
@@ -39,7 +39,6 @@ describe 'event service', ->
   beforeEach inject(($injector) ->
     $q = $injector.get '$q'
     $rootScope = $injector.get '$rootScope'
-    $stateParams = $injector.get '$stateParams'
     Auth = angular.copy $injector.get('Auth')
     EventService = $injector.get 'EventService'
     Invitation = $injector.get 'Invitation'
@@ -50,30 +49,29 @@ describe 'event service', ->
       id: 2
     invitation =
       id: 3
+    linkId = '123'
   )
 
   describe 'getting initial data', ->
+    params = null
 
     describe 'when we already have data', ->
       data = null
 
       beforeEach ->
-        angular.extend $stateParams,
+        params =
           event: event
           fromUser: fromUser
           invitation: invitation
+          linkId: linkId
+        data = EventService.getData params
 
-        data = EventService.getData()
-
-      afterEach ->
-        for key in ['event', 'fromUser', 'invitation']
-          delete $stateParams[key]
-
-      it 'should return the data from $stateParams', ->
+      it 'should return the data from params', ->
         expect(data).toEqual
           event: event
           fromUser: fromUser
           invitation: invitation
+          linkId: linkId
 
 
     describe 'when we don\'t have data yet', ->
@@ -82,7 +80,12 @@ describe 'event service', ->
       beforeEach ->
         deferredAuth = $q.defer()
 
-        EventService.getData()
+        params =
+          event: null
+          fromUser: null
+          invitation: null
+          linkId: linkId
+        EventService.getData params
           .then (_data_) ->
             data = _data_
 
@@ -90,22 +93,15 @@ describe 'event service', ->
         expect(Auth.isAuthenticated).toHaveBeenCalled()
 
       describe 'when the user is logged in', ->
-        linkId = null
         deferredLinkInvitation = null
 
         beforeEach ->
-          linkId = '123'
-          $stateParams.linkId = linkId
-
           deferredLinkInvitation = $q.defer()
           spyOn(LinkInvitation, 'getByLinkId').and.returnValue \
               deferredLinkInvitation.promise
 
           deferredAuth.resolve true
           $rootScope.$apply()
-
-        afterEach ->
-          delete $stateParams.linkId
 
         it 'should get the link invitation', ->
           expect(LinkInvitation.getByLinkId).toHaveBeenCalledWith {linkId: linkId}
@@ -155,9 +151,10 @@ describe 'event service', ->
               $rootScope.$apply()
 
             it 'should resolve the promise with a redirect view', ->
-              expectedData = angular.copy linkInvitation
-              expectedData.redirectView = 'invitation'
-              expect(data).toEqual expectedData
+              expect(data).toEqual angular.extend({}, linkInvitation,
+                redirectView: 'invitation'
+                linkId: linkId
+              )
 
 
           describe 'when the user hasn\'t responded to their invitation', ->
@@ -169,9 +166,10 @@ describe 'event service', ->
               $rootScope.$apply()
 
             it 'should resolve the promise with a redirect view', ->
-              expectedData = angular.copy linkInvitation
-              expectedData.redirectView = 'invitation'
-              expect(data).toEqual expectedData
+              expect(data).toEqual angular.extend({}, linkInvitation,
+                redirectView: 'invitation'
+                linkId: linkId
+              )
 
 
         describe 'getting the link invitation fails', ->
@@ -191,7 +189,9 @@ describe 'event service', ->
           $rootScope.$apply()
 
         it 'should resolve the promise with a redirect view', ->
-          expect(data).toEqual {redirectView: 'login'}
+          expect(data).toEqual
+            redirectView: 'login'
+            linkId: linkId
 
 
       describe 'when checking whether the user is logged in fails', ->

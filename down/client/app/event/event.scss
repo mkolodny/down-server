@@ -97,17 +97,11 @@
     border-radius: $border-radius-large;
     height: 100%;
   }
-  #messages-container {
-    height: calc(100% - 51px); // The chat input is 51px
-    overflow: hidden;
-    width: 100%;
-  }
   #messages {
     padding: 15px;
-    padding-right: 30px;
-    height: 100%;
     overflow: auto;
-    width: calc(100% + 15px);
+    width: 100%;
+    height: calc(100% - 51px); // The chat input is 51px
   }
   #enter-message-container {
     width: 100%;

@@ -1,12 +1,63 @@
 class EventCtrl
-  constructor: (@$state, @$stateParams) ->
-    redirectView = @$stateParams.redirectView
-    if redirectView
-      @$state.go redirectView, @$stateParams
+  constructor: (@$state, @$stateParams, @Asteroid, @Auth, @Event,
+                @Invitation, @User, @data) ->
+    if @data.redirectView
+      @$state.go @data.redirectView,
+        event: @data.event
+        fromUser: @data.fromUser
+        invitation: @data.invitation
+        linkId: @data.linkId
       return
 
-    @event = @$stateParams.event
-    @invitation = @$stateParams.invitation
+    @event = @data.event
+    @fromUser = @data.fromUser
+    @invitation = @data.invitation
 
+    # Get/subscribe to the messages posted in this event.
+    @Asteroid.subscribe 'messages', @event.id
+    @Messages = @Asteroid.getCollection 'messages'
+    @messagesRQ = @Messages.reactiveQuery {eventId: "#{@event.id}"}
+    @showMessages()
+
+    # Watch for new messages.
+    @messagesRQ.on 'change', @showMessages
+
+    @Invitation.getMemberInvitations {id: @event.id}
+      .$promise.then (invitations) =>
+        @members = (invitation.toUser for invitation in invitations)
+      , =>
+        @membersError = true
+
+  showMessages: =>
+    @messages = angular.copy @messagesRQ.result
+    for message in @messages
+      message.creator = new @User message.creator
+
+    # Sort the messages from oldest to newest.
+    @messages.sort (a, b) ->
+      if a.createdAt.$date < b.createdAt.$date
+        return -1
+      else
+        return 1
+
+    # Mark newest message as read
+    if @messages.length > 0
+      newestMessage = @messages[@messages.length - 1]
+      @Asteroid.call 'readMessage', newestMessage._id
+
+  isActionMessage: (message) ->
+    actions = [
+      @Invitation.acceptAction
+      @Invitation.maybeAction
+      @Invitation.declineAction
+    ]
+    message.type in actions
+
+  isMyMessage: (message) ->
+    message.creator.id is "#{@Auth.user.id}" # Meteor likes strings
+
+  sendMessage: ->
+    @Event.sendMessage @event, @message
+    @message = null
 
 module.exports = EventCtrl
