@@ -8,7 +8,6 @@ EventCtrl = require './event-controller'
 describe 'event controller', ->
   $controller = null
   $state = null
-  $stateParams = null
   $q = null
   $rootScope = null
   Auth = null
@@ -16,6 +15,7 @@ describe 'event controller', ->
   Event = null
   Invitation = null
   ctrl = null
+  data = null
   deferredGetMemberInvitations = null
   event = null
   fromUser = null
@@ -38,7 +38,6 @@ describe 'event controller', ->
   beforeEach inject(($injector) ->
     $controller = $injector.get '$controller'
     $state = $injector.get '$state'
-    $stateParams = $injector.get '$stateParams'
     $q = $injector.get '$q'
     Auth = angular.copy $injector.get('Auth')
     Asteroid = $injector.get 'Asteroid'
@@ -54,12 +53,11 @@ describe 'event controller', ->
     invitation =
       id: 789
     linkId = '123'
-    $stateParams =
-      data:
-        event: event
-        fromUser: fromUser
-        invitation: invitation
-        linkId: linkId
+    data =
+      event: event
+      fromUser: fromUser
+      invitation: invitation
+      linkId: linkId
 
     # Create mocks/spies for getting the messages for this event.
     spyOn Asteroid, 'subscribe'
@@ -77,11 +75,8 @@ describe 'event controller', ->
 
     ctrl = $controller EventCtrl,
       Auth: Auth
-      $stateParams: $stateParams
+      data: data
   )
-
-  afterEach ->
-    delete $stateParams.data
 
   it 'should set the event on the controller', ->
     expect(ctrl.event).toBe event
@@ -118,13 +113,13 @@ describe 'event controller', ->
 
     beforeEach ->
       redirectView = 'login'
-      $stateParams.data.redirectView = redirectView
+      data.redirectView = redirectView
 
       spyOn $state, 'go'
 
       ctrl = $controller EventCtrl,
         Auth: Auth
-        $stateParams: $stateParams
+        data: data
 
     it 'should go to the redirect state', ->
       expect($state.go).toHaveBeenCalledWith redirectView,
@@ -137,7 +132,7 @@ describe 'event controller', ->
   xdescribe 'when there is an error', ->
 
     beforeEach ->
-      $stateParams.data.error = true
+      data.error = true
 
 
   describe 'when the invitations return successfully', ->

@@ -191,7 +191,8 @@ describe 'login controller', ->
       linkId = '123'
       $stateParams.linkId = linkId
       deferred = $q.defer()
-      spyOn(LinkInvitation, 'getByLinkId').and.returnValue deferred.promise
+      spyOn(LinkInvitation, 'getByLinkId').and.returnValue
+        $promise: deferred.promise
 
       ctrl.getLinkData()
 

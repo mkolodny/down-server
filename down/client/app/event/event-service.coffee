@@ -14,14 +14,15 @@ class EventService
 
     @Auth.isAuthenticated()
       .then (isAuthenticated) =>
-        if isAuthenticated
-          @LinkInvitation.getByLinkId {linkId: params.linkId}
-        else
-          {redirectView: 'login', linkId: params.linkId}
+        @isAuthenticated = isAuthenticated
+        @LinkInvitation.getByLinkId({linkId: params.linkId}).$promise
       .then (data) =>
         nonMemberResponses = [@Invitation.noResponse, @Invitation.declined]
         if data.invitation?.response in nonMemberResponses
           data.redirectView = 'invitation'
+          data.linkId = params.linkId
+        else if not @isAuthenticated
+          data.redirectView = 'login'
           data.linkId = params.linkId
         deferred.resolve data
       , ->

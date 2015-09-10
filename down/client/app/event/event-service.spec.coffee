@@ -97,8 +97,8 @@ describe 'event service', ->
 
         beforeEach ->
           deferredLinkInvitation = $q.defer()
-          spyOn(LinkInvitation, 'getByLinkId').and.returnValue \
-              deferredLinkInvitation.promise
+          spyOn(LinkInvitation, 'getByLinkId').and.returnValue
+            $promise: deferredLinkInvitation.promise
 
           deferredAuth.resolve true
           $rootScope.$apply()
@@ -179,19 +179,39 @@ describe 'event service', ->
             $rootScope.$apply()
 
           it 'should resolve the promise with an error', ->
-            expect(data.error).toBe true
+            expect(data).toEqual {error: true}
 
 
       describe 'when the user isn\'t logged in', ->
+        deferredLinkInvitation = null
 
         beforeEach ->
+          deferredLinkInvitation = $q.defer()
+          spyOn(LinkInvitation, 'getByLinkId').and.returnValue
+            $promise: deferredLinkInvitation.promise
+
           deferredAuth.resolve false
           $rootScope.$apply()
 
-        it 'should resolve the promise with a redirect view', ->
-          expect(data).toEqual
-            redirectView: 'login'
-            linkId: linkId
+        describe 'getting the link invitation', ->
+          linkInvitation = null
+
+          beforeEach ->
+            linkInvitation =
+              event:
+                id: 1
+              fromUser:
+                id: 2
+              invitation:
+                id: 3
+            deferredLinkInvitation.resolve linkInvitation
+            $rootScope.$apply()
+
+          it 'should resolve the promise with a redirect view', ->
+            expect(data).toEqual angular.extend({}, linkInvitation,
+              redirectView: 'login'
+              linkId: linkId
+            )
 
 
       describe 'when checking whether the user is logged in fails', ->

@@ -45,7 +45,7 @@ class LoginCtrl
 
   getLinkData: ->
     @LinkInvitation.getByLinkId {linkId: @$stateParams.linkId}
-      .then (linkInvitation) =>
+      .$promise.then (linkInvitation) =>
         memberResponses = [@Invitation.accepted, @Invitation.maybe]
         if linkInvitation.invitation.response in memberResponses
           @$state.go 'event', linkInvitation
