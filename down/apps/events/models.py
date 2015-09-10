@@ -7,7 +7,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from hashids import Hashids
-from push_notifications.models import APNSDevice
 import pytz
 import requests
 from twilio.rest import TwilioRestClient
@@ -92,104 +91,6 @@ def get_local_dt(dt, point):
     local_dt = dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
     return local_dt
 
-class InvitationManager(models.Manager):
-
-    def get_queryset(self):
-        return InvitationQuerySet(self.model)
-
-    def bulk_create(self, invitations):
-        # TODO: Test this.
-        if len(invitations) == 0:
-            return
-
-        super(InvitationManager, self).bulk_create(invitations)
-
-        # Get the first invitation to use to grab the user sending the invitations,
-        # and the event.
-        first_invitation = invitations[0]
-        from_user = first_invitation.from_user
-        event = first_invitation.event
-
-        # Don't notify the user who is sending the invitations.
-        invitations = [invitation for invitation in invitations
-                       if invitation.to_user_id != from_user.id]
-
-        # Send users with devices push notifications.
-        message = 'from {name}'.format(name=from_user.name)
-        user_ids = [invitation.to_user_id for invitation in invitations]
-        devices = APNSDevice.objects.filter(user_id__in=user_ids)
-        devices.send_message(message, badge=1)
-
-        # Text message everyone else their invitation.
-        message = get_invite_sms(from_user, event)
-        device_user_ids = [device.user_id for device in devices]
-        sms_user_ids = [invitation.to_user_id for invitation in invitations
-                        if invitation.to_user_id not in device_user_ids]
-        userphones = UserPhone.objects.filter(user_id__in=sms_user_ids)
-        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        for userphone in userphones:
-            phone = unicode(userphone.phone)
-            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
-                                   body=message)
-
-
-class InvitationQuerySet(models.query.QuerySet):
-
-    def send(self):
-        """
-        Send push notifications / SMS notifying people that they were invited to
-        an event. All of the invitations must be from the same user, for the same
-        event.
-        """
-        if self.count() == 0:
-            return
-
-        # Get the first invitation to use to grab the user sending the invitations,
-        # and the event.
-        first_invitation = self.first()
-        from_user = first_invitation.from_user
-        event = first_invitation.event
-
-        # Make sure that all of the invitations are from the same user, for the
-        # same event.
-        assert all((invitation.from_user_id == from_user.id) for invitation in self)
-        assert all((invitation.event_id == event.id) for invitation in self)
-
-        # Add the users to the Firebase members list.
-        url = ('{firebase_url}/events/members/{event_id}/.json?auth='
-               '{firebase_secret}').format(
-                firebase_url=settings.FIREBASE_URL, event_id=event.id,
-                firebase_secret=settings.FIREBASE_SECRET)
-        json_invitations = json.dumps({
-            invitation.to_user_id: True
-            for invitation in self
-        })
-        requests.patch(url, json_invitations)
-
-        # Don't notify the user who is sending the invitations.
-        invitations = [invitation for invitation in self
-                       if invitation.to_user_id != from_user.id]
-
-        # Send users with devices push notifications.
-        message = '{name} suggested: {activity}'.format(name=from_user.name,
-                                                            activity=event.title)
-        user_ids = [invitation.to_user_id for invitation in invitations]
-        devices = APNSDevice.objects.filter(user_id__in=user_ids)
-        devices.send_message(message, badge=1)
-
-        # Text message everyone else their invitation.
-        message = get_invite_sms(from_user, event)
-        device_user_ids = [device.user_id for device in devices]
-        sms_user_ids = [invitation.to_user_id for invitation in invitations
-                        if invitation.to_user_id not in device_user_ids]
-        userphones = UserPhone.objects.filter(user_id__in=sms_user_ids)
-        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        for userphone in userphones:
-            phone = unicode(userphone.phone)
-            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
-                                   body=message)
-
-
 class Invitation(models.Model):
     from_user = models.ForeignKey(User, related_name='related_from_user+')
     to_user = models.ForeignKey(User, related_name='related_to_user+')
@@ -210,8 +111,6 @@ class Invitation(models.Model):
     muted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    objects = InvitationManager()
 
     class Meta:
         unique_together = ('to_user', 'event')

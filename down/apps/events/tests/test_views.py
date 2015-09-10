@@ -8,7 +8,6 @@ from django.core.urlresolvers import reverse
 from hashids import Hashids
 import httpretty
 import mock
-from push_notifications.models import APNSDevice
 import pytz
 import requests
 from rest_framework import status
@@ -36,10 +35,7 @@ from down.apps.friends.models import Friendship
 
 class EventTests(APITestCase):
 
-    # We have to mock the function that sends push notifications, since 
-    # inviting people to events will send push notifications.
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def setUp(self, mock_send):
+    def setUp(self):
         self.patcher = mock.patch('requests.patch')
         self.mock_patch = self.patcher.start()
 
@@ -47,31 +43,15 @@ class EventTests(APITestCase):
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                          username='tdog')
         self.user.save()
-        registration_id = ('1ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.apns_device = APNSDevice(registration_id=registration_id,
-                                      device_id=device_id, name='iPhone, 8.2',
-                                      user=self.user)
-        self.apns_device.save()
 
         # Mock two of the user's friend1s
         self.friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
                            username='jcke')
         self.friend1.save()
-        registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.friend1_device = APNSDevice(registration_id=registration_id,
-                                         device_id=device_id, name='iPhone, 8.2',
-                                         user=self.friend1)
-        self.friend1_device.save()
 
         # This user doesn't have the app yet, so they only have a name.
         self.friend2 = User(name='Richard Feynman')
         self.friend2.save()
-        self.friend2_phone = UserPhone(phone='+19178699626', user=self.friend2)
-        self.friend2_phone.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user)
@@ -212,17 +192,8 @@ class EventTests(APITestCase):
         response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_create_message(self, mock_send):
-        # Give friend2 a device so that we can send them a push notification.
-        registration_id = ('3ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        friend2_device = APNSDevice(registration_id=registration_id,
-                                    device_id=device_id, name='iPhone, 8.2',
-                                    user=self.friend2)
-        friend2_device.save()
-
+    @mock.patch('down.apps.events.views.send_message')
+    def test_create_message(self, mock_send_message):
         # Accept the invitation.
         self.friend2_invitation.response = Invitation.ACCEPTED
         self.friend2_invitation.save()
@@ -234,17 +205,14 @@ class EventTests(APITestCase):
         # It should notify users with devices who have accepted the invitation,
         # or who have posted a message in the group chat about the user's
         # message.
-        tokens = [
-            self.friend1_device.registration_id,
-            friend2_device.registration_id,
-        ]
+        user_ids = [self.friend1.id, self.friend2.id]
         if len(self.event.title) > 25:
             activity = self.event.title[:25] + '...'
         else:
             activity = self.event.title
         message = '{name} to {activity}: {text}'.format(
                 name=self.user.name, activity=activity, text=data['text'])
-        mock_send.assert_any_call(registration_ids=tokens, alert=message)
+        mock_send_message.assert_any_call(user_ids, message, sms=False)
 
     def test_create_message_not_invited(self):
         # Uninvite the logged in user. (You can't actually do that)
@@ -253,46 +221,6 @@ class EventTests(APITestCase):
         data = {'text': 'So down!'}
         response = self.client.post(self.create_message_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('down.apps.events.views.TwilioRestClient')
-    def test_cancel(self, mock_twilio, mock_apns):
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
-        # Have the SMS user accept their invitation.
-        self.friend2_invitation.response = Invitation.ACCEPTED
-        self.friend2_invitation.save()
-
-        response = self.client.delete(self.detail_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should set the event to canceled.
-        event = Event.objects.get(id=self.event.id)
-        self.assertTrue(event.canceled)
-
-        # It should send push notifications to users with devices.
-        registration_ids = [self.friend1_device.registration_id]
-        notif = '{name} canceled {activity}'.format(name=event.creator.name,
-                                                    activity=event.title)
-        mock_apns.assert_any_call(registration_ids=registration_ids, alert=notif,
-                                  badge=1)
-
-        # It should init the Twilio client with the proper params.
-        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
-                                       settings.TWILIO_TOKEN)
-
-        # It should send SMS to users without devices.
-        phone = unicode(self.friend2_phone.phone)
-        mock_client.messages.create.assert_called_with(to=phone, 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=notif)
-
-        # It should return the event.
-        serializer = EventSerializer(event)
-        json_event = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_event)
 
     def test_get_member_invitations(self):
         response = self.client.get(self.member_invitations_url)
@@ -321,10 +249,7 @@ class EventTests(APITestCase):
 
 class InvitationTests(APITestCase):
 
-    # We have to mock the function that sends push notifications, since 
-    # inviting people to events will send push notifications.
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def setUp(self, mock_send):
+    def setUp(self):
         self.patcher = mock.patch('requests.patch')
         self.mock_patch = self.patcher.start()
 
@@ -345,35 +270,6 @@ class InvitationTests(APITestCase):
         self.token = Token(user=self.user1)
         self.token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
-
-        # Mock the users with usernames' devices.
-        registration_id = ('1ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.user1_device = APNSDevice(registration_id=registration_id,
-                                       device_id=device_id, name='iPhone, 8.2',
-                                       user=self.user1)
-        self.user1_device.save()
-
-        registration_id = ('2ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.user2_device = APNSDevice(registration_id=registration_id,
-                                       device_id=device_id, name='iPhone, 8.2',
-                                       user=self.user2)
-        self.user2_device.save()
-
-        registration_id = ('4ed202ac08ea9033665e853a3dc8bc4c5e78f7a6cf8d559'
-                           '10df230567037dcc4')
-        device_id = 'E621E1F8-C36C-495A-93FC-0C247A3E6E5F'
-        self.user4_device = APNSDevice(registration_id=registration_id,
-                                       device_id=device_id, name='iPhone, 8.2',
-                                       user=self.user4)
-        self.user4_device.save()
-
-        # Mock the user without a username's user phone.
-        self.user3_phone = UserPhone(user=self.user3, phone='+12036227310')
-        self.user3_phone.save()
 
         # Mock a place.
         self.place = Place(name='Founder House',
@@ -469,19 +365,14 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('down.apps.events.models.TwilioRestClient')
+    @mock.patch('down.apps.events.views.send_message')
     @mock.patch('down.apps.events.models.get_invite_sms')
-    def test_bulk_create_as_creator_not_invited(self, mock_sms, mock_twilio,
-                                                mock_send):
+    def test_bulk_create_as_creator_not_invited(self, mock_get_invite_sms,
+                                                mock_send_message):
         data = self.bulk_create_data
 
         # Mock the sms message.
-        mock_sms.return_value = '<user> invited you to <event>'
-
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
+        mock_get_invite_sms.return_value = '<user> invited you to <event>'
 
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -526,8 +417,8 @@ class InvitationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @mock.patch('down.apps.events.serializers.add_member')
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_accept(self, mock_send, mock_add_member):
+    @mock.patch('down.apps.events.serializers.send_message')
+    def test_accept(self, mock_send_message, mock_add_member):
         # Log in as user2.
         token = Token(user=self.user2)
         token.save()
@@ -553,9 +444,6 @@ class InvitationTests(APITestCase):
         friendship = Friendship(user=self.user4, friend=self.user2)
         friendship.save()
 
-        # Clear the mock's call count
-        mock_send.reset_mock()
-
         url = reverse('invitation-detail', kwargs={'pk': invitation2.id})
         data = {
             'from_user': invitation2.from_user_id,
@@ -575,18 +463,15 @@ class InvitationTests(APITestCase):
 
         # It should notify users who are either down or might be down, and
         # haven't muted their notifications.
+        user_ids = [self.user1.id, self.user4.id]
         message = '{name} is down for {event}'.format(
                 name=self.user2.name,
                 event=self.event.title)
-        tokens = [
-            self.user1_device.registration_id, # maybe
-            self.user4_device.registration_id, # accepted
-        ]
-        mock_send.assert_called_with(registration_ids=tokens, alert=message)
+        mock_send_message.assert_called_with(user_ids, message, sms=False)
 
     @mock.patch('down.apps.events.serializers.add_member')
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_maybe(self, mock_send, mock_add_member):
+    @mock.patch('down.apps.events.serializers.send_message')
+    def test_maybe(self, mock_send_message, mock_add_member):
         # Log in as user2.
         token = Token(user=self.user2)
         token.save()
@@ -612,9 +497,6 @@ class InvitationTests(APITestCase):
         friendship = Friendship(user=self.user4, friend=self.user2)
         friendship.save()
 
-        # Clear the mock's call count
-        mock_send.reset_mock()
-
         url = reverse('invitation-detail', kwargs={'pk': invitation2.id})
         data = {
             'from_user': invitation2.from_user_id,
@@ -634,25 +516,19 @@ class InvitationTests(APITestCase):
 
         # It should notify users who are either down or might be down, and
         # haven't muted their notifications.
+        user_ids = [self.user1.id, self.user4.id, self.user1.id]
         message = '{name} might be down for {event}'.format(
                 name=self.user2.name,
                 event=self.event.title)
-        tokens = [
-            self.user1_device.registration_id, # maybe
-            self.user4_device.registration_id, # accepted
-        ]
-        mock_send.assert_called_with(registration_ids=tokens, alert=message)
+        mock_send_message.assert_called_with(user_ids, message, sms=False)
 
     @mock.patch('down.apps.events.serializers.remove_member')
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_decline(self, mock_send, mock_remove_member):
+    @mock.patch('down.apps.events.serializers.send_message')
+    def test_decline(self, mock_send_message, mock_remove_member):
         # Mock an invitation.
         invitation = Invitation(from_user=self.user2, to_user=self.user1,
                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
-
-        # Clear the mock's call count
-        mock_send.reset_mock()
 
         url = reverse('invitation-detail', kwargs={'pk': invitation.id})
         data = {
@@ -672,15 +548,15 @@ class InvitationTests(APITestCase):
                                                    invitation.to_user_id)
 
         # It should notify the person who invited them.
+        user_ids = [self.user2.id] # from_user
         message = '{name} can\'t make it to {event}'.format(
                 name=self.user1.name,
                 event=self.event.title)
-        tokens = [self.user2_device.registration_id] # from_user
-        mock_send.assert_called_with(registration_ids=tokens, alert=message)
+        mock_send_message.assert_called_with(user_ids, message, sms=False)
 
     @mock.patch('down.apps.events.serializers.remove_member')
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def test_accept_then_decline(self, mock_send, mock_remove_member):
+    @mock.patch('down.apps.events.serializers.send_message')
+    def test_accept_then_decline(self, mock_send_message, mock_remove_member):
         # Log in as user3.
         token = Token(user=self.user3)
         token.save()
@@ -706,9 +582,6 @@ class InvitationTests(APITestCase):
         friendship = Friendship(user=self.user4, friend=self.user3)
         friendship.save()
 
-        # Clear the mock's call count
-        mock_send.reset_mock()
-
         url = reverse('invitation-detail', kwargs={'pk': invitation3.id})
         data = {
             'from_user': invitation3.from_user_id,
@@ -728,15 +601,11 @@ class InvitationTests(APITestCase):
 
         # It should notify users who are either down or might be down, and
         # haven't muted their notifications.
+        user_ids = [self.user1.id, self.user4.id, self.user2.id]
         message = '{name} can\'t make it to {event}'.format(
                 name=self.user3.name,
                 event=self.event.title)
-        tokens = [
-            self.user1_device.registration_id, # from user
-            self.user2_device.registration_id, # maybe
-            self.user4_device.registration_id, # accepted
-        ]
-        mock_send.assert_called_with(registration_ids=tokens, alert=message)
+        mock_send_message.assert_called_with(user_ids, message, sms=False)
 
     @mock.patch('down.apps.events.serializers.add_member')
     def test_accept_bad_meteor_response(self, mock_add_member):

@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 from django.conf import settings
 from django.db.models import Q
-from push_notifications.models import APNSDevice
 import requests
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -13,6 +12,7 @@ from .utils import add_member, remove_member
 from down.apps.auth.models import User, UserPhone
 from down.apps.auth.serializers import FriendSerializer
 from down.apps.friends.models import Friendship
+from down.apps.notifications.utils import send_message
 from down.apps.utils.exceptions import ServiceUnavailable
 from down.apps.utils.serializers import (
     PkOnlyPrimaryKeyRelatedField,
@@ -169,8 +169,7 @@ class InvitationSerializer(serializers.ModelSerializer):
             elif new_response == Invitation.DECLINED:
                 to_user_ids = [invitation.from_user_id]
 
-            devices = APNSDevice.objects.filter(user_id__in=to_user_ids)
-            devices.send_message(message)
+            send_message(to_user_ids, message, sms=False)
 
         for attr, value in validated_data.items():
             setattr(invitation, attr, value)

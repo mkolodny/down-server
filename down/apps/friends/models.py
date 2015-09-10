@@ -1,8 +1,5 @@
 from __future__ import unicode_literals
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from push_notifications.models import APNSDevice
 from down.apps.auth.models import User
 
 
@@ -14,32 +11,3 @@ class Friendship(models.Model):
 
     class Meta:
         unique_together = ('user', 'friend')
-
-@receiver(post_save, sender=Friendship)
-def send_new_friendship_notification(sender, instance, created, **kwargs):
-    """
-    Send a push notification to the user who was added as a friend.
-    """
-
-    if not created:
-        return
-
-    friendship = instance
-    friend = friendship.user
-
-    # check if one leg of this friendship already exists in the database
-    if Friendship.objects.filter(user=friendship.friend, friend=friend):
-        message = '{name} added you back!'.format(name=friendship.user.name)
-    else:
-        message = '{name} (@{username}) added you as a friend!'.format(
-                name=friendship.user.name, username=friend.username)
-
-    devices = APNSDevice.objects.filter(user_id=friendship.friend.id)
-    devices.send_message(message)
-
-
-"""
-class FacebookFriendship(models.Model):
-    user = models.ForeignKey(User, related_name='user+')
-    friend = models.ForeignKey(User, related_name='friend+')
-"""

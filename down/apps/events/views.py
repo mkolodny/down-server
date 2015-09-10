@@ -10,9 +10,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from push_notifications.models import APNSDevice
-from twilio.rest import TwilioRestClient
 from down.apps.auth.models import User, UserPhone
+from down.apps.notifications.utils import send_message
 from .filters import EventFilter
 from .models import Event, Invitation, LinkInvitation
 from .permissions import (
@@ -32,7 +31,8 @@ from .serializers import (
 )
 
 
-class EventViewSet(viewsets.ModelViewSet):
+class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
+                   mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
     permission_classes = (IsAuthenticated, IsCreator, WasInvited)
     queryset = Event.objects.all()
@@ -43,40 +43,6 @@ class EventViewSet(viewsets.ModelViewSet):
         request.data['creator'] = request.user.id
 
         return super(EventViewSet, self).create(request, *args, **kwargs)
-
-    def destroy(self, request, *args, **kwargs):
-        """
-        Set the event to canceled.
-        """
-        event = self.get_object()
-        event.canceled = True
-        event.save()
-
-        # Notify people who were down that the event was canceled.
-        message = '{name} canceled {activity}'.format(name=event.creator.name,
-                                                      activity=event.title)
-        responses = [Invitation.ACCEPTED, Invitation.MAYBE]
-        invitations = Invitation.objects.filter(event=event) \
-                .filter(Q(response__in=responses)) \
-                .exclude(to_user=request.user)
-        member_ids = [invitation.to_user_id for invitation in invitations]
-        devices = APNSDevice.objects.filter(user_id__in=member_ids)
-        # TODO: Catch exception if sending the message fails.
-        devices.send_message(message, badge=1)
-
-        # Notify all SMS users that the event was canceled.
-        device_ids = set(device.user_id for device in devices)
-        sms_user_ids = [member_id for member_id in member_ids
-                if member_id not in device_ids]
-        userphones = UserPhone.objects.filter(user_id__in=sms_user_ids)
-        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        for userphone in userphones:
-            phone = unicode(userphone.phone)
-            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
-                                   body=message)
-
-        serializer = self.get_serializer(event)
-        return Response(serializer.data)
 
     @detail_route(methods=['post'])
     def messages(self, request, pk=None):
@@ -97,6 +63,13 @@ class EventViewSet(viewsets.ModelViewSet):
             # Make sure that the current user was invited to the event.
             self.check_object_permissions(request, event)
 
+            # Send push notifications.
+            responses = [Invitation.ACCEPTED, Invitation.MAYBE]
+            invitations = Invitation.objects.filter(event=event,
+                                                    response__in=responses) \
+                    .exclude(to_user=request.user) \
+                    .exclude(muted=True)
+            member_ids = [invitation.to_user_id for invitation in invitations]
             if len(event.title) > 25:
                 activity = event.title[:25] + '...'
             else:
@@ -104,15 +77,7 @@ class EventViewSet(viewsets.ModelViewSet):
             message = '{name} to {activity}: {text}'.format(
                     name=request.user.name, activity=activity,
                     text=serializer.data['text'])
-            responses = [Invitation.ACCEPTED, Invitation.MAYBE]
-            invitations = Invitation.objects.filter(event=event,
-                                                    response__in=responses) \
-                    .exclude(to_user=request.user) \
-                    .exclude(muted=True)
-            member_ids = [invitation.to_user_id for invitation in invitations]
-            devices = APNSDevice.objects.filter(user_id__in=member_ids)
-            # TODO: Catch exception if sending the message fails.
-            devices.send_message(message)
+            send_message(member_ids, message, sms=False)
 
             # Update the datetime the event was modified.
             event.save()
