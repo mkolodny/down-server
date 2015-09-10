@@ -36,32 +36,12 @@
               <i class="fa fa-comment-o"></i>{{login.event.comment}}
             </div>
           </div>
-          <div id="fb-login-container" class="hidden-xs hidden-sm">
+          <div id="fb-login-container">
             <p>Log in to respond, see who's down, and join the group chat.</p>
             <div id="fb-root"></div>
             <button id="fb-login" class="btn" ng-click="login.login()">
               <i class="fa fa-facebook-square fa-lg"></i> Log in
             </button>
-          </div>
-          <div id="download-links-container" class="hidden-md hidden-lg">
-            <p>Download the app to respond, see who's down, and join the group chat.</p>
-            <div>
-              <a href="">
-                {% endverbatim %}
-                <img class="download-image" src="{% static 'download-ios.png' %}"
-                     alt="Download on the App Store">
-                {% verbatim %}
-              </a>
-            </div>
-            <div>
-              <a href="">
-                {% endverbatim %}
-                <img class="download-image"
-                     src="{% static 'download-android.png' %}"
-                     alt="Get it on Google Play">
-                {% verbatim %}
-              </a>
-            </div>
           </div>
         </div>
       </div>

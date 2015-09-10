@@ -5,7 +5,7 @@
   <nav class="navbar navbar-default">
     <div class="container-fluid">
       <div class="row">
-        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3">
+        <div class="col-md-8 col-md-offset-2">
           <div class="navbar-header">
             <a class="navbar-brand" href="#">Down.</a>
           </div>
@@ -20,7 +20,7 @@
   </nav>
   <div class="container-fluid" id="content">
     <div class="row" id="content-row">
-      <div class="col-md-3 col-md-offset-2 col-sm-6 col-sm-offset-3">
+      <div class="col-md-3 col-md-offset-2 col-sm-5 content-col">
         <div id="event-info">
           <div id="event-details">
             <img id="from-image"
@@ -56,13 +56,13 @@
               Can't
             </button>
           </div>
-          <hr>
+          <hr ng-if="event.members.length > 0">
           <div id="members">
             <img class="member" ng-repeat="member in event.members"
                  src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
           </div>
-          <hr class="hidden-xs hidden-sm">
-          <div class="hidden-xs hidden-sm" id="phone-form-container">
+          <hr class="hidden-xs">
+          <div class="hidden-xs" id="phone-form-container">
             Text yourself a link to download the app:
             <form class="form-inline" id="phone-form">
               <div class="form-group">
@@ -74,8 +74,8 @@
               </div>
             </form>
           </div>
-          <hr>
-          <div id="download-images">
+          <hr class="hidden-xs">
+          <div class="hidden-xs download-images">
             <div>
               <a href="">
                 {% endverbatim %}
@@ -96,7 +96,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-5 hidden-xs hidden-sm" id="group-chat-col">
+      <div class="col-md-5 col-sm-7 content-col" id="group-chat-col">
         <div id="group-chat">
           <div id="messages" scroll-glue>
             <div ng-repeat="message in event.messages">
@@ -116,6 +116,25 @@
                      placeholder="Type a message...">
             </div>
           </form>
+        </div>
+      </div>
+      <div class="hidden-sm hidden-md hidden-lg download-images">
+        <div>
+          <a href="">
+            {% endverbatim %}
+            <img class="download-image" src="{% static 'download-ios.png' %}"
+                 alt="Download on the App Store">
+            {% verbatim %}
+          </a>
+        </div>
+        <div>
+          <a href="">
+            {% endverbatim %}
+            <img class="download-image"
+                 src="{% static 'download-android.png' %}"
+                 alt="Get it on Google Play">
+            {% verbatim %}
+          </a>
         </div>
       </div>
     </div>
