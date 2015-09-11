@@ -21,7 +21,8 @@
           <h2 id="suggested-by">
             Suggested by {{login.fromUser.name}}
           </h2>
-          <div id="event-details">
+          <div id="event-details"
+               ng-if="login.event.datetime || login.event.place || login.event.comment">
             <div class="event-detail" ng-if="event.event.datetime">
               <i class="fa fa-calendar-o"></i>
               <div>

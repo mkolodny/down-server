@@ -13,4 +13,9 @@
       border-color: $btn-primary-border;
     }
   }
+  .event-detail {
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
 }

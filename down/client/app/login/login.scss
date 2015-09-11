@@ -7,6 +7,11 @@
     text-align: center;
     margin: auto;
   }
+  .event-detail {
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
   #fb-login {
     color: #fff;
     background-color: #4e69a2;
@@ -19,9 +24,5 @@
   }
   .fa-facebook-square {
     margin-right: 5px;
-  }
-  .download-image {
-    width: 153px;
-    margin-top: 15px;
   }
 }
