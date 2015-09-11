@@ -23,14 +23,14 @@
           </h2>
           <div id="event-details"
                ng-if="login.event.datetime || login.event.place || login.event.comment">
-            <div class="event-detail" ng-if="event.event.datetime">
+            <div class="event-detail" ng-if="login.event.datetime">
               <i class="fa fa-calendar-o"></i>
               <div>
                 <div>{{login.event.datetime | date:'EEEE, MMM d'}}</div>
                 <div>{{login.event.datetime | date:'shortTime' | lowercase}}</div>
               </div>
             </div>
-            <div class="event-detail" ng-if="event.event.place">
+            <div class="event-detail" ng-if="login.event.place">
               <a href><i class="fa fa-map-marker"></i>{{login.event.place.name}}</a>
             </div>
             <div id="event-comment" class="event-detail" ng-if="login.event.comment">
