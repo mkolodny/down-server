@@ -29,3 +29,16 @@ class APNSDeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 class GCMDeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = GCMDeviceSerializer
     queryset = GCMDevice.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            registration_id = serializer.data['registration_id']
+            gcmdevice = GCMDevice.objects.get(registration_id=registration_id)
+            headers = self.get_success_headers(serializer.data)
+            return Response(status=status.HTTP_200_OK, headers=headers)
+        except GCMDevice.DoesNotExist:
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(status=status.HTTP_201_CREATED, headers=headers)

@@ -74,3 +74,13 @@ class GCMDeviceTests(APITestCase):
 
         # It should create a GCMDevice.
         GCMDevice.objects.get(**self.post_data)
+
+    def test_create_already_exists(self):
+        # Create the GCMDevice.
+        data = self.post_data.copy()
+        data['user'] = self.user
+        device = GCMDevice(**data)
+        device.save()
+
+        response = self.client.post(self.create_url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
