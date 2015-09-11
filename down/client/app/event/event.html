@@ -31,17 +31,18 @@
             <h2 id="suggested-by">
               Suggested by {{event.fromUser.name}}
             </h2>
-            <div class="event-detail">
+            <div class="event-detail" ng-if="event.event.datetime">
               <i class="fa fa-calendar-o"></i>
               <div>
                 <div>{{event.event.datetime | date:'EEEE, MMM d'}}</div>
                 <div>{{event.event.datetime | date:'shortTime' | lowercase}}</div>
               </div>
             </div>
-            <div class="event-detail">
+            <div class="event-detail" ng-if="event.event.place">
               <a href><i class="fa fa-map-marker"></i>{{event.event.place.name}}</a>
             </div>
-            <div id="event-comment" class="event-detail">
+            <div id="event-comment" class="event-detail"
+                 ng-if="event.event.comment">
               <i class="fa fa-comment-o"></i>{{event.event.comment}}
             </div>
           </div>
@@ -110,12 +111,12 @@
               </div>
             </div>
           </div>
-          <form class="form-inline">
-            <div class="form-group" id="enter-message-container">
-              <input class="form-control" id="enter-message"
-                     placeholder="Type a message...">
-            </div>
-          </form>
+          <textarea class="form-control" id="enter-message"
+                    ng-model="event.message" rows="1"
+                    placeholder="Type a message..."></textarea>
+          <button class="btn btn-link" id="send-message"
+                  ng-click="event.sendMessage()"
+                  ng-disabled="!event.message">Send</button>
         </div>
       </div>
       <div class="hidden-sm hidden-md hidden-lg download-images">

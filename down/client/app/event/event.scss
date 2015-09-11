@@ -103,9 +103,6 @@
     width: 100%;
     height: calc(100% - 51px); // The chat input is 51px
   }
-  #enter-message-container {
-    width: 100%;
-  }
   .action-message {
     color: #888;
     font-size: 13px;
@@ -189,10 +186,21 @@
     border-top-right-radius: 0;
     box-shadow: none;
     width: 100%;
-    padding-left: 15px;
-    padding-right: 15px;
-    padding-top: 25px;
-    padding-bottom: 25px;
+    padding: 15px;
+    padding-right: 60px;
+    resize: none;
+    line-height: 20px;
+    bottom: 51px;
+  }
+  #send-message {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    font-weight: 900;
+
+    &:disabled {
+      color: $btn-link-disabled-color;
+    }
   }
 
   @media (min-width: $screen-md-min) and (max-width: 1102px) {
@@ -203,6 +211,9 @@
   @media (max-width: $screen-xs-max) {
     .content-col {
       margin-bottom: 25px;
+    }
+    #group-chat-col {
+      height: calc(100% - 40px);
     }
   }
 }
