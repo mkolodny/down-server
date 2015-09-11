@@ -74,7 +74,7 @@ describe 'login controller', ->
       initOptions =
         appId: fbAppId
         xfbml: true
-        version: 'v2.3'
+        version: 'v2.2'
       expect($window.FB.init).toHaveBeenCalledWith initOptions
 
 

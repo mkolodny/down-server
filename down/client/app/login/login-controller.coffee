@@ -4,6 +4,20 @@ class LoginCtrl
     @event = @$stateParams.event
     @fromUser = @$stateParams.fromUser
 
+    # Add Facebook SDK
+    ((d, s, id) ->
+      js = undefined
+      fjs = d.getElementsByTagName(s)[0]
+      if d.getElementById(id)
+        return
+      js = d.createElement(s)
+      js.id = id
+      js.src = '//connect.facebook.net/en_US/sdk.js'
+      fjs.parentNode.insertBefore js, fjs
+      return
+    ) document, 'script', 'facebook-jssdk'
+
+    ###
     # Load the Facebook javascript SDK.
     id = 'facebook-jssdk'
     if not document.getElementById id
@@ -13,6 +27,7 @@ class LoginCtrl
       js.src = "//connect.facebook.net/en_US/sdk.js"
       ref = document.getElementsByTagName('script')[0]
       ref.parentNode.insertBefore js, ref
+    ###
 
     # Init Facebook SDK
     @$window.fbAppId = '864552050271610' # TODO: Set this via DJANGO!
@@ -20,7 +35,7 @@ class LoginCtrl
       FB.init
         appId: @$window.fbAppId
         xfbml: true
-        version: 'v2.3'
+        version: 'v2.2'
 
   login: ->
     @$window.FB.login @handleFBLogin
