@@ -74,10 +74,6 @@ class UserSerializer(GeoModelSerializer):
             return None
 
 
-class PhoneSerializer(serializers.Serializer):
-    phones = serializers.ListField(child=PhoneNumberField())
-
-
 class UserPhoneSerializer(serializers.ModelSerializer):
     user = FriendSerializer(read_only=True)
     phone = PhoneNumberField()

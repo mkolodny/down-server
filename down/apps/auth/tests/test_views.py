@@ -794,19 +794,12 @@ class SessionTests(APITestCase):
 class UserPhoneTests(APITestCase):
 
     def setUp(self):
-        # Mock two users.
+        # Mock the user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                          username='tdog', image_url='http://imgur.com/tdog')
         self.user.save()
-        self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
-                           image_url='http://imgur.com/jcke')
-        self.friend.save()
-
-        # Mock the users' phone numbers.
-        self.friend_phone = UserPhone(user=self.friend, phone='+12036227310')
-        self.friend_phone.save()
-        self.user_phone = UserPhone(user=self.user, phone='+14388843460')
-        self.user_phone.save()
+        self.userphone = UserPhone(user=self.user, phone='+14388843460')
+        self.userphone.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user)
@@ -816,30 +809,37 @@ class UserPhoneTests(APITestCase):
         # Save URLs.
         self.list_url = reverse('userphone-list')
         self.phones_url = reverse('userphone-phones')
-        self.contact_url = reverse('userphone-contact')
 
-    def test_query_by_phones(self):
-        # Mock a third user.
-        friend = User(email='blee@gmail.com', name='Bruce Lee',
-                      username='blee', image_url='http://imgur.com/blee')
-        friend.save()
-        friend_phone = UserPhone(user=friend, phone='+19176227310')
-        friend_phone.save()
+    def test_query_by_contacts(self):
+        contact_phone = '+19176227310'
+        contact_name = 'Ada Lovelace'
 
-        data = {'phones': [
-            unicode(self.user_phone.phone),
-            unicode(friend_phone.phone),
+        data = {'contacts': [
+            {
+                'name': self.user.name,
+                'phone': unicode(self.userphone.phone),
+            },
+            {
+                'name': contact_name,
+                'phone': contact_phone,
+            },
         ]}
         response = self.client.post(self.phones_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # It should create a userphone for the extra phone number.
+        contact_userphone = UserPhone.objects.get(phone=contact_phone)
+
+        # It should name the contact.
+        self.assertEqual(contact_userphone.user.name, contact_name)
+
         # It should return a list with the userphones.
-        userphones = [self.user_phone, friend_phone]
+        userphones = [self.userphone, contact_userphone]
         serializer = UserPhoneSerializer(userphones, many=True)
         json_user_phones = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phones)
 
-    def test_query_by_phones_not_logged_in(self):
+    def test_query_by_contacts_not_logged_in(self):
         # Unauth the user.
         self.client.credentials()
 
@@ -859,73 +859,6 @@ class UserPhoneTests(APITestCase):
 
         # It should create a new user.
         self.assertEqual(User.objects.count(), num_users+1)
-
-    @mock.patch('down.apps.auth.views.TwilioRestClient')
-    def test_create_for_contact(self, mock_twilio):
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
-        data = {
-            'phone': '+19178699626',
-            'name': 'Dickface Killah',
-        }
-        response = self.client.post(self.contact_url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # It should create a userphone with the given number.
-        UserPhone.objects.get(phone=data['phone'])
-
-        # It should create a new user with the POSTed name.
-        User.objects.get(name=data['name'])
-
-        # It should init the Twilio client with the proper params.
-        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
-                                       settings.TWILIO_TOKEN)
-
-        # It should text the contact.
-        message = ('{name} (@{username}) added you as a friend on Down!'
-                   ' - http://down.life/app').format(name=self.user.name,
-                                                     username=self.user.username)
-        mock_client.messages.create.assert_called_with(to=data['phone'], 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=message)
-
-    @mock.patch('down.apps.auth.views.TwilioRestClient')
-    def test_create_for_contact_user_exists(self, mock_twilio):
-        # Create a user with a name and phone.
-        user = User(name='Denise Tinder')
-        user.save()
-        user_phone = UserPhone(user=user, phone='+19178699626')
-        user_phone.save()
-
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
-        data = {
-            'phone': unicode(user_phone.phone),
-            'name': user.name,
-        }
-        response = self.client.post(self.contact_url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should init the Twilio client with the proper params.
-        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
-                                       settings.TWILIO_TOKEN)
-
-        # It should text the contact.
-        message = ('{name} (@{username}) added you as a friend on Down!'
-                   ' - http://down.life/app').format(name=self.user.name,
-                                                     username=self.user.username)
-        mock_client.messages.create.assert_called_with(to=data['phone'], 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=message)
-
-        # It should return the userphone.
-        serializer = UserPhoneSerializer(user_phone)
-        json_user_phone = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_user_phone)
 
 
 class LinfootFunnelTests(APITestCase):

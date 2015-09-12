@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from datetime import datetime, timedelta
 import json
+import time
 from urllib import urlencode
 from django.conf import settings
 from django.contrib import auth
@@ -9,6 +10,7 @@ from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import render
 from django.views.generic.base import RedirectView, TemplateView
+from hashids import Hashids
 import pytz
 import requests
 from rest_framework import mixins, status, viewsets
@@ -30,7 +32,6 @@ from .serializers import (
     FacebookSessionSerializer,
     FriendSerializer,
     LinfootFunnelSerializer,
-    PhoneSerializer,
     SessionSerializer,
     SocialAccountSyncSerializer,
     UserSerializer,
@@ -300,55 +301,59 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     @list_route(methods=['post'])
     def phones(self, request):
         """
-        Return a list of users with the given phone numbers.
-
-        We're using POST here mainly because the list of phone numbers may not
-        be able to fit in the query parameters of a GET request.
+        Return a list of userphones with the given phone numbers. Create
+        userphones for any contacts without userphones.
         """
         # TODO: Handle when the data is invalid.
-        serializer = PhoneSerializer(data=request.data)
+        contacts = request.data['contacts']
+        serializer = ContactSerializer(data=contacts, many=True)
         serializer.is_valid()
 
         # Filter user phone numbers using the phone number data.
-        phones = serializer.data['phones']
-        user_phones = UserPhone.objects.filter(phone__in=phones)
-        user_phones.prefetch_related('user')
+        phones = [contact['phone'] for contact in serializer.data]
+        userphones = UserPhone.objects.filter(phone__in=phones)
+        userphones.prefetch_related('user')
 
-        serializer = UserPhoneSerializer(user_phones, many=True)
+        # Create userphones for any contacts who don't have userphones yet. First,
+        # we create users with the contacts' names. Then we create userphones for
+        # each user. `bulk_ref` is used to query for the objects we bulk created,
+        # since Django doesn't set ids on objects that were bulk created.
+        phones_set = {unicode(userphone.phone) for userphone in userphones}
+        userless_contacts = [contact for contact in contacts
+                             if contact['phone'] not in phones_set]
+        if len(userless_contacts) > 0:
+            # Create the `bulk_ref` for querying the objects we bulk create.
+            hashids = Hashids(salt=settings.HASHIDS_SALT)
+            timestamp = time.time()
+            bulk_ref = hashids.encode(request.user.id, timestamp)
+
+            # Create users for contacts without userphones.
+            user_ids = User.objects.values_list('id', flat=True)
+            contacts_users = [User(name=contact['name'], bulk_ref=bulk_ref)
+                              for contact in userless_contacts]
+            User.objects.bulk_create(contacts_users)
+            contacts_users = User.objects.filter(bulk_ref=bulk_ref)
+
+            # Create userphones for the users we created.
+            contacts_dict = {contact['name']: [] for contact in userless_contacts}
+            for contact in userless_contacts:
+                name = contact['name']
+                contacts_dict[name].append(contact['phone'])
+            contacts_userphones = []
+            for user in contacts_users:
+                phone = contacts_dict[user.name].pop()
+                userphone = UserPhone(user=user, phone=phone, bulk_ref=bulk_ref)
+                contacts_userphones.append(userphone)
+            UserPhone.objects.bulk_create(contacts_userphones)
+            contacts_userphones = UserPhone.objects.filter(bulk_ref=bulk_ref)
+            contacts_userphones.prefetch_related('user')
+            
+            # Merge the new contacts' userphones and the existing userphones.
+            userphones = list(userphones)
+            userphones.extend(list(contacts_userphones))
+
+        serializer = UserPhoneSerializer(userphones, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @list_route(methods=['post'])
-    def contact(self, request):
-        """
-        Create a userphone, and a user with the given name.
-        """
-        serializer = ContactSerializer(data=request.data)
-        serializer.is_valid()
-
-        # Create a user with the given name
-        user = User(name=serializer.data['name'])
-        user.save()
-
-        # Create a userphone for the new user.
-        phone = serializer.data['phone']
-        try:
-            user_phone = UserPhone.objects.get(phone=phone)
-            status_code = status.HTTP_200_OK
-        except UserPhone.DoesNotExist:
-            user_phone = UserPhone(user=user, phone=phone)
-            user_phone.save()
-            status_code = status.HTTP_201_CREATED
-
-        # Text the contact to let them know that the user added them.
-        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        message = ('{name} (@{username}) added you as a friend on Down!'
-                   ' - http://down.life/app').format(name=request.user.name,
-                                                     username=request.user.username)
-        client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
-                               body=message)
-
-        serializer = UserPhoneSerializer(user_phone)
-        return Response(serializer.data, status=status_code)
 
 
 class LinfootFunnelViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):

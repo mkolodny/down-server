@@ -23,6 +23,7 @@ class User(AbstractBaseUser):
     friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False,
                                      related_name='related_friends+')
+    bulk_ref = models.TextField(null=True, blank=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = 'username'
@@ -41,6 +42,7 @@ class AuthCode(models.Model):
 class UserPhone(models.Model):
     user = models.ForeignKey(User)
     phone = PhoneNumberField(unique=True)
+    bulk_ref = models.TextField(null=True, blank=True, db_index=True)
 
 
 class SocialAccount(models.Model):
