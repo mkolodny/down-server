@@ -299,7 +299,7 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserPhoneSerializer
 
     @list_route(methods=['post'])
-    def phones(self, request):
+    def contacts(self, request):
         """
         Return a list of userphones with the given phone numbers. Create
         userphones for any contacts without userphones.

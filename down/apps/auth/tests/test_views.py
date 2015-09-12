@@ -808,7 +808,7 @@ class UserPhoneTests(APITestCase):
 
         # Save URLs.
         self.list_url = reverse('userphone-list')
-        self.phones_url = reverse('userphone-phones')
+        self.phones_url = reverse('userphone-contacts')
 
     def test_query_by_contacts(self):
         contact_phone = '+19176227310'
