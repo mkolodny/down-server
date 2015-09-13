@@ -34,7 +34,7 @@ class LoginCtrl
     @$window.fbAsyncInit = =>
       FB.init
         appId: @$window.fbAppId
-        xfbml: true
+        cookie: true
         version: 'v2.2'
 
   login: ->

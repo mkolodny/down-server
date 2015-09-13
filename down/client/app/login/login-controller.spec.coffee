@@ -73,7 +73,7 @@ describe 'login controller', ->
     it 'should call FB.init', ->
       initOptions =
         appId: fbAppId
-        xfbml: true
+        cookie: true
         version: 'v2.2'
       expect($window.FB.init).toHaveBeenCalledWith initOptions
 
