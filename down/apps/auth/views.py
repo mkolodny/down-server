@@ -324,20 +324,21 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         if len(userless_contacts) > 0:
             # Create the `bulk_ref` for querying the objects we bulk create.
             hashids = Hashids(salt=settings.HASHIDS_SALT)
-            timestamp = time.time()
+            timestamp = int(time.time())
             bulk_ref = hashids.encode(request.user.id, timestamp)
 
             # Create users for contacts without userphones.
-            user_ids = User.objects.values_list('id', flat=True)
             contacts_users = [User(name=contact['name'], bulk_ref=bulk_ref)
                               for contact in userless_contacts]
             User.objects.bulk_create(contacts_users)
             contacts_users = User.objects.filter(bulk_ref=bulk_ref)
 
             # Create userphones for the users we created.
-            contacts_dict = {contact['name']: [] for contact in userless_contacts}
+            # contacts_dict == {'Andrew': ['+19251234567', '+19252234456'], ...}
+            contacts_dict = {}
             for contact in userless_contacts:
                 name = contact['name']
+                contacts_dict[name] = contacts_dict.get(name, [])
                 contacts_dict[name].append(contact['phone'])
             contacts_userphones = []
             for user in contacts_users:
