@@ -123,31 +123,6 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
 
         return super(InvitationViewSet, self).get_serializer(*args, **kwargs)
 
-    def create(self, request, *args, **kwargs):
-        data = request.data
-        if type(data) is dict:
-            # Make the current user the inviter.
-            data['from_user'] = request.user.id
-
-        serializer = self.get_serializer(data=data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            status_code = status.HTTP_201_CREATED
-        except ValidationError as error:
-            try:
-                event_id = request.data.get('event')
-                to_user_id = request.data.get('to_user')
-                invitation = Invitation.objects.get(event_id=event_id,
-                                                    to_user_id=to_user_id)
-                serializer = self.get_serializer(invitation)
-                status_code = status.HTTP_200_OK
-            except Invitation.DoesNotExist:
-                # TODO: Test this
-                raise error
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status_code, headers=headers)
-
 
 class LinkInvitationViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
                             viewsets.GenericViewSet):

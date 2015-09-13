@@ -307,44 +307,8 @@ class InvitationTests(APITestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    def test_create(self):
-        # Invite the logged in user.
-        invitation = Invitation(from_user=self.user1, to_user=self.user1,
-                                event=self.event)
-        invitation.save()
-
-        response = self.client.post(self.list_url, self.post_data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # It should create an invitation.
-        invitation = Invitation.objects.get(from_user=self.user1,
-                                            to_user=self.user2, event=self.event)
-
-        # It should return the created invitation.
-        serializer = InvitationSerializer(invitation)
-        json_invitation = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitation)
-
-    def test_create_already_exists(self):
-        # Mock the invitation already being created.
-        invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                event=self.event)
-        invitation.save()
-
-        # Log in as user2 to mock the invitation being sent from another user.
-        token = Token(user=self.user2)
-        token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
-
-        response = self.client.post(self.list_url, self.post_data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return the already created invitation.
-        serializer = InvitationSerializer(invitation)
-        json_invitation = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitation)
-
     @mock.patch('down.apps.events.models.Invitation.objects.bulk_create')
+    #@mock.patch('down.apps.events.views.send_message')
     def test_bulk_create(self, mock_bulk_create):
         # Invite the current user.
         invitation = Invitation(to_user=self.user1, from_user=self.user1,
