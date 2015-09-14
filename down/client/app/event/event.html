@@ -24,7 +24,7 @@
         <div id="event-info">
           <div id="event-details">
             <img id="from-image"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=100&height=100">
+                 ng-src="{{event.fromUser.getImageUrl(100)}}">
             <h1 id="event-title">
               {{event.event.title}}
             </h1>
@@ -66,7 +66,7 @@
           <hr ng-if="event.members.length > 0">
           <div id="members">
             <img class="member" ng-repeat="member in event.members"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
+                ng-src="{{member.getImageUrl(72)}}">
           </div>
           <hr class="hidden-xs">
           <div class="hidden-xs" id="phone-form-container">
