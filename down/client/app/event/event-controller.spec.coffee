@@ -91,7 +91,7 @@ describe 'event controller', ->
     expect(Invitation.getMemberInvitations).toHaveBeenCalledWith {id: event.id}
 
   it 'should subscribe to the events messages', ->
-    expect(Asteroid.subscribe).toHaveBeenCalledWith 'messages', event.id
+    expect(Asteroid.subscribe).toHaveBeenCalledWith 'event', event.id
 
   it 'should get the messages collection', ->
     expect(Asteroid.getCollection).toHaveBeenCalledWith 'messages'

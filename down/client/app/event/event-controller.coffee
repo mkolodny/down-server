@@ -1,6 +1,6 @@
 class EventCtrl
-  constructor: (@$state, @$stateParams, @Asteroid, @Auth, @Event,
-                @Invitation, @User, @data) ->
+  constructor: (@$rootScope, @$state, @$stateParams, @Asteroid, @Auth,
+                @Event, @Invitation, @User, @data) ->
     if @data.redirectView
       @$state.go @data.redirectView,
         event: @data.event
@@ -14,7 +14,7 @@ class EventCtrl
     @invitation = @data.invitation
 
     # Get/subscribe to the messages posted in this event.
-    @Asteroid.subscribe 'messages', @event.id
+    @Asteroid.subscribe 'event', @event.id
     @Messages = @Asteroid.getCollection 'messages'
     @messagesRQ = @Messages.reactiveQuery {eventId: "#{@event.id}"}
     @showMessages()
@@ -44,6 +44,10 @@ class EventCtrl
     if @messages.length > 0
       newestMessage = @messages[@messages.length - 1]
       @Asteroid.call 'readMessage', newestMessage._id
+
+    # Call digest
+    if not @$rootScope.$$phase
+      @$rootScope.$digest()
 
   isActionMessage: (message) ->
     actions = [
