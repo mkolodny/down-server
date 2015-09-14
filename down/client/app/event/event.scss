@@ -54,10 +54,12 @@
     padding-bottom: 3px;
 
     &:active,
-    &.active {
+    &.active,
+    &:disabled {
       color: $btn-primary-color;
       background-color: $btn-primary-bg;
       border-color: $btn-primary-border;
+      opacity: 1;
     }
   }
   #members {

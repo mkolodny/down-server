@@ -47,13 +47,19 @@
             </div>
           </div>
           <div id="respond-buttons">
-            <button class="btn btn-default respond active">
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasAccepted()"
+                    ng-click="event.acceptInvitation()">
               Down
             </button>
-            <button class="btn btn-default respond">
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasMaybed()"
+                    ng-click="event.maybeInvitation()">
               Maybe
             </button>
-            <button class="btn btn-default respond">
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasDeclined()"
+                    ng-click="event.declineInvitation()">
               Can't
             </button>
           </div>

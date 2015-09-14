@@ -327,3 +327,141 @@ describe 'event controller', ->
 
     it 'should clear the message', ->
       expect(ctrl.message).toBeNull()
+
+  # Copied from invitation-controller.spec.coffee
+  describe 'checking whether the user accepted their invitation', ->
+
+    describe 'when they did', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.accepted
+
+      it 'should return true', ->
+        expect(ctrl.wasAccepted()).toBe true
+
+
+    describe 'when they didn\'t', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.maybe
+
+      it 'should return false', ->
+        expect(ctrl.wasAccepted()).toBe false
+
+
+  describe 'checking whether the user responded maybe their invitation', ->
+
+    describe 'when they did', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.maybe
+
+      it 'should return true', ->
+        expect(ctrl.wasMaybed()).toBe true
+
+
+    describe 'when they didn\'t', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.accepted
+
+      it 'should return false', ->
+        expect(ctrl.wasMaybed()).toBe false
+
+
+  describe 'checking whether the user declined their invitation', ->
+
+    describe 'when they did', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.declined
+
+      it 'should return true', ->
+        expect(ctrl.wasDeclined()).toBe true
+
+
+    describe 'when they didn\'t', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.maybe
+
+      it 'should return false', ->
+        expect(ctrl.wasDeclined()).toBe false
+
+
+
+  describe 'responding to the invitation', ->
+    response = null
+    deferred = null
+
+    beforeEach ->
+      # Mock the current invitation response.
+      response = Invitation.maybe
+      ctrl.invitation.response = response
+
+      deferred = $q.defer()
+      spyOn(Invitation, 'updateResponse').and.returnValue
+        $promise: deferred.promise
+      spyOn $state, 'go'
+
+      ctrl.respondToInvitation response
+
+    it 'should update the invitation', ->
+      expect(Invitation.updateResponse).toHaveBeenCalledWith invitation, response
+
+    describe 'successfully', ->
+
+      beforeEach ->
+        deferred.resolve()
+        scope.$apply()
+
+      xit 'should go to the events view', ->
+        expect($state.go).toHaveBeenCalledWith 'events',
+          event: event
+          fromUser: fromUser
+          invitation: invitation
+          linkId: linkId
+
+
+    describe 'unsuccessfully', ->
+
+      beforeEach ->
+        deferred.reject()
+        scope.$apply()
+
+      xit 'show an error', ->
+        error = 'For some reason, that didn\'t work.'
+        expect(ctrl.error).toBe error
+
+
+  describe 'accepting the invitation', ->
+
+    beforeEach ->
+      spyOn ctrl, 'respondToInvitation'
+
+      ctrl.acceptInvitation()
+
+    it 'should respond to the invitation', ->
+      expect(ctrl.respondToInvitation).toHaveBeenCalledWith Invitation.accepted
+
+
+  describe 'responding maybe to the invitation', ->
+
+    beforeEach ->
+      spyOn ctrl, 'respondToInvitation'
+
+      ctrl.maybeInvitation()
+
+    it 'should respond to the invitation', ->
+      expect(ctrl.respondToInvitation).toHaveBeenCalledWith Invitation.maybe
+
+
+  describe 'declining the invitation', ->
+
+    beforeEach ->
+      spyOn ctrl, 'respondToInvitation'
+
+      ctrl.declineInvitation()
+
+    it 'should respond to the invitation', ->
+      expect(ctrl.respondToInvitation).toHaveBeenCalledWith Invitation.declined
