@@ -1,6 +1,8 @@
 require 'angular'
 require 'angular-ui-router'
+require 'angular-local-storage'
 require 'down-ionic/app/common/auth/auth-module'
+require 'down-ionic/app/common/resources/resources-module'
 require './event/event-module'
 require './login/login-module'
 require './invitation/invitation-module'
@@ -11,8 +13,11 @@ angular.module 'down', [
     'down.event'
     'down.login'
     'down.invitation'
+    'down.resources'
+    'LocalStorageModule'
   ]
-  .config ($httpProvider, $locationProvider, $urlRouterProvider, $stateProvider) ->
+  .config ($httpProvider, $locationProvider, $urlRouterProvider,
+           $stateProvider) ->
     # Use html5 push state.
     $locationProvider.html5Mode
       enabled: true
@@ -31,7 +36,17 @@ angular.module 'down', [
         # Delay injecting the $http + Auth services to avoid a circular
         #   dependency.
         Auth = $injector.get 'Auth'
+
         if Auth.user.authtoken?
           authHeader = "Token #{Auth.user.authtoken}"
           config.headers.Authorization = authHeader
         config
+  .run (localStorageService, Auth, User) ->
+    # Check local storage for currentUser and currentPhone
+    currentUser = localStorageService.get 'currentUser'
+    if currentUser isnt null
+      Auth.user = new User currentUser
+      for id, friend of Auth.user.friends
+        Auth.user.friends[id] = new User friend
+      for id, friend of Auth.user.facebookFriends
+        Auth.user.facebookFriends[id] = new User friend
