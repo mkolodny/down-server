@@ -17,18 +17,6 @@ class LoginCtrl
       return
     ) document, 'script', 'facebook-jssdk'
 
-    ###
-    # Load the Facebook javascript SDK.
-    id = 'facebook-jssdk'
-    if not document.getElementById id
-      js = document.createElement 'script'
-      js.id = id
-      js.async = true
-      js.src = "//connect.facebook.net/en_US/sdk.js"
-      ref = document.getElementsByTagName('script')[0]
-      ref.parentNode.insertBefore js, ref
-    ###
-
     # Init Facebook SDK
     @$window.fbAppId = '864552050271610' # TODO: Set this via DJANGO!
     @$window.fbAsyncInit = =>

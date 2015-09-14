@@ -10,6 +10,7 @@ describe 'event controller', ->
   $state = null
   $q = null
   $rootScope = null
+  $window = null
   Auth = null
   Asteroid = null
   Event = null
@@ -39,12 +40,17 @@ describe 'event controller', ->
     $controller = $injector.get '$controller'
     $state = $injector.get '$state'
     $q = $injector.get '$q'
+    $window = $injector.get '$window'
     Auth = angular.copy $injector.get('Auth')
     Asteroid = $injector.get 'Asteroid'
     Event = $injector.get 'Event'
     Invitation = $injector.get 'Invitation'
     scope = $injector.get '$rootScope'
     User = $injector.get 'User'
+
+    Auth.user =
+      id: 1
+      name: 'Jimbo Walker'
 
     event =
       id: 123
@@ -78,6 +84,9 @@ describe 'event controller', ->
       data: data
   )
 
+  it 'should set the current user on the controller', ->
+    expect(ctrl.currentUser).toBe Auth.user
+
   it 'should set the event on the controller', ->
     expect(ctrl.event).toBe event
 
@@ -110,6 +119,44 @@ describe 'event controller', ->
 
   it 'should listen for new messages', ->
     expect(messagesRQ.on).toHaveBeenCalledWith 'change', ctrl.showMessages
+
+  # How to test?
+  xit 'should inititialize branch', ->
+    expect(ctrl.initBranch).toHaveBeenCalled()
+
+  describe 'setting up branch', ->
+
+    beforeEach ->
+      branchApiKey = 'key_test_ogfq42bC7tuGVWdMjNm3sjflvDdOBJiv'
+      $window.branchApiKey = branchApiKey
+      $window.branch =
+        init: jasmine.createSpy 'branch.init'
+
+      ctrl.initBranch()
+
+    it 'should init the branch sdk', ->
+      expect($window.branch.init).toHaveBeenCalledWith branchApiKey
+
+
+  describe 'sending a download link', ->
+    downloadPhone = null
+
+    beforeEach ->
+      spyOn $window.branch, 'sendSMS'
+      downloadPhone = '+19252852230'
+      ctrl.downloadPhone = downloadPhone
+
+      ctrl.sendSMS()
+
+    it 'should send the sms', ->
+      linkData =
+        channel: 'WebView'
+        feature: 'Text-To-Download'
+      expect($window.branch.sendSMS).toHaveBeenCalledWith downloadPhone, linkData
+        
+    it 'should clear the form', ->
+      expect(ctrl.downloadPhone).toBeNull()
+
 
   describe 'when there is a redirect view', ->
     redirectView = null

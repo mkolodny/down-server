@@ -1,6 +1,6 @@
 class EventCtrl
-  constructor: (@$rootScope, @$state, @$stateParams, @Asteroid, @Auth,
-                @Event, @Invitation, @User, @data) ->
+  constructor: (@$rootScope, @$state, @$stateParams, @$window, @Asteroid,
+                @Auth, @Event, @Invitation, @User, @data) ->
     if @data.redirectView
       @$state.go @data.redirectView,
         event: @data.event
@@ -9,6 +9,7 @@ class EventCtrl
         linkId: @data.linkId
       return
 
+    @currentUser = @Auth.user
     @event = @data.event
     @fromUser = @data.fromUser
     @invitation = @data.invitation
@@ -28,6 +29,48 @@ class EventCtrl
         @members = (invitation.toUser for invitation in invitations)
       , =>
         @membersError = true
+
+    # Add branch web sdk
+    ((b, r, a, n, c, h, _, s, d, k) ->
+      if !b[n] or !b[n]._q
+        while s < _.length
+          c h, _[s++]
+        d = r.createElement(a)
+        d.async = 1
+        d.src = 'https://cdn.branch.io/branch-v1.6.10.min.js'
+        k = r.getElementsByTagName(a)[0]
+        k.parentNode.insertBefore d, k
+        b[n] = h
+      return
+    ) window, document, 'script', 'branch', ((b, r) ->
+
+      b[r] = ->
+        b._q.push [
+          r
+          arguments
+        ]
+        return
+
+      return
+    ), {
+      _q: []
+      _v: 1
+    }, 'init data first addListener removeListener setIdentity logout track link sendSMS referrals credits creditHistory applyCode validateCode getCode redeem banner closeBanner'.split(' '), 0
+
+    @initBranch()
+
+  # used for text to download links
+  initBranch: ->
+    # TODO : SET THIS FROM DJANGO!!
+    @$window.branchApiKey = 'key_test_ogfq42bC7tuGVWdMjNm3sjflvDdOBJiv'
+    @$window.branch.init @$window.branchApiKey
+
+  sendSMS: ->    
+    linkData =
+      channel: 'WebView'
+      feature: 'Text-To-Download'
+    @$window.branch.sendSMS @downloadPhone, linkData
+    @downloadPhone = null
 
   showMessages: =>
     @messages = angular.copy @messagesRQ.result
