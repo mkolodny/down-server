@@ -87,6 +87,9 @@ describe 'event controller', ->
   it 'should set the invitation on the controller', ->
     expect(ctrl.invitation).toBe invitation
 
+  it 'should set the linkId on the controller', ->
+    expect(ctrl.linkId).toBe linkId
+
   it 'should request the event members\' invitations', ->
     expect(Invitation.getMemberInvitations).toHaveBeenCalledWith {id: event.id}
 
@@ -398,7 +401,6 @@ describe 'event controller', ->
       # Mock the current invitation response.
       response = Invitation.declined
       ctrl.invitation.response = response
-      ctrl.linkId = linkId
 
       deferred = $q.defer()
       spyOn(Invitation, 'updateResponse').and.returnValue

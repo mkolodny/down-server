@@ -12,6 +12,7 @@ class EventCtrl
     @event = @data.event
     @fromUser = @data.fromUser
     @invitation = @data.invitation
+    @linkId = @data.linkId
 
     # Get/subscribe to the messages posted in this event.
     @Asteroid.subscribe 'event', @event.id
