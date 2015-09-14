@@ -65,13 +65,13 @@ class EventCtrl
     @message = null
 
   wasAccepted: ->
-    @invitation.response is @Invitation.accepted
+    @invitation?.response is @Invitation.accepted
 
   wasMaybed: ->
-    @invitation.response is @Invitation.maybe
+    @invitation?.response is @Invitation.maybe
 
   wasDeclined: ->
-    @invitation.response is @Invitation.declined
+    @invitation?.response is @Invitation.declined
 
   acceptInvitation: ->
     @respondToInvitation @Invitation.accepted
