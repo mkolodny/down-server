@@ -84,12 +84,14 @@ class EventCtrl
 
   respondToInvitation: (response) ->
     @Invitation.updateResponse @invitation, response
-      .$promise.then =>
-        @$state.go 'events',
-          event: @event
-          fromUser: @fromUser
-          invitation: @invitation
-          linkId: @$stateParams.linkId
+      .$promise.then (invitation) =>
+        @invitation = invitation
+        if invitation.response is @Invitation.declined
+          @$state.go 'invitation',
+            event: @event
+            fromUser: @fromUser
+            invitation: @invitation
+            linkId: @linkId
       , =>
         @error = 'For some reason, that didn\'t work.'
 

@@ -26,7 +26,7 @@ class InvitationCtrl
   respondToInvitation: (response) ->
     @Invitation.updateResponse @invitation, response
       .$promise.then =>
-        @$state.go 'events',
+        @$state.go 'event',
           event: @event
           fromUser: @fromUser
           invitation: @invitation

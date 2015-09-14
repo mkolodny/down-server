@@ -396,8 +396,9 @@ describe 'event controller', ->
 
     beforeEach ->
       # Mock the current invitation response.
-      response = Invitation.maybe
+      response = Invitation.declined
       ctrl.invitation.response = response
+      ctrl.linkId = linkId
 
       deferred = $q.defer()
       spyOn(Invitation, 'updateResponse').and.returnValue
@@ -412,15 +413,20 @@ describe 'event controller', ->
     describe 'successfully', ->
 
       beforeEach ->
-        deferred.resolve()
+        deferred.resolve invitation
         scope.$apply()
 
-      xit 'should go to the events view', ->
-        expect($state.go).toHaveBeenCalledWith 'events',
-          event: event
-          fromUser: fromUser
-          invitation: invitation
-          linkId: linkId
+      it 'should set the invitation on the controller', ->
+        expect(ctrl.invitation).toEqual invitation
+
+      describe 'when the response is declined', ->
+
+        it 'should go to the invitation view', ->
+          expect($state.go).toHaveBeenCalledWith 'invitation',
+            event: event
+            fromUser: fromUser
+            invitation: invitation
+            linkId: linkId
 
 
     describe 'unsuccessfully', ->
