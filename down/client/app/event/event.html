@@ -24,7 +24,7 @@
         <div id="event-info">
           <div id="event-details">
             <img id="from-image"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=100&height=100">
+                 ng-src="{{event.fromUser.getImageUrl(100)}}">
             <h1 id="event-title">
               {{event.event.title}}
             </h1>
@@ -47,29 +47,42 @@
             </div>
           </div>
           <div id="respond-buttons">
-            <button class="btn btn-default respond active">
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasAccepted()"
+                    ng-click="event.acceptInvitation()">
               Down
             </button>
-            <button class="btn btn-default respond">
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasMaybed()"
+                    ng-click="event.maybeInvitation()">
               Maybe
             </button>
-            <button class="btn btn-default respond">
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasDeclined()"
+                    ng-click="event.declineInvitation()">
               Can't
             </button>
           </div>
           <hr ng-if="event.members.length > 0">
           <div id="members">
             <img class="member" ng-repeat="member in event.members"
-                 src="https://graph.facebook.com/v2.2/10154645767660433/picture?width=72&height=72">
+                ng-src="{{member.getImageUrl(72)}}">
           </div>
           <hr class="hidden-xs">
           <div class="hidden-xs" id="phone-form-container">
             Text yourself a link to download the app:
-            <form class="form-inline" id="phone-form">
+            <form class="form-inline" id="phone-form" ng-submit="event.sendSMS()">
               <div class="form-group">
-                <input class="form-control" placeholder="(917) 622-7310">
-                <button type="submit" class="btn btn-primary"
-                        id="send-download-link">
+                <input 
+                  class="form-control" 
+                  ng-model="event.downloadPhone"
+                  placeholder="(917) 622-7310"
+                >
+                <button 
+                  type="submit"
+                  class="btn btn-primary"
+                  id="send-download-link"
+                >
                   Send
                 </button>
               </div>

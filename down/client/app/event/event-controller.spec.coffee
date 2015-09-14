@@ -10,6 +10,7 @@ describe 'event controller', ->
   $state = null
   $q = null
   $rootScope = null
+  $window = null
   Auth = null
   Asteroid = null
   Event = null
@@ -39,12 +40,17 @@ describe 'event controller', ->
     $controller = $injector.get '$controller'
     $state = $injector.get '$state'
     $q = $injector.get '$q'
+    $window = $injector.get '$window'
     Auth = angular.copy $injector.get('Auth')
     Asteroid = $injector.get 'Asteroid'
     Event = $injector.get 'Event'
     Invitation = $injector.get 'Invitation'
     scope = $injector.get '$rootScope'
     User = $injector.get 'User'
+
+    Auth.user =
+      id: 1
+      name: 'Jimbo Walker'
 
     event =
       id: 123
@@ -78,6 +84,9 @@ describe 'event controller', ->
       data: data
   )
 
+  it 'should set the current user on the controller', ->
+    expect(ctrl.currentUser).toBe Auth.user
+
   it 'should set the event on the controller', ->
     expect(ctrl.event).toBe event
 
@@ -87,11 +96,14 @@ describe 'event controller', ->
   it 'should set the invitation on the controller', ->
     expect(ctrl.invitation).toBe invitation
 
+  it 'should set the linkId on the controller', ->
+    expect(ctrl.linkId).toBe linkId
+
   it 'should request the event members\' invitations', ->
     expect(Invitation.getMemberInvitations).toHaveBeenCalledWith {id: event.id}
 
   it 'should subscribe to the events messages', ->
-    expect(Asteroid.subscribe).toHaveBeenCalledWith 'messages', event.id
+    expect(Asteroid.subscribe).toHaveBeenCalledWith 'event', event.id
 
   it 'should get the messages collection', ->
     expect(Asteroid.getCollection).toHaveBeenCalledWith 'messages'
@@ -107,6 +119,44 @@ describe 'event controller', ->
 
   it 'should listen for new messages', ->
     expect(messagesRQ.on).toHaveBeenCalledWith 'change', ctrl.showMessages
+
+  # How to test?
+  xit 'should inititialize branch', ->
+    expect(ctrl.initBranch).toHaveBeenCalled()
+
+  describe 'setting up branch', ->
+
+    beforeEach ->
+      branchApiKey = 'key_test_ogfq42bC7tuGVWdMjNm3sjflvDdOBJiv'
+      $window.branchApiKey = branchApiKey
+      $window.branch =
+        init: jasmine.createSpy 'branch.init'
+
+      ctrl.initBranch()
+
+    it 'should init the branch sdk', ->
+      expect($window.branch.init).toHaveBeenCalledWith branchApiKey
+
+
+  describe 'sending a download link', ->
+    downloadPhone = null
+
+    beforeEach ->
+      spyOn $window.branch, 'sendSMS'
+      downloadPhone = '+19252852230'
+      ctrl.downloadPhone = downloadPhone
+
+      ctrl.sendSMS()
+
+    it 'should send the sms', ->
+      linkData =
+        channel: 'WebView'
+        feature: 'Text-To-Download'
+      expect($window.branch.sendSMS).toHaveBeenCalledWith downloadPhone, linkData
+        
+    it 'should clear the form', ->
+      expect(ctrl.downloadPhone).toBeNull()
+
 
   describe 'when there is a redirect view', ->
     redirectView = null
@@ -327,3 +377,146 @@ describe 'event controller', ->
 
     it 'should clear the message', ->
       expect(ctrl.message).toBeNull()
+
+  # Copied from invitation-controller.spec.coffee
+  describe 'checking whether the user accepted their invitation', ->
+
+    describe 'when they did', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.accepted
+
+      it 'should return true', ->
+        expect(ctrl.wasAccepted()).toBe true
+
+
+    describe 'when they didn\'t', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.maybe
+
+      it 'should return false', ->
+        expect(ctrl.wasAccepted()).toBe false
+
+
+  describe 'checking whether the user responded maybe their invitation', ->
+
+    describe 'when they did', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.maybe
+
+      it 'should return true', ->
+        expect(ctrl.wasMaybed()).toBe true
+
+
+    describe 'when they didn\'t', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.accepted
+
+      it 'should return false', ->
+        expect(ctrl.wasMaybed()).toBe false
+
+
+  describe 'checking whether the user declined their invitation', ->
+
+    describe 'when they did', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.declined
+
+      it 'should return true', ->
+        expect(ctrl.wasDeclined()).toBe true
+
+
+    describe 'when they didn\'t', ->
+
+      beforeEach ->
+        ctrl.invitation.response = Invitation.maybe
+
+      it 'should return false', ->
+        expect(ctrl.wasDeclined()).toBe false
+
+
+
+  describe 'responding to the invitation', ->
+    response = null
+    deferred = null
+
+    beforeEach ->
+      # Mock the current invitation response.
+      response = Invitation.declined
+      ctrl.invitation.response = response
+
+      deferred = $q.defer()
+      spyOn(Invitation, 'updateResponse').and.returnValue
+        $promise: deferred.promise
+      spyOn $state, 'go'
+
+      ctrl.respondToInvitation response
+
+    it 'should update the invitation', ->
+      expect(Invitation.updateResponse).toHaveBeenCalledWith invitation, response
+
+    describe 'successfully', ->
+
+      beforeEach ->
+        deferred.resolve invitation
+        scope.$apply()
+
+      it 'should set the invitation on the controller', ->
+        expect(ctrl.invitation).toEqual invitation
+
+      describe 'when the response is declined', ->
+
+        it 'should go to the invitation view', ->
+          expect($state.go).toHaveBeenCalledWith 'invitation',
+            event: event
+            fromUser: fromUser
+            invitation: invitation
+            linkId: linkId
+
+
+    describe 'unsuccessfully', ->
+
+      beforeEach ->
+        deferred.reject()
+        scope.$apply()
+
+      xit 'show an error', ->
+        error = 'For some reason, that didn\'t work.'
+        expect(ctrl.error).toBe error
+
+
+  describe 'accepting the invitation', ->
+
+    beforeEach ->
+      spyOn ctrl, 'respondToInvitation'
+
+      ctrl.acceptInvitation()
+
+    it 'should respond to the invitation', ->
+      expect(ctrl.respondToInvitation).toHaveBeenCalledWith Invitation.accepted
+
+
+  describe 'responding maybe to the invitation', ->
+
+    beforeEach ->
+      spyOn ctrl, 'respondToInvitation'
+
+      ctrl.maybeInvitation()
+
+    it 'should respond to the invitation', ->
+      expect(ctrl.respondToInvitation).toHaveBeenCalledWith Invitation.maybe
+
+
+  describe 'declining the invitation', ->
+
+    beforeEach ->
+      spyOn ctrl, 'respondToInvitation'
+
+      ctrl.declineInvitation()
+
+    it 'should respond to the invitation', ->
+      expect(ctrl.respondToInvitation).toHaveBeenCalledWith Invitation.declined

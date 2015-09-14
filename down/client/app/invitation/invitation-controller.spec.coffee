@@ -149,8 +149,8 @@ describe 'invitation controller', ->
         deferred.resolve()
         scope.$apply()
 
-      it 'should go to the events view', ->
-        expect($state.go).toHaveBeenCalledWith 'events',
+      it 'should go to the event view', ->
+        expect($state.go).toHaveBeenCalledWith 'event',
           event: event
           fromUser: fromUser
           invitation: invitation
