@@ -11,7 +11,8 @@ def send_message(user_ids, message, sms=True, is_invitation=False):
 
     # Notify users with Android devices.
     gcmdevices = GCMDevice.objects.filter(user_id__in=user_ids)
-    gcmdevices.send_message(message, badge=1)
+    extra = {'title': 'Down.', 'message': message}
+    gcmdevices.send_message(None, extra=extra)
 
     if sms:
         # Notify users who were added from contacts.
