@@ -53,7 +53,7 @@ class EventSerializer(serializers.ModelSerializer):
         super common - saving an event with a place.
         """
         invitations = [Invitation(**invitation)
-                for invitation in validated_data.pop('invitations')]
+                       for invitation in validated_data.pop('invitations')]
 
         has_place = validated_data.has_key('place')
         if has_place:
@@ -74,11 +74,18 @@ class EventSerializer(serializers.ModelSerializer):
         for invitation in invitations:
             invitation.event = event
             invitation.from_user_id = event.creator_id
-            if invitation.to_user.id == event.creator_id:
+            if invitation.to_user_id == event.creator_id:
                 invitation.response = Invitation.MAYBE
             else:
                 invitation.response = Invitation.NO_RESPONSE
         Invitation.objects.bulk_create(invitations)
+
+        # Notify the `to_user`s users that they were invited.
+        user_ids = [invitation.to_user_id for invitation in invitations
+                    if invitation.to_user_id != event.creator_id]
+        name = self.context['request'].user.name
+        message = 'from {name}'.format(name=name)
+        send_message(user_ids, message, is_invitation=True)
 
         return event
 
@@ -94,10 +101,16 @@ class InvitationListSerializer(serializers.ListSerializer):
             if len(invitations) > 0:
                 event_id = invitations[0].event_id
                 event = Event.objects.get(id=event_id)
+
+                Invitation.objects.bulk_create(invitations)
+
+                # Notify the `to_user`s users that they were invited.
+                user_ids = [invitation.to_user_id for invitation in invitations]
+                name = self.context['request'].user.name
+                message = 'from {name}'.format(name=name)
+                send_message(user_ids, message, is_invitation=True)
         except Event.DoesNotExist:
             raise ValidationError('Event doesn\'t exist')
-
-        Invitation.objects.bulk_create(invitations)
 
         return invitations
 
@@ -163,7 +176,7 @@ class InvitationSerializer(serializers.ModelSerializer):
                 to_user_ids = [friendship.user_id for friendship in added_me]
 
                 # Always notify the person who sent the invitation... Unless they
-                # invited themselves (i.e. they created the event).
+                # invited themselves (they created the event).
                 if invitation.from_user_id != user.id:
                     to_user_ids.append(invitation.from_user_id)
             elif new_response == Invitation.DECLINED:

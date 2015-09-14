@@ -4,7 +4,7 @@ from push_notifications.models import APNSDevice, GCMDevice
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import UserPhone
 
-def send_message(user_ids, message, sms=True):
+def send_message(user_ids, message, sms=True, is_invitation=False):
     # Notify users with iOS devices.
     apnsdevices = APNSDevice.objects.filter(user_id__in=user_ids)
     apnsdevices.send_message(message, badge=1)
@@ -23,6 +23,8 @@ def send_message(user_ids, message, sms=True):
                 if user_id not in gcmdevice_ids]
         userphones = UserPhone.objects.filter(user_id__in=remaining_user_ids)
         client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
+        if is_invitation:
+            message = 'Down. {og_message}'.format(og_message=message)
         for userphone in userphones:
             phone = unicode(userphone.phone)
             client.messages.create(to=phone, from_=settings.TWILIO_PHONE,

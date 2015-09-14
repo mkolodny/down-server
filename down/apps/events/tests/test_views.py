@@ -122,8 +122,8 @@ class EventTests(APITestCase):
         self.patcher.stop()
 
     @mock.patch('down.apps.events.serializers.add_member')
-    @mock.patch('down.apps.events.models.Invitation.objects.bulk_create')
-    def test_create(self, mock_bulk_create, mock_add_member):
+    @mock.patch('down.apps.events.serializers.send_message')
+    def test_create(self, mock_send_message, mock_add_member):
         data = self.post_data
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -137,22 +137,22 @@ class EventTests(APITestCase):
         data.pop('invitations') # The event model doesn't have invitations.
         event = Event.objects.get(**data)
 
-        # It should bulk create two invitations.
-        self.assertTrue(mock_bulk_create.called)
-        call_args = mock_bulk_create.call_args[0][0]
-        user_invitation_call = call_args[0]
-        self.assertEqual(user_invitation_call.event_id, event.id)
-        self.assertEqual(user_invitation_call.response, Invitation.MAYBE)
-        self.assertEqual(user_invitation_call.to_user_id, self.user.id)
-        self.assertEqual(user_invitation_call.from_user_id, self.user.id)
-        friend_invitation_call = call_args[1]
-        self.assertEqual(friend_invitation_call.event_id, event.id)
-        self.assertEqual(friend_invitation_call.response, Invitation.NO_RESPONSE)
-        self.assertEqual(friend_invitation_call.to_user_id, self.friend1.id)
-        self.assertEqual(friend_invitation_call.from_user_id, self.user.id)
+        # It should create the invitations.
+        Invitation.objects.get(to_user=self.user, from_user=self.user, event=event,
+                               response=Invitation.MAYBE)
+        Invitation.objects.get(to_user=self.friend1, from_user=self.user,
+                               event=event, response=Invitation.NO_RESPONSE)
 
         # It should add the creator to the members list.
         mock_add_member.assert_called_once_with(event.id, event.creator_id)
+
+        # It should send notifications to the users who were invited aside from
+        # the creator.
+        # TODO: Include a link invitation.
+        user_ids = [self.friend1.id]
+        message = 'from {name}'.format(name=self.user.name)
+        mock_send_message.assert_called_once_with(user_ids, message,
+                                                  is_invitation=True)
 
         # It should return the event.
         serializer = EventSerializer(event)
@@ -307,9 +307,8 @@ class InvitationTests(APITestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    @mock.patch('down.apps.events.models.Invitation.objects.bulk_create')
-    #@mock.patch('down.apps.events.views.send_message')
-    def test_bulk_create(self, mock_bulk_create):
+    @mock.patch('down.apps.events.serializers.send_message')
+    def test_bulk_create(self, mock_send_message):
         # Invite the current user.
         invitation = Invitation(to_user=self.user1, from_user=self.user1,
                                 event=self.event, response=Invitation.MAYBE)
@@ -318,9 +317,20 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url, self.bulk_create_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should bulk create the invitations.
-        # TODO: Make this test more robust.
-        self.assertTrue(mock_bulk_create.called)
+        # It should create the invitations.
+        invitations = self.bulk_create_data['invitations']
+        for invitation in invitations:
+            Invitation.objects.get(to_user=invitation['to_user'],
+                                   from_user=self.user1,
+                                   event=self.event,
+                                   response=Invitation.NO_RESPONSE)
+
+        # It should send notifications to the users who were invited.
+        # TODO: Include a link invitation.
+        user_ids = [invitation['to_user'] for invitation in invitations]
+        message = 'from {name}'.format(name=self.user1.name)
+        mock_send_message.assert_called_once_with(user_ids, message,
+                                                  is_invitation=True)
 
     def test_bulk_create_not_logged_in(self):
         # Don't include the user's credentials in the request.
@@ -329,22 +339,25 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @mock.patch('down.apps.events.views.send_message')
-    @mock.patch('down.apps.events.models.get_invite_sms')
-    def test_bulk_create_as_creator_not_invited(self, mock_get_invite_sms,
-                                                mock_send_message):
-        data = self.bulk_create_data
-
-        # Mock the sms message.
-        mock_get_invite_sms.return_value = '<user> invited you to <event>'
-
-        response = self.client.post(self.list_url, data)
+    @mock.patch('down.apps.events.serializers.send_message')
+    def test_bulk_create_as_creator_not_invited(self, mock_send_message):
+        response = self.client.post(self.list_url, self.bulk_create_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create the invitations.
-        invitations = Invitation.objects.filter(from_user=self.user1,
-                                                event=self.event)
-        self.assertEqual(invitations.count(), len(data['invitations']))
+        invitations = self.bulk_create_data['invitations']
+        for invitation in invitations:
+            Invitation.objects.get(to_user=invitation['to_user'],
+                                   from_user=self.user1,
+                                   event=self.event,
+                                   response=Invitation.NO_RESPONSE)
+
+        # It should send notifications to the users who were invited.
+        # TODO: Include a link invitation.
+        user_ids = [invitation['to_user'] for invitation in invitations]
+        message = 'from {name}'.format(name=self.user1.name)
+        mock_send_message.assert_called_once_with(user_ids, message,
+                                                  is_invitation=True)
 
     def test_bulk_create_not_invited(self):
         # Log the second user in.

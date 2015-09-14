@@ -89,3 +89,35 @@ class SendMessageTests(TestCase):
         token = self.android_user_device.registration_id
         data = {'message': message}
         mock_gcm.assert_any_call(registration_ids=[token], data=data)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('push_notifications.gcm.gcm_send_bulk_message')
+    @mock.patch('down.apps.notifications.utils.TwilioRestClient')
+    def test_send_message_invitation(self, mock_twilio, mock_gcm, mock_apns):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        user_ids = [self.ios_user.id, self.android_user.id, self.sms_user.id]
+        message = 'from Barack Obama'
+        utils.send_message(user_ids, message, is_invitation=True)
+
+        # It should send push notifications to users with ios devices.
+        token = self.ios_user_device.registration_id
+        mock_apns.assert_any_call(registration_ids=[token], alert=message,
+                                  badge=1)
+
+        # It should send push notifications to users with android devices.
+        token = self.android_user_device.registration_id
+        data = {'message': message}
+        mock_gcm.assert_any_call(registration_ids=[token], data=data)
+
+        # It should send SMS to users without devices.
+        message = 'Down. {og_message}'.format(og_message=message)
+        phone = unicode(self.sms_user_phone.phone)
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=message)
+
+        # TODO: It should create link invitations.
+        # Pass the event into send_message, too.
