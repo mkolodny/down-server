@@ -22,12 +22,12 @@ uglify = require 'gulp-uglify'
 watchify = require 'watchify'
 protractor = require('gulp-protractor').protractor
 
-buildDir = './build'
+buildDir = './build/client'
 appDir = './app'
 dataDir = './data'
 testDir = './tests'
 vendorDir = './app/vendor'
-staticDir = '../static'
+staticDir = '../static/client'
 
 scripts = (watch) ->
   bundler = browserify
@@ -177,13 +177,14 @@ gulp.task 'build', (done) ->
 
 gulp.task 'prepare-static', ->
   gulp.src ["#{buildDir}/**/*", "!#{buildDir}/{client,client/**}"]
-    .pipe gulp.dest("#{buildDir}/client")
-    .pipe gulp.dest("#{staticDir}/client")
+    .pipe gulp.dest(staticDir)
 
 
 gulp.task 'watch', [
   'styles'
   'templates'
+  'data'
+  'vendor'
 ], ->
   scripts true
   gulp.watch "#{appDir}/**/*.scss", ['styles']
