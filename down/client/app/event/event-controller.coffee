@@ -1,7 +1,7 @@
 class EventCtrl
-  @$inject: ['$state', '$stateParams', '$window', 'Asteroid', 'Auth', 'Event',
-             'Invitation', 'User', 'data']
-  constructor: (@$state, @$stateParams, @$window, @Asteroid, @Auth, @Event,
+  @$inject: ['$scope', '$state', '$stateParams', '$window', 'Asteroid', 'Auth',
+             'Event', 'Invitation', 'User', 'data']
+  constructor: (@$scope, @$state, @$stateParams, @$window, @Asteroid, @Auth, @Event,
                 @Invitation, @User, @data) ->
     if @data.redirectView
       @$state.go @data.redirectView,
@@ -9,6 +9,10 @@ class EventCtrl
         fromUser: @data.fromUser
         invitation: @data.invitation
         linkId: @data.linkId
+      return
+
+    if @data.error
+      @$window.location.href = '/'
       return
 
     @currentUser = @Auth.user

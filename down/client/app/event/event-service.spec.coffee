@@ -2,7 +2,7 @@ require 'angular'
 require 'angular-mocks'
 require 'down-ionic/app/common/auth/auth-module'
 require 'down-ionic/app/common/resources/resources-module'
-require './event-module'
+Service = require './event-service'
 
 describe 'event service', ->
   $q = null
@@ -22,11 +22,11 @@ describe 'event service', ->
 
   beforeEach angular.mock.module('down.resources')
 
-  beforeEach angular.mock.module('down.event')
-
   beforeEach angular.mock.module('ui.router')
 
   beforeEach angular.mock.module(($provide) ->
+    $provide.service 'EventService', Service
+
     Auth =
       user:
         id: 1

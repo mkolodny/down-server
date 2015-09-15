@@ -97,7 +97,7 @@ gulp.task 'vendor', ->
 gulp.task 'minify-js', ->
   gulp.src "#{buildDir}/app/bundle.js"
     .pipe ngAnnotate()
-    .pipe uglify({mangle: false})
+    .pipe uglify()
     .pipe gulp.dest("#{buildDir}/app")
 
 

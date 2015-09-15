@@ -1,4 +1,5 @@
 class EventService
+  @$inject: ['$q', '$state', 'Auth', 'Invitation', 'LinkInvitation']
   constructor: (@$q, @$state, @Auth, @Invitation, @LinkInvitation) ->
 
   getData: (params) ->

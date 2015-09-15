@@ -82,6 +82,7 @@ describe 'event controller', ->
     ctrl = $controller EventCtrl,
       Auth: Auth
       data: data
+      $scope: scope
   )
 
   it 'should set the current user on the controller', ->
@@ -142,6 +143,8 @@ describe 'event controller', ->
     downloadPhone = null
 
     beforeEach ->
+      scope.sendSMSForm =
+        $valid: true
       spyOn $window.branch, 'sendSMS'
       downloadPhone = '+19252852230'
       ctrl.downloadPhone = downloadPhone
@@ -153,7 +156,7 @@ describe 'event controller', ->
         channel: 'WebView'
         feature: 'Text-To-Download'
       expect($window.branch.sendSMS).toHaveBeenCalledWith downloadPhone, linkData
-        
+
     it 'should clear the form', ->
       expect(ctrl.downloadPhone).toBeNull()
 
@@ -170,6 +173,7 @@ describe 'event controller', ->
       ctrl = $controller EventCtrl,
         Auth: Auth
         data: data
+        $scope: scope
 
     it 'should go to the redirect state', ->
       expect($state.go).toHaveBeenCalledWith redirectView,
@@ -179,10 +183,23 @@ describe 'event controller', ->
         linkId: linkId
 
 
-  xdescribe 'when there is an error', ->
+  describe 'when there is an error', ->
+    mockWindow = null
 
     beforeEach ->
-      data.error = true
+      data =
+        error: true
+
+      mockWindow =
+        location: {}
+      ctrl = $controller EventCtrl,
+        $window: mockWindow
+        Auth: Auth
+        data: data
+        $scope: scope
+
+    it 'should redirect to the landing page', ->
+      expect(mockWindow.location.href).toBe '/'
 
 
   describe 'when the invitations return successfully', ->
