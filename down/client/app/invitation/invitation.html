@@ -1,3 +1,5 @@
+{% load static from staticfiles %}
+
 {% verbatim %}
 <div id="invitation" class="non-member-view">
   <nav class="navbar navbar-default">
@@ -63,6 +65,24 @@
           </div>
           <p>Respond "Down" or "Maybe" to see who's down and join the group chat.</p>
         </div>
+      </div>    
+    </div>
+    <div class="row download-images">
+      <div class="col-md-6 col-md-offset-3">
+        <a href="">
+          {% endverbatim %}
+          <img class="download-image"
+               src="{% static 'download-ios.png' %}"
+               alt="Download on the App Store">
+          {% verbatim %}
+        </a>
+        <a href="">
+          {% endverbatim %}
+          <img class="download-image"
+               src="{% static 'download-android.png' %}"
+               alt="Get it on Google Play">
+          {% verbatim %}
+        </a>
       </div>
     </div>
   </div>
