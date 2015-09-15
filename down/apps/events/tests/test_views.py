@@ -148,11 +148,11 @@ class EventTests(APITestCase):
 
         # It should send notifications to the users who were invited aside from
         # the creator.
-        # TODO: Include a link invitation.
         user_ids = [self.friend1.id]
         message = 'from {name}'.format(name=self.user.name)
         mock_send_message.assert_called_once_with(user_ids, message,
-                                                  is_invitation=True)
+                                                  event_id=event.id,
+                                                  from_user=self.user)
 
         # It should return the event.
         serializer = EventSerializer(event)
@@ -330,7 +330,8 @@ class InvitationTests(APITestCase):
         user_ids = [invitation['to_user'] for invitation in invitations]
         message = 'from {name}'.format(name=self.user1.name)
         mock_send_message.assert_called_once_with(user_ids, message,
-                                                  is_invitation=True)
+                                                  event_id=self.event.id,
+                                                  from_user=self.user1)
 
     def test_bulk_create_not_logged_in(self):
         # Don't include the user's credentials in the request.
@@ -357,7 +358,8 @@ class InvitationTests(APITestCase):
         user_ids = [invitation['to_user'] for invitation in invitations]
         message = 'from {name}'.format(name=self.user1.name)
         mock_send_message.assert_called_once_with(user_ids, message,
-                                                  is_invitation=True)
+                                                  event_id=self.event.id,
+                                                  from_user=self.user1)
 
     def test_bulk_create_not_invited(self):
         # Log the second user in.

@@ -3,8 +3,9 @@ from django.conf import settings
 from push_notifications.models import APNSDevice, GCMDevice
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import UserPhone
+from down.apps.events.models import LinkInvitation
 
-def send_message(user_ids, message, sms=True, is_invitation=False):
+def send_message(user_ids, message, sms=True, from_user=None, event_id=None):
     # Notify users with iOS devices.
     apnsdevices = APNSDevice.objects.filter(user_id__in=user_ids)
     apnsdevices.send_message(message, badge=1)
@@ -14,14 +15,24 @@ def send_message(user_ids, message, sms=True, is_invitation=False):
     extra = {'title': 'Down.', 'message': message}
     gcmdevices.send_message(None, extra=extra)
 
-    if sms:
-        # Notify users who were added from contacts.
-        if is_invitation:
-            message = 'Down. {og_message}'.format(og_message=message)
-        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        userphones = UserPhone.objects.filter(user_id__in=user_ids,
-                                              user__username__isnull=True)
-        for userphone in userphones:
-            phone = unicode(userphone.phone)
-            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
-                                   body=message)
+    if not sms:
+        return
+
+    # Notify users who were added from contacts.
+    if from_user is not None and event_id is not None:
+        # The message is an invitation to an event. Send each contact a link
+        # invitation.
+        emoji = '\U0001f447'
+        link_invitation, created = LinkInvitation.objects.get_or_create(
+                event_id=event_id, from_user=from_user)
+        link = 'http://{emoji}.ws/e/{link_id}'.format(
+                emoji=emoji, link_id=link_invitation.link_id)
+        name = link_invitation.from_user.name
+        message = '{name} sent you a down - {link}'.format(name=name, link=link)
+    client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
+    userphones = UserPhone.objects.filter(user_id__in=user_ids,
+                                          user__username__isnull=True)
+    for userphone in userphones:
+        phone = unicode(userphone.phone)
+        client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
+                               body=message)

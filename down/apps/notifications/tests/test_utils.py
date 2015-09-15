@@ -4,6 +4,7 @@ from django.test import TestCase
 import mock
 from push_notifications.models import APNSDevice, GCMDevice
 from down.apps.auth.models import User, UserPhone
+from down.apps.events.models import Event, LinkInvitation
 from down.apps.notifications import utils
 
 
@@ -95,9 +96,61 @@ class SendMessageTests(TestCase):
         mock_client = mock.MagicMock()
         mock_twilio.return_value = mock_client
 
+        # Mock an event.
+        event = Event(title='Ball?', creator=self.user)
+        event.save()
+
         user_ids = [self.user.id, self.contact.id]
         message = 'from Barack Obama'
-        utils.send_message(user_ids, message, is_invitation=True)
+        from_user = self.user
+        utils.send_message(user_ids, message, from_user=from_user,
+                           event_id=event.id)
+
+        # It should send push notifications to users with ios devices.
+        token = self.ios_device.registration_id
+        mock_apns.assert_any_call(registration_ids=[token], alert=message,
+                                  badge=1)
+
+        # It should send push notifications to users with android devices.
+        token = self.android_device.registration_id
+        data = {'title': 'Down.', 'message': message}
+        mock_gcm.assert_any_call(registration_ids=[token], data=data)
+
+        # It should create a link invitation.
+        link_invitation = LinkInvitation.objects.get(event=event,
+                                                     from_user=from_user)
+
+        # It should send SMS to users without devices.
+        emoji = '\U0001f447'
+        link = 'http://{emoji}.ws/e/{link_id}'.format(
+                emoji=emoji, link_id=link_invitation.link_id)
+        name = link_invitation.from_user.name
+        message = '{name} sent you a down - {link}'.format(name=name, link=link)
+        phone = unicode(self.contact_phone.phone)
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=message)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('push_notifications.gcm.gcm_send_bulk_message')
+    @mock.patch('down.apps.notifications.utils.TwilioRestClient')
+    def test_send_message_invitation_link_exists(self, mock_twilio, mock_gcm,
+                                                 mock_apns):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        # Mock an event with a link invitation.
+        event = Event(title='Ball?', creator=self.user)
+        event.save()
+        from_user = self.user
+        link_invitation = LinkInvitation(event=event, from_user=from_user)
+        link_invitation.save()
+
+        user_ids = [self.user.id, self.contact.id]
+        message = 'from Barack Obama'
+        utils.send_message(user_ids, message, from_user=from_user,
+                           event_id=event.id)
 
         # It should send push notifications to users with ios devices.
         token = self.ios_device.registration_id
@@ -110,11 +163,12 @@ class SendMessageTests(TestCase):
         mock_gcm.assert_any_call(registration_ids=[token], data=data)
 
         # It should send SMS to users without devices.
-        message = 'Down. {og_message}'.format(og_message=message)
+        emoji = '\U0001f447'
+        link = 'http://{emoji}.ws/e/{link_id}'.format(
+                emoji=emoji, link_id=link_invitation.link_id)
+        name = link_invitation.from_user.name
+        message = '{name} sent you a down - {link}'.format(name=name, link=link)
         phone = unicode(self.contact_phone.phone)
         mock_client.messages.create.assert_called_with(to=phone, 
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
-
-        # TODO: It should create link invitations.
-        # Pass the event into send_message, too.

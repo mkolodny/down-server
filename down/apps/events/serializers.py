@@ -83,9 +83,9 @@ class EventSerializer(serializers.ModelSerializer):
         # Notify the `to_user`s users that they were invited.
         user_ids = [invitation.to_user_id for invitation in invitations
                     if invitation.to_user_id != event.creator_id]
-        name = self.context['request'].user.name
-        message = 'from {name}'.format(name=name)
-        send_message(user_ids, message, is_invitation=True)
+        from_user = self.context['request'].user
+        message = 'from {name}'.format(name=from_user.name)
+        send_message(user_ids, message, event_id=event.id, from_user=from_user)
 
         return event
 
@@ -106,9 +106,10 @@ class InvitationListSerializer(serializers.ListSerializer):
 
                 # Notify the `to_user`s users that they were invited.
                 user_ids = [invitation.to_user_id for invitation in invitations]
-                name = self.context['request'].user.name
-                message = 'from {name}'.format(name=name)
-                send_message(user_ids, message, is_invitation=True)
+                from_user = self.context['request'].user
+                message = 'from {name}'.format(name=from_user.name)
+                send_message(user_ids, message, event_id=event.id,
+                             from_user=from_user)
         except Event.DoesNotExist:
             raise ValidationError('Event doesn\'t exist')
 
