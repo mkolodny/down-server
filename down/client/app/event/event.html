@@ -71,29 +71,39 @@
           <hr class="hidden-xs">
           <div class="hidden-xs" id="phone-form-container">
             Text yourself a link to download the app:
-            <form class="form-inline" id="phone-form" ng-submit="event.sendSMS()">
-              <div class="form-group">
-                <input 
-                  class="form-control" 
-                  ng-model="event.downloadPhone"
-                  placeholder="(917) 622-7310"
-                >
-                <button 
-                  type="submit"
-                  class="btn btn-primary"
-                  id="send-download-link"
-                >
-                  Send
-                </button>
-              </div>
+            <form role="form"
+                  novalidate
+                  name="sendSMSForm" 
+                  class="form-inline"
+                  id="phone-form" 
+                  ng-submit="event.sendSMS()">
+              <input intl-phone
+                     required
+                     id="phone"
+                     name="phone"
+                     class="form-control"
+                     ng-class="{'submitted': sendSMSForm.$submitted}"
+                     ng-model="event.downloadPhone"
+                     placeholder="(917) 622-7310">
+              <button type="submit"
+                      class="btn btn-primary"
+                      id="send-download-link">
+                Send
+              </button>
             </form>
+            <div class="form-error"
+                 ng-if="sendSMSForm.$submitted && 
+                 sendSMSForm.phone.$error.validNumber && !sendSMSForm.phone.$error.required">
+              That phone number is invalid.
+            </div>
           </div>
           <hr class="hidden-xs">
           <div class="hidden-xs download-images">
             <div>
               <a href="">
                 {% endverbatim %}
-                <img class="download-image" src="{% static 'download-ios.png' %}"
+                <img class="download-image"
+                     src="{% static 'download-ios.png' %}"
                      alt="Download on the App Store">
                 {% verbatim %}
               </a>

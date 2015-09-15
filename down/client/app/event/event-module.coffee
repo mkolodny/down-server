@@ -3,12 +3,14 @@ require 'angularjs-scroll-glue'
 require 'angular-ui-router'
 require 'down-ionic/app/common/auth/auth-module'
 require 'down-ionic/app/common/resources/resources-module'
+require 'down-ionic/app/common/intl-phone/intl-phone-module'
 EventCtrl = require './event-controller'
 EventService = require './event-service'
 
 angular.module 'down.event', [
     'ui.router'
     'down.auth'
+    'down.intlPhone'
     'down.resources'
     'luegg.directives'
   ]

@@ -1,3 +1,5 @@
+# jquery must be loaded before angular - needed for intl-phone
+window.$ = window.jQuery = require 'jquery'
 require 'angular'
 require './app-module'
 

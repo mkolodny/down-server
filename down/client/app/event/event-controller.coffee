@@ -1,7 +1,7 @@
 class EventCtrl
-  @$inject: ['$state', '$stateParams', 'Asteroid', 'Auth', 'Event',
+  @$inject: ['$state', '$stateParams', '$window', 'Asteroid', 'Auth', 'Event',
              'Invitation', 'User', 'data']
-  constructor: (@$state, @$stateParams, @Asteroid, @Auth, @Event,
+  constructor: (@$state, @$stateParams, @$window, @Asteroid, @Auth, @Event,
                 @Invitation, @User, @data) ->
     if @data.redirectView
       @$state.go @data.redirectView,
@@ -68,6 +68,8 @@ class EventCtrl
     @$window.branch.init @$window.branchApiKey
 
   sendSMS: ->
+    if not @$scope.sendSMSForm.$valid then return
+
     linkData =
       channel: 'WebView'
       feature: 'Text-To-Download'
