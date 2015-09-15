@@ -14,6 +14,7 @@ karmaConf = require './config/karma.conf'
 minifyCss = require 'gulp-minify-css'
 ngAnnotate = require 'gulp-ng-annotate'
 rename = require 'gulp-rename'
+runSequence = require 'run-sequence'
 sass = require 'gulp-sass'
 sh = require 'shelljs'
 source = require 'vinyl-source-stream'
@@ -26,6 +27,7 @@ appDir = './app'
 dataDir = './data'
 testDir = './tests'
 vendorDir = './app/vendor'
+staticDir = '../static'
 
 scripts = (watch) ->
   bundler = browserify
@@ -50,12 +52,10 @@ scripts = (watch) ->
     bundler.on 'update', bundle
 
   bundle()
-  return
 
 
 gulp.task 'scripts', ->
   scripts false
-  return
 
 
 gulp.task 'styles', ->
@@ -67,13 +67,11 @@ gulp.task 'styles', ->
     #.pipe minifyCss(keepSpecialComments: 0)
     #.pipe rename(extname: '.min.css')
     #.pipe gulp.dest("#{buildDir}/app")
-  return
 
 
 gulp.task 'data', ->
-  gulp.src "#{dataDir}/**/*", {base: "#{dataDir}"}
+  gulp.src "#{dataDir}/**/*"
     .pipe gulp.dest(buildDir)
-  return
 
 
 gulp.task 'templates', ->
@@ -89,13 +87,11 @@ gulp.task 'templates', ->
 
   gulp.src "#{appDir}/index.html"
     .pipe gulp.dest(buildDir)
-  return
 
 
 gulp.task 'vendor', ->
   gulp.src "#{vendorDir}/**/*", {base: "#{appDir}"}
     .pipe gulp.dest("#{buildDir}/app")
-  return
 
 
 gulp.task 'minify-js', ->
@@ -103,21 +99,18 @@ gulp.task 'minify-js', ->
     .pipe ngAnnotate()
     .pipe uglify({mangle: false})
     .pipe gulp.dest("#{buildDir}/app")
-  return
 
 
 gulp.task 'minify-css', ->
   gulp.src "#{buildDir}/app/main.css"
     .pipe minifyCss()
     .pipe gulp.dest("#{buildDir}/app")
-  return
 
 
 gulp.task 'minify-images', ->
   gulp.src "#{buildDir}/images/**/*"
     .pipe imagemin()
     .pipe gulp.dest("#{buildDir}/images")
-  return
 
 
 gulp.task 'minify', [
@@ -148,13 +141,11 @@ gulp.task 'unit', ->
 
     # run the unit tests using karma
     karma.start karmaConf
-  return
 
 
 gulp.task 'webdriver-update', (done) ->
   childProcess.spawn 'webdriver-manager', ['update'], stdio: 'inherit'
     .once 'close', done
-  return
 
 
 gulp.task 'e2e', ['webdriver-update'], ->
@@ -162,23 +153,31 @@ gulp.task 'e2e', ['webdriver-update'], ->
     .pipe protractor(configFile: './config/protractor.conf.coffee')
     .on 'error', (error) ->
       throw error
-  return
 
 
 gulp.task 'clean', ->
-  del 'www'
-  return
+  del "#{buildDir}/**/*"
 
 
-gulp.task 'build', [
-  # 'clean'
-  'scripts'
-  'styles'
-  'templates'
-  'data'
-  'vendor'
-  #'minify'
-]
+gulp.task 'build', (done) ->
+  runSequence(
+    [
+      'scripts'
+      'styles'
+      'templates'
+      'data'
+      'vendor'
+    ]
+    'minify'
+    'prepare-static'
+    done
+  )
+
+
+gulp.task 'prepare-static', ->
+  gulp.src ["#{buildDir}/**/*", "!#{buildDir}/{client,client/**}"]
+    .pipe gulp.dest("#{buildDir}/client")
+    .pipe gulp.dest("#{staticDir}/client")
 
 
 gulp.task 'watch', [
@@ -193,7 +192,6 @@ gulp.task 'watch', [
   livereload.listen()
   gulp.watch "#{buildDir}/**/*"
     .on 'change', livereload.changed
-  return
 
 
 gulp.task 'default', ['watch']
