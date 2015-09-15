@@ -157,6 +157,7 @@ gulp.task 'e2e', ['webdriver-update'], ->
 
 gulp.task 'clean', ->
   del "#{buildDir}/**/*"
+  del "#{staticDir}/client/**/*", {force: true}
 
 
 gulp.task 'build', (done) ->
