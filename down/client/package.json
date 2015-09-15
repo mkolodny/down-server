@@ -11,10 +11,12 @@
     "angularjs-scroll-glue": "2.0.4",
     "bootstrap-sass": "3.3.5",
     "down-ionic": "git@github.com:mkolodny/down-ionic.git#d128b20b695484cc7a5621766ece6e4a92fe4292",
-    "jquery": "1.11.3"
+    "jquery": "1.11.3",
+    "vinyl-paths": "^2.0.0"
   },
   "devDependencies": {
-    "angular-mocks": "1.3.13"
+    "angular-mocks": "1.3.13",
+    "run-sequence": "^1.1.2"
   },
   "browserify": {
     "transform": [
