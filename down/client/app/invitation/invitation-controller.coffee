@@ -1,4 +1,5 @@
 class InvitationCtrl
+  @$inject: ['$state', '$stateParams', 'Auth', 'Invitation']
   constructor: (@$state, @$stateParams, @Auth, @Invitation) ->
     @event = @$stateParams.event
     @fromUser = @$stateParams.fromUser

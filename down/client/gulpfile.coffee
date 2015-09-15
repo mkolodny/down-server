@@ -43,7 +43,6 @@ scripts = (watch) ->
       .pipe source('bundle.js')
       # wrap plugins to support streams
       # i.e. .pipe streamify(plugin())
-      .pipe ngAnnotate()
       .pipe gulp.dest("#{buildDir}/app")
     bundleStream
 
@@ -101,6 +100,7 @@ gulp.task 'vendor', ->
 
 gulp.task 'minify-js', ->
   gulp.src "#{buildDir}/app/bundle.js"
+    .pipe ngAnnotate()
     .pipe uglify({mangle: false})
     .pipe gulp.dest("#{buildDir}/app")
   return
@@ -140,7 +140,6 @@ gulp.task 'unit', ->
     bundle = ->
       bundler.bundle()
         .pipe source('test-bundle.js')
-        .pipe ngAnnotate()
         .pipe gulp.dest(testDir)
 
     bundler.on 'update', bundle

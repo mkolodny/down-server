@@ -1,4 +1,6 @@
 class LoginCtrl
+  @$inject: ['$state', '$stateParams', '$window', 'Auth', 'Asteroid',
+             'Invitation', 'LinkInvitation']
   constructor: (@$state, @$stateParams, @$window, @Auth, @Asteroid,
                 @Invitation, @LinkInvitation) ->
     @event = @$stateParams.event

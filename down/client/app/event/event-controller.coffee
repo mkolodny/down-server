@@ -1,6 +1,8 @@
 class EventCtrl
-  constructor: (@$rootScope, @$state, @$stateParams, @$window, @Asteroid,
-                @Auth, @Event, @Invitation, @User, @data) ->
+  @$inject: ['$state', '$stateParams', 'Asteroid', 'Auth', 'Event',
+             'Invitation', 'User', 'data']
+  constructor: (@$state, @$stateParams, @Asteroid, @Auth, @Event,
+                @Invitation, @User, @data) ->
     if @data.redirectView
       @$state.go @data.redirectView,
         event: @data.event
@@ -65,7 +67,7 @@ class EventCtrl
     @$window.branchApiKey = 'key_test_ogfq42bC7tuGVWdMjNm3sjflvDdOBJiv'
     @$window.branch.init @$window.branchApiKey
 
-  sendSMS: ->    
+  sendSMS: ->
     linkData =
       channel: 'WebView'
       feature: 'Text-To-Download'
@@ -90,8 +92,8 @@ class EventCtrl
       @Asteroid.call 'readMessage', newestMessage._id
 
     # Call digest
-    if not @$rootScope.$$phase
-      @$rootScope.$digest()
+    if not @$scope.$$phase
+      @$scope.$digest()
 
   isActionMessage: (message) ->
     actions = [
