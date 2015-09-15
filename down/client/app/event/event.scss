@@ -80,8 +80,22 @@
   #phone-form {
     margin-top: 10px;
   }
+  .intl-tel-input {
+    max-width: calc(100% - 65px);
+  }
+  #phone {
+    width: 100%;
+    
+    &.ng-invalid.submitted {
+      border-color: $brand-danger;
+    }
+  }
   #send-download-link {
     margin-bottom: 1px;
+    float: right;
+  }
+  .form-error {
+    color: $brand-danger;
   }
   .download-images {
     text-align: center;

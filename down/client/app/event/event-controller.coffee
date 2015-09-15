@@ -1,5 +1,5 @@
 class EventCtrl
-  constructor: (@$rootScope, @$state, @$stateParams, @$window, @Asteroid,
+  constructor: (@$rootScope, @$scope, @$state, @$stateParams, @$window, @Asteroid,
                 @Auth, @Event, @Invitation, @User, @data) ->
     if @data.redirectView
       @$state.go @data.redirectView,
@@ -65,7 +65,9 @@ class EventCtrl
     @$window.branchApiKey = 'key_test_ogfq42bC7tuGVWdMjNm3sjflvDdOBJiv'
     @$window.branch.init @$window.branchApiKey
 
-  sendSMS: ->    
+  sendSMS: ->
+    if not @$scope.sendSMSForm.$valid then return
+
     linkData =
       channel: 'WebView'
       feature: 'Text-To-Download'

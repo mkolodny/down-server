@@ -23,7 +23,6 @@ $btn-default-border: $brand-primary;
 
 @import "sass/bootstrap-custom";
 
-
 /* App-specific app-wide sass */
 
 // Global
@@ -144,8 +143,11 @@ body,
   }
 }
 
+// Intl-Phone
+@import "../node_modules/down-ionic/app/common/intl-phone/intlTelInput";
 
 /* View styles */
 @import "login/login";
 @import "invitation/invitation";
 @import "event/event";
+
