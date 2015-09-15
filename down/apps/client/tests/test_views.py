@@ -26,8 +26,7 @@ class LandingTests(APITestCase):
     def test_redirect(self):
         url = reverse('landing')
         response = self.client.get(url)
-        app_store_url = ('https://itunes.apple.com/us/app/down-connect-people'
-                         '-around/id969040287?mt=8')
+        app_store_url = 'http://bnc.lt/m/cdhqhLhSSm'
         self.assertRedirects(response, app_store_url,
                              fetch_redirect_response=False)
 
@@ -37,8 +36,7 @@ class AppStoreTests(APITestCase):
     def test_redirect(self):
         url = reverse('app-store')
         response = self.client.get(url)
-        app_store_url = ('https://itunes.apple.com/us/app/down-connect-people'
-                         '-around/id969040287?mt=8')
+        app_store_url = 'http://bnc.lt/m/cdhqhLhSSm'
         self.assertRedirects(response, app_store_url,
                              fetch_redirect_response=False)
 

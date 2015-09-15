@@ -15,8 +15,7 @@ class LandingView(TemplateView):
 
 
 class AppStoreView(RedirectView):
-    url = ('https://itunes.apple.com/us/app/down-connect-people-around/id'
-           '969040287?mt=8')
+    url = 'http://bnc.lt/m/cdhqhLhSSm'
     permanent = False
 
 
