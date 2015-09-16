@@ -1,0 +1,72 @@
+{% load static from staticfiles %}
+
+{% verbatim %}
+<div id="login" class="non-member-view">
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#">Down.</a>
+      </div>
+    </div>
+  </nav>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">
+        <div id="content">
+          <img id="from-image"
+               ng-src="{{login.fromUser.getImageUrl(150)}}">
+          <h1 id="event-title">
+            {{login.event.title}}
+          </h1>
+          <h2 id="suggested-by">
+            Suggested by {{login.fromUser.name}}
+          </h2>
+          <div id="event-details"
+               ng-if="login.event.datetime || login.event.place || login.event.comment">
+            <div class="event-detail" ng-if="login.event.datetime">
+              <i class="fa fa-calendar-o"></i>
+              <div>
+                <div>{{login.event.datetime | date:'EEEE, MMM d'}}</div>
+                <div>{{login.event.datetime | date:'shortTime' | lowercase}}</div>
+              </div>
+            </div>
+            <div class="event-detail" ng-if="login.event.place">
+              <a href><i class="fa fa-map-marker"></i>{{login.event.place.name}}</a>
+            </div>
+            <div id="event-comment" class="event-detail" ng-if="login.event.comment">
+              <i class="fa fa-comment-o"></i>{{login.event.comment}}
+            </div>
+          </div>
+          <div id="fb-login-container">
+            <p>Log in to respond, see who's down, and join the group chat.</p>
+            <div id="fb-root"></div>
+            <button id="fb-login" class="btn" ng-click="login.login()">
+              <i class="fa fa-facebook-square fa-lg"></i> Log in
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="download-images">
+          <a href="http://im.xn--sp8h.ws/m/7d6pphEKSm">
+            {% endverbatim %}
+            <img class="download-image"
+                 src="{% static 'client/images/download-ios.png' %}"
+                 alt="Download on the App Store">
+            {% verbatim %}
+          </a>
+          <a href="http://im.xn--sp8h.ws/m/Yig3riBKSm">
+            {% endverbatim %}
+            <img class="download-image"
+                 src="{% static 'client/images/download-android.png' %}"
+                 alt="Get it on Google Play">
+            {% verbatim %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endverbatim %}

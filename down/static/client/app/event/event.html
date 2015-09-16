@@ -1,0 +1,167 @@
+{% load static from staticfiles %}
+
+{% verbatim %}
+<div id="event">
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+          <div class="navbar-header">
+            <a class="navbar-brand" href="#">Down.</a>
+          </div>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a class="current-user" href="#">{{event.currentUser.name}}</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="container-fluid" id="content">
+    <div class="row" id="content-row">
+      <div class="col-md-3 col-md-offset-2 col-sm-5 content-col">
+        <div id="event-info">
+          <div id="event-details">
+            <img id="from-image"
+                 ng-src="{{event.fromUser.getImageUrl(100)}}">
+            <h1 id="event-title">
+              {{event.event.title}}
+            </h1>
+            <h2 id="suggested-by">
+              Suggested by {{event.fromUser.name}}
+            </h2>
+            <div class="event-detail" ng-if="event.event.datetime">
+              <i class="fa fa-calendar-o"></i>
+              <div>
+                <div>{{event.event.datetime | date:'EEEE, MMM d'}}</div>
+                <div>{{event.event.datetime | date:'shortTime' | lowercase}}</div>
+              </div>
+            </div>
+            <div class="event-detail" ng-if="event.event.place">
+              <a href><i class="fa fa-map-marker"></i>{{event.event.place.name}}</a>
+            </div>
+            <div id="event-comment" class="event-detail"
+                 ng-if="event.event.comment">
+              <i class="fa fa-comment-o"></i>{{event.event.comment}}
+            </div>
+          </div>
+          <div id="respond-buttons">
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasAccepted()"
+                    ng-click="event.acceptInvitation()">
+              Down
+            </button>
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasMaybed()"
+                    ng-click="event.maybeInvitation()">
+              Maybe
+            </button>
+            <button class="btn btn-default respond"
+                    ng-disabled="event.wasDeclined()"
+                    ng-click="event.declineInvitation()">
+              Can't
+            </button>
+          </div>
+          <hr ng-if="event.members.length > 0">
+          <div id="members">
+            <img class="member" ng-repeat="member in event.members"
+                ng-src="{{member.getImageUrl(72)}}">
+          </div>
+          <hr class="hidden-xs">
+          <div class="hidden-xs" id="phone-form-container">
+            Text yourself a link to download the app:
+            <form role="form"
+                  novalidate
+                  name="sendSMSForm" 
+                  class="form-inline"
+                  id="phone-form" 
+                  ng-submit="event.sendSMS()">
+              <input intl-phone
+                     required
+                     id="phone"
+                     name="phone"
+                     class="form-control"
+                     ng-class="{'submitted': sendSMSForm.$submitted}"
+                     ng-model="event.downloadPhone"
+                     placeholder="(917) 622-7310">
+              <button type="submit"
+                      class="btn btn-primary"
+                      id="send-download-link">
+                Send
+              </button>
+            </form>
+            <div class="form-error"
+                 ng-if="sendSMSForm.$submitted && 
+                 sendSMSForm.phone.$error.validNumber && !sendSMSForm.phone.$error.required">
+              That phone number is invalid.
+            </div>
+          </div>
+          <hr class="hidden-xs">
+          <div class="hidden-xs download-images">
+            <div>
+              <a href="">
+                {% endverbatim %}
+                <img class="download-image"
+                     src="{% static 'client/images/download-ios.png' %}"
+                     alt="Download on the App Store">
+                {% verbatim %}
+              </a>
+            </div>
+            <div>
+              <a href="">
+                {% endverbatim %}
+                <img class="download-image"
+                     src="{% static 'client/images/download-android.png' %}"
+                     alt="Get it on Google Play">
+                {% verbatim %}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 col-sm-7 content-col" id="group-chat-col">
+        <div id="group-chat">
+          <div id="messages" scroll-glue>
+            <div ng-repeat="message in event.messages">
+              <div class="action-message" ng-if="event.isActionMessage(message)">
+                {{message.text}}
+              </div>
+              <div class="text-message" ng-if="!event.isActionMessage(message)"
+                   ng-class="{'mine': event.isMyMessage(message)}">
+                <img class="avatar" ng-src="{{message.creator.getImageUrl(72)}}">
+                <div class="text">{{message.text}}</div>
+              </div>
+            </div>
+          </div>
+          <textarea class="form-control" id="enter-message"
+                    ng-model="event.message" rows="1"
+                    placeholder="Type a message..."></textarea>
+          <button class="btn btn-link" id="send-message"
+                  ng-click="event.sendMessage()"
+                  ng-disabled="!event.message">Send</button>
+        </div>
+      </div>
+      <div class="hidden-sm hidden-md hidden-lg download-images">
+        <div>
+          <a href="http://im.xn--sp8h.ws/m/8yVxo9FKSm">
+            {% endverbatim %}
+            <img class="download-image" src="{% static 'client/images/download-ios.png' %}"
+                 alt="Download on the App Store">
+            {% verbatim %}
+          </a>
+        </div>
+        <div>
+          <a href="http://im.xn--sp8h.ws/m/o9ZhEZEKSm">
+            {% endverbatim %}
+            <img class="download-image"
+                 src="{% static 'client/images/download-android.png' %}"
+                 alt="Get it on Google Play">
+            {% verbatim %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endverbatim %}
