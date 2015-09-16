@@ -34,3 +34,15 @@ AWS_QUERYSTRING_AUTH = False
 AWS_S3_SECURE_URLS = False
 AWS_IS_GZIPPED = True
 STATIC_URL = 'https://{domain}/'.format(domain=AWS_S3_CUSTOM_DOMAIN)
+
+# Cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django_bmemcached.memcached.BMemcached',
+        'LOCATION': os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
+        'OPTIONS': {
+            'username': os.environ.get('MEMCACHEDCLOUD_USERNAME'),
+            'password': os.environ.get('MEMCACHEDCLOUD_PASSWORD'),
+        },
+    },
+}
