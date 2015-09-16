@@ -137,3 +137,6 @@ HASHIDS_SALT = os.environ['HASHIDS_SALT']
 PUSH_NOTIFICATIONS_SETTINGS = {
     'GCM_API_KEY': os.environ['GCM_API_KEY'],
 }
+
+# Branch
+BRANCH_API_KEY = os.environ['BRANCH_API_KEY']

@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -68,24 +69,36 @@ class FellowshipDemoTests(APITestCase):
         self.assertTemplateUsed(response, 'demo.html')
 
 
-class AppTests(APITestCase):
+class WebAppTests(APITestCase):
 
     def test_get_event(self):
         url = reverse('web-app-event')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.context['BRANCH_API_KEY'],
+                         settings.BRANCH_API_KEY)
+        self.assertEqual(response.context['FACEBOOK_APP_ID'],
+                         settings.FACEBOOK_APP_ID)
         self.assertTemplateUsed(response, 'web-app.html')
 
     def test_get_login(self):
         url = reverse('web-app-login')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.context['BRANCH_API_KEY'],
+                         settings.BRANCH_API_KEY)
+        self.assertEqual(response.context['FACEBOOK_APP_ID'],
+                         settings.FACEBOOK_APP_ID)
         self.assertTemplateUsed(response, 'web-app.html')
 
     def test_get_invitation(self):
         url = reverse('web-app-invitation')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.context['BRANCH_API_KEY'],
+                         settings.BRANCH_API_KEY)
+        self.assertEqual(response.context['FACEBOOK_APP_ID'],
+                         settings.FACEBOOK_APP_ID)
         self.assertTemplateUsed(response, 'web-app.html')
 
 

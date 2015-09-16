@@ -20,7 +20,6 @@ class LoginCtrl
     ) document, 'script', 'facebook-jssdk'
 
     # Init Facebook SDK
-    @$window.fbAppId = '864552050271610' # TODO: Set this via DJANGO!
     @$window.fbAsyncInit = =>
       FB.init
         appId: @$window.fbAppId

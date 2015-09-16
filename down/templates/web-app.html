@@ -12,6 +12,10 @@
   <link href="http://fonts.googleapis.com/css?family=Viga" rel="stylesheet">
 
   <link href="{% static 'client/app/main.css' %}" rel="stylesheet">
+  <script>
+    window.branchApiKey = '{{ BRANCH_API_KEY }}';
+    window.fbAppId = '{{ FACEBOOK_APP_ID }}';
+  </script>
   <script src="{% static 'client/app/bundle.js' %}"></script>
 </head>
 <body>

@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from django.conf import settings
 from django.http import Http404
 from django.shortcuts import render
 from django.template.base import TemplateDoesNotExist
@@ -33,6 +34,12 @@ class FellowshipDemoView(TemplateView):
 
 class WebAppView(TemplateView):
     template_name = 'web-app.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(WebAppView, self).get_context_data(**kwargs)
+        context['BRANCH_API_KEY'] = settings.BRANCH_API_KEY
+        context['FACEBOOK_APP_ID'] = settings.FACEBOOK_APP_ID
+        return context
 
 
 class PartialView(APIView):
