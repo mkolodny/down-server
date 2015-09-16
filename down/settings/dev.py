@@ -18,6 +18,6 @@ PUSH_NOTIFICATIONS_SETTINGS.update({
 })
 
 # Static files
-STATICFILES_DIRS += (
+STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'down/client/build'),
-)
+) + STATICFILES_DIRS
