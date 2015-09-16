@@ -63,7 +63,7 @@
     }
   }
   #members {
-    width: 235.5px;
+    max-width: 235.5px;
     margin: auto;
   }
   .member {
@@ -231,6 +231,9 @@
     }
     #group-chat-col {
       height: calc(100% - 40px);
+    }
+    #members {
+      text-align: center;
     }
   }
 }
