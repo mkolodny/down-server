@@ -6,7 +6,7 @@ DEBUG = True
 TEMPLATE_DEBUG = False
 
 # DB
-POSTGIS_VERSION = (2, 1, 3)
+POSTGIS_VERSION = (2, 1, 5)
 
 # GeoDjango
 GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
