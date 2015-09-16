@@ -12,7 +12,6 @@ class EventCtrl
       return
 
     if @data.error
-      @$window.location.href = '/'
       return
 
     @currentUser = @Auth.user
@@ -67,8 +66,6 @@ class EventCtrl
 
   # used for text to download links
   initBranch: ->
-    # TODO : SET THIS FROM DJANGO!!
-    @$window.branchApiKey = 'key_test_ogfq42bC7tuGVWdMjNm3sjflvDdOBJiv'
     @$window.branch.init @$window.branchApiKey
 
   sendSMS: ->

@@ -184,22 +184,17 @@ describe 'event controller', ->
 
 
   describe 'when there is an error', ->
-    mockWindow = null
 
     beforeEach ->
       data =
         error: true
 
-      mockWindow =
-        location: {}
       ctrl = $controller EventCtrl,
-        $window: mockWindow
         Auth: Auth
         data: data
         $scope: scope
 
-    it 'should redirect to the landing page', ->
-      expect(mockWindow.location.href).toBe '/'
+    it 'should return without doing anything', ->
 
 
   describe 'when the invitations return successfully', ->
