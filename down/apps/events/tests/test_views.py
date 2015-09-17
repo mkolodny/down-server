@@ -791,3 +791,5 @@ class LinkInvitationTests(APITestCase):
         serializer = LinkInvitationFkObjectsSerializer(link_invitation)
         json_link_invitation = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_link_invitation)
+
+    # TODO: test_get_by_link_id_already_invited

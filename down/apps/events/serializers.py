@@ -236,8 +236,7 @@ class LinkInvitationFkObjectsSerializer(GeoModelSerializer):
             return None
 
         try:
-            invitation = Invitation.objects.get(from_user=obj.from_user,
-                                                to_user=to_user,
+            invitation = Invitation.objects.get(to_user=to_user,
                                                 event=obj.event)
         except Invitation.DoesNotExist:
             invitation = Invitation(from_user=obj.from_user, to_user=to_user,
