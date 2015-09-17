@@ -29,7 +29,6 @@ AWS_HEADERS = {
 }
 AWS_S3_FILE_OVERWRITE = False
 AWS_QUERYSTRING_AUTH = False
-AWS_S3_SECURE_URLS = False
 AWS_IS_GZIPPED = True
 STATIC_URL = 'https://{domain}/'.format(domain=AWS_S3_CUSTOM_DOMAIN)
 
