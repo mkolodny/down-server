@@ -208,6 +208,7 @@
     resize: none;
     line-height: 20px;
     bottom: 51px;
+    -webkit-appearance: none; // remove the inset on ios
   }
   #send-message {
     position: absolute;
