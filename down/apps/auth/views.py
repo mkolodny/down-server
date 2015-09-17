@@ -1,15 +1,16 @@
 from __future__ import unicode_literals
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
+import time
 from urllib import urlencode
-import uuid
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.gis.measure import D
 from django.db import IntegrityError
+from django.db.models import Q
 from django.shortcuts import render
 from django.views.generic.base import RedirectView, TemplateView
-from firebase_token_generator import create_token
+from hashids import Hashids
 import pytz
 import requests
 from rest_framework import mixins, status, viewsets
@@ -22,23 +23,29 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
-from .exceptions import ServiceUnavailable
+from .filters import UserFilter
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
 from .permissions import IsCurrentUserOrReadOnly
 from .serializers import (
     AuthCodeSerializer,
     ContactSerializer,
+    FacebookSessionSerializer,
+    FriendSerializer,
     LinfootFunnelSerializer,
-    PhoneSerializer,
     SessionSerializer,
     SocialAccountSyncSerializer,
     UserSerializer,
     UserPhoneSerializer,
 )
-from down.apps.auth.filters import UserFilter
-from down.apps.events.models import AllFriendsInvitation, Event, Invitation
-from down.apps.events.serializers import EventSerializer
+from . import utils
+from down.apps.events.models import Event, Invitation
+from down.apps.events.serializers import (
+    EventSerializer,
+    InvitationSerializer,
+    MyInvitationSerializer,
+)
 from down.apps.friends.models import Friendship
+from down.apps.utils.exceptions import ServiceUnavailable
 
 
 class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
@@ -50,122 +57,38 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @detail_route(methods=['get'])
+    @list_route(methods=['get'])
     def friends(self, request, pk=None):
         # TODO: Handle when the user doesn't exist.
-        user = User.objects.get(id=pk)
-        serializer = UserSerializer(user.friends, many=True)
+        serializer = FriendSerializer(request.user.friends, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=['get'])
+    @list_route(methods=['get'], url_path='facebook-friends')
     def facebook_friends(self, request, pk=None):
         """
         Get a list of the user's facebook friends.
         """
-        # Ask Facebook for the user's Facebook friends who are using Down.
-        user_facebook_account = SocialAccount.objects.get(user=request.user)
-        params = {'access_token': user_facebook_account.profile['access_token']}
-        url = 'https://graph.facebook.com/v2.2/me/friends?' + urlencode(params)
-        facebook_friend_ids = []
-        while True:
-            r = requests.get(url)
-            if r.status_code != status.HTTP_200_OK:
-                raise ServiceUnavailable(r.content)
-            try:
-                facebook_json = r.json()
-            except ValueError:
-                raise ServiceUnavailable('Facebook response data was not JSON.')
-            try:
-                new_friend_ids = [
-                    facebook_friend['id']
-                    for facebook_friend in facebook_json['data']
-                ]
-                facebook_friend_ids.extend(new_friend_ids)
-                paging = facebook_json['paging']
-                if len(new_friend_ids) < 25 or 'next' not in paging:
-                    break
-                url = paging['next']
-            except KeyError:
-                raise ServiceUnavailable('Facebook response did not contain data.')
+        try:
+            social_account = SocialAccount.objects.get(user=request.user)
+            facebook_friends = utils.get_facebook_friends(social_account)
+            serializer = FriendSerializer(facebook_friends, many=True)
+            friends = serializer.data
+        except SocialAccount.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(friends)
 
-        # Use the list of the user's Facebook friends to create a queryset of the
-        # user's friends on Down.
-        social_accounts = SocialAccount.objects.filter(uid__in=facebook_friend_ids)
-        friend_ids = [account.user_id for account in social_accounts]
-        friends = User.objects.filter(id__in=friend_ids)
-        serializer = UserSerializer(friends, many=True)
-        return Response(serializer.data)
+    @list_route(methods=['get'])
+    def invitations(self, request):
+        twenty_four_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=24)
+        invitations = Invitation.objects.filter(to_user=request.user) \
+                .select_related('event') \
+                .filter(Q(event__datetime__isnull=True,
+                          event__created_at__gt=twenty_four_hrs_ago) |
+                        Q(event__datetime__isnull=False,
+                          event__datetime__gt=twenty_four_hrs_ago)) \
+                .select_related('from_user')
 
-    @detail_route(methods=['get'])
-    def invited_events(self, request, pk=None):
-        # Create a list of ids of events that the user was invited to directly.
-        invitations = Invitation.objects.filter(to_user=request.user)
-        event_ids = [invitation.event_id for invitation in invitations]
-
-        # Create a list of ids of open events that were posted by people nearby the
-        # user, who've added the user as their friend.
-        added_me_friendships = Friendship.objects.filter(friend=request.user)
-        user_ids = [friendship.user_id for friendship in added_me_friendships]
-        radius = (request.user.location, D(mi=5))
-        added_me = User.objects.filter(id__in=user_ids,
-                                       location__distance_lte=radius)
-        all_friends_invitations = AllFriendsInvitation.objects.filter(
-                from_user__in=added_me)
-        nearby_event_ids = [all_friends_invitation.event_id
-            for all_friends_invitation in all_friends_invitations]
-
-        # Fetch both directly invited and nearby events.
-        event_ids.extend(nearby_event_ids)
-        events = Event.objects.filter(id__in=event_ids)
-
-        # Check whether we only want the latest events.
-        min_updated_at = request.query_params.get('min_updated_at')
-        if min_updated_at:
-            dt = datetime.utcfromtimestamp(int(min_updated_at))
-            dt = dt.replace(tzinfo=pytz.utc)
-            events = events.filter(updated_at__gte=dt)
-
-        # Prefetch related fields to avoid lots of queries when serializing the
-        # events.
-        events.select_related('place').prefetch_related('invitation_set')
-
-        # Create open invitations for any nearby events that the user doesn't
-        # have an invitation for yet.
-        invitations_created = False
-        for event in events:
-            if event.invitation_set.filter(to_user=request.user).exists():
-                # The user already has an invitation for this event.
-                continue
-
-            # Get the user who sent out the invitation to all of their nearby
-            # friends.
-            for all_friends_invitation in all_friends_invitations:
-                if event.id == all_friends_invitation.event_id:
-                    from_user_id = all_friends_invitation.from_user_id
-
-            invitation = Invitation(event=event, from_user_id=from_user_id,
-                                    to_user=request.user, open=True)
-            invitation.save()
-            invitations_created = True
-
-            # Update the event so that other users fetch the new invitation.
-            event.save()
-
-            # Add the user to the Firebase members list.
-            url = ('{firebase_url}/events/members/{event_id}/.json?auth='
-                   '{firebase_secret}').format(
-                    firebase_url=settings.FIREBASE_URL, event_id=event.id,
-                    firebase_secret=settings.FIREBASE_SECRET)
-            json_invitation = json.dumps({request.user.id: True})
-            requests.patch(url, json_invitation)
-
-        if invitations_created:
-            # Since we updated the event invitations, prefetch the invitations
-            # again so that we're including the new invitation in the returned
-            # events.
-            events.prefetch_related('invitation_set')
-
-        serializer = EventSerializer(events, many=True)
+        serializer = MyInvitationSerializer(invitations, many=True)
         return Response(serializer.data)
 
     @list_route(methods=['get'])
@@ -196,52 +119,57 @@ class SocialAccountSync(APIView):
         # Request the user's profile from the selected provider.
         provider = serializer.data['provider']
         access_token = serializer.data['access_token']
-        profile = self.get_profile(provider, access_token)
 
-        # Update the user.
-        # TODO: Remove the default email after updating the client to handle the
-        # case where the user has synced with Facebook, but doesn't have an email
-        # set.
-        request.user.email = profile.get('email', 'no.email@down.life')
-        request.user.name = profile['name']
-        request.user.image_url = profile['image_url']
-        request.user.save()
+        # Save the user's current auth token and user object.
+        token = request.auth
+        user = request.user
 
-        # Create the user's social account.
-        account = SocialAccount(user_id=request.user.id, provider=provider,
-                                uid=profile['id'], profile=profile)
-        account.save()
+        try:
+            social_account = SocialAccount.objects.get(user=request.user)
+            social_account.profile['access_token'] = access_token
+            social_account.save()
+        except SocialAccount.DoesNotExist:
+            profile = utils.get_facebook_profile(access_token)
 
-        serializer = UserSerializer(request.user)
+            try:
+                # When a user has logged into the web view, and just installed the
+                # app, they'll have a social account tied to a different user
+                # object.
+                social_account = SocialAccount.objects.get(uid=profile['id'])
+
+                # The user has logged into the web view, and just installed the
+                # app. Return the user's token from that social account.
+                user = social_account.user
+                token = Token.objects.get(user=user)
+
+                # Then update their userphone to point to that user
+                UserPhone.objects.filter(user=request.user).update(user=user)
+
+                # Delete the current user.
+                request.user.delete()
+
+                # Log in to the meteor server as the new user.
+                utils.meteor_login(user.id, token)
+            except SocialAccount.DoesNotExist:
+                # Update the user with the new data from Facebook.
+                # Facebook users might not have emails.
+                request.user.email = profile.get('email')
+                request.user.name = profile['name']
+                request.user.first_name = profile['first_name']
+                request.user.last_name = profile['last_name']
+                request.user.image_url = profile['image_url']
+                request.user.save()
+
+                # Create the user's social account.
+                social_account = SocialAccount(user_id=request.user.id,
+                                               provider=provider,
+                                               uid=profile['id'], profile=profile)
+                social_account.save()
+
+        facebook_friends = utils.get_facebook_friends(social_account)
+        data = {'facebook_friends': facebook_friends, 'authtoken': token.key}
+        serializer = UserSerializer(user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def get_profile(self, provider, access_token):
-        """
-        Request the user's profile from `provider`, and return a dictionary with
-        any info the provider gives us.
-        """
-        if provider == SocialAccount.FACEBOOK:
-            profile = self.get_facebook_profile(access_token)
-
-        # Set the access_token on the profile in case we need to re-auth the user.
-        profile['access_token'] = access_token
-
-        return profile
-
-    def get_facebook_profile(self, access_token):
-        """
-        Return a dictionary with the user's Facebook profile.
-        """
-        params = {'access_token': access_token}
-        url = 'https://graph.facebook.com/v2.2/me?' + urlencode(params)
-        r = requests.get(url)
-        if r.status_code != 200:
-            raise ServiceUnavailable(r.content)
-        # TODO: Handle bad data.
-        profile = r.json()
-        profile['image_url'] = ('https://graph.facebook.com/v2.2/{id}/'
-                                'picture').format(id=profile['id'])
-        return profile
 
 
 class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -288,9 +216,9 @@ class AuthCodeViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             raise ServiceUnavailable('Twilio\'s shitting the bed...')
     
 
-class SessionView(APIView):
+class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
-    def post(self, request):
+    def create(self, request, *args, **kwargs):
         # TODO: Handle when the data is invalid.
         serializer = SessionSerializer(data=request.data)
         serializer.is_valid()
@@ -301,38 +229,66 @@ class SessionView(APIView):
         except AuthCode.DoesNotExist:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        # If the user is the Apple test user, don't delete the auth code.
-        if serializer.data['phone'] != '+15555555555':
-            # Delete the auth code to keep the db clean
-            auth.delete()
-
         # Get or create the user
         try:
+            # Init the user's facebook friends.
             phone = serializer.data['phone']
             user_number = UserPhone.objects.get(phone=phone)
+
             # User exists
             user = user_number.user
+            token, created = Token.objects.get_or_create(user=user)
         except UserPhone.DoesNotExist:
             # User doesn't already exist, so create a blank new user and phone
             # number.
             user = User()
             user.save()
 
-            user_number = UserPhone(user=user, phone=serializer.data['phone'])
-            user_number.save()
+            userphone = UserPhone(user=user, phone=serializer.data['phone'])
+            userphone.save()
 
+            token = Token.objects.create(user=user)
+
+        # Authenticate the user on the meteor server.
+        utils.meteor_login(user.id, token)
+
+        # If the user is the Apple test user, don't delete the auth code.
+        if serializer.data['phone'] != '+15555555555':
+            auth.delete()
+
+        data = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @list_route(methods=['post'])
+    def facebook(self, request):
+        # TODO: Handle when the data is invalid.
+        serializer = FacebookSessionSerializer(data=request.data)
+        serializer.is_valid()
+
+        access_token = serializer.data['access_token']
+        profile = utils.get_facebook_profile(access_token)
+
+        try:
+            social_account = SocialAccount.objects.get(uid=profile['id'])
+            user = social_account.user
+        except SocialAccount.DoesNotExist:
+            user = User(email=profile.get('email'), name=profile['name'],
+                        first_name=profile['first_name'],
+                        last_name=profile['last_name'],
+                        image_url=profile['image_url'])
+            user.save()
+            social_account = SocialAccount(user=user,
+                                           provider=SocialAccount.FACEBOOK,
+                                           uid=profile['id'], profile=profile)
+            social_account.save()
+
+        # Log in to the meteor server.
         token, created = Token.objects.get_or_create(user=user)
-        user.authtoken = token.key
+        utils.meteor_login(user.id, token)
 
-        # Generate a Firebase token every time.
-        # TODO: Don't set the firebase token on the user. Just add it as
-        # extra context to the user serializer.
-        #auth_payload = {'uid': unicode(uuid.uuid1())}
-        auth_payload = {'uid': unicode(user.id)}
-        firebase_token = create_token(settings.FIREBASE_SECRET, auth_payload)
-        user.firebase_token = firebase_token
-
-        serializer = UserSerializer(user)
+        context = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=context)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -343,87 +299,64 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserPhoneSerializer
 
     @list_route(methods=['post'])
-    def phones(self, request):
+    def contacts(self, request):
         """
-        Return a list of users with the given phone numbers.
-
-        We're using POST here mainly because the list of phone numbers may not
-        be able to fit in the query parameters of a GET request.
+        Return a list of userphones with the given phone numbers. Create
+        userphones for any contacts without userphones.
         """
         # TODO: Handle when the data is invalid.
-        serializer = PhoneSerializer(data=request.data)
+        contacts = request.data['contacts']
+        serializer = ContactSerializer(data=contacts, many=True)
         serializer.is_valid()
 
         # Filter user phone numbers using the phone number data.
-        phones = serializer.data['phones']
-        user_phones = UserPhone.objects.filter(phone__in=phones)
-        user_phones.prefetch_related('user')
+        phones = [contact['phone'] for contact in serializer.data]
+        userphones = UserPhone.objects.filter(phone__in=phones)
+        userphones.prefetch_related('user')
 
-        serializer = UserPhoneSerializer(user_phones, many=True)
+        # Create userphones for any contacts who don't have userphones yet. First,
+        # we create users with the contacts' names. Then we create userphones for
+        # each user. `bulk_ref` is used to query for the objects we bulk created,
+        # since Django doesn't set ids on objects that were bulk created.
+        phones_set = {unicode(userphone.phone) for userphone in userphones}
+        userless_contacts = [contact for contact in contacts
+                             if contact['phone'] not in phones_set]
+        if len(userless_contacts) > 0:
+            # Create the `bulk_ref` for querying the objects we bulk create.
+            hashids = Hashids(salt=settings.HASHIDS_SALT)
+            timestamp = int(time.time())
+            bulk_ref = hashids.encode(request.user.id, timestamp)
+
+            # Create users for contacts without userphones.
+            contacts_users = [User(name=contact['name'], bulk_ref=bulk_ref)
+                              for contact in userless_contacts]
+            User.objects.bulk_create(contacts_users)
+            contacts_users = User.objects.filter(bulk_ref=bulk_ref)
+
+            # Create userphones for the users we created.
+            # contacts_dict == {'Andrew': ['+19251234567', '+19252234456'], ...}
+            contacts_dict = {}
+            for contact in userless_contacts:
+                name = contact['name']
+                contacts_dict[name] = contacts_dict.get(name, [])
+                contacts_dict[name].append(contact['phone'])
+            contacts_userphones = []
+            for user in contacts_users:
+                phone = contacts_dict[user.name].pop()
+                userphone = UserPhone(user=user, phone=phone, bulk_ref=bulk_ref)
+                contacts_userphones.append(userphone)
+            UserPhone.objects.bulk_create(contacts_userphones)
+            contacts_userphones = UserPhone.objects.filter(bulk_ref=bulk_ref)
+            contacts_userphones.prefetch_related('user')
+            
+            # Merge the new contacts' userphones and the existing userphones.
+            userphones = list(userphones)
+            userphones.extend(list(contacts_userphones))
+
+        serializer = UserPhoneSerializer(userphones, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @list_route(methods=['post'])
-    def contact(self, request):
-        """
-        Create a userphone, and a user with the given name.
-        """
-        serializer = ContactSerializer(data=request.data)
-        serializer.is_valid()
-
-        # Create a user with the given name
-        user = User(name=serializer.data['name'])
-        user.save()
-
-        # Create a userphone for the new user.
-        phone = serializer.data['phone']
-        try:
-            user_phone = UserPhone.objects.get(phone=phone)
-            status_code = status.HTTP_200_OK
-        except UserPhone.DoesNotExist:
-            user_phone = UserPhone(user=user, phone=phone)
-            user_phone.save()
-            status_code = status.HTTP_201_CREATED
-
-        # Text the contact to let them know that the user added them.
-        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        message = ('{name} (@{username}) added you as a friend on Down!'
-                   ' - http://down.life/app').format(name=request.user.name,
-                                                     username=request.user.username)
-        client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
-                               body=message)
-
-        serializer = UserPhoneSerializer(user_phone)
-        return Response(serializer.data, status=status_code)
-
-
-class TermsView(TemplateView):
-    template_name = 'terms.html'
-
-
-class LandingView(RedirectView):
-    url = ('https://itunes.apple.com/us/app/down-connect-people-around/id'
-           '969040287?mt=8')
-    permanent = False
 
 
 class LinfootFunnelViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = LinfootFunnel.objects.all()
     serializer_class = LinfootFunnelSerializer
-
-
-class AppStoreView(RedirectView):
-    url = ('https://itunes.apple.com/us/app/down-connect-people-around/id'
-           '969040287?mt=8')
-    permanent = False
-
-
-class ArticleView(TemplateView):
-    template_name = 'festivals.html'
-
-
-class FellowshipFoundersView(TemplateView):
-    template_name = 'founders.html'
-
-
-class FellowshipDemoView(TemplateView):
-    template_name = 'demo.html'

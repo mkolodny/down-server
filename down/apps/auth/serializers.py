@@ -3,7 +3,6 @@ from phonenumber_field import phonenumber
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework_gis.serializers import GeoModelSerializer
-from down.apps.utils.serializers import UnixEpochDateField
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
 
 
@@ -42,22 +41,41 @@ class SocialAccountSyncSerializer(serializers.Serializer):
     provider = serializers.IntegerField(default=SocialAccount.FACEBOOK)
 
 
-class UserSerializer(GeoModelSerializer):
-    authtoken = serializers.ReadOnlyField(required=False)
-    firebase_token = serializers.ReadOnlyField(required=False)
-    updated_at = UnixEpochDateField(read_only=True)
+class FriendSerializer(GeoModelSerializer):
 
     class Meta:
         model = User
-        exclude = ('password', 'date_joined', 'last_login')
+        depth = 1
+        fields = ('id', 'email', 'name', 'first_name', 'last_name',
+                  'image_url', 'username', 'location')
 
 
-class PhoneSerializer(serializers.Serializer):
-    phones = serializers.ListField(child=PhoneNumberField())
+class UserSerializer(GeoModelSerializer):
+    authtoken = serializers.SerializerMethodField(required=False)
+    friends = FriendSerializer(required=False, many=True)
+    facebook_friends = serializers.SerializerMethodField(required=False)
+
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'name', 'first_name', 'last_name',
+                  'image_url', 'username', 'location', 'friends',
+                  'updated_at', 'authtoken', 'facebook_friends')
+        read_only_fields = ('updated_at', 'friends', 'facebook_friends')
+
+    def get_authtoken(self, obj):
+        return self.context.get('authtoken')
+
+    def get_facebook_friends(self, obj):
+        facebook_friends = self.context.get('facebook_friends')
+        if facebook_friends is not None:
+            serializer = FriendSerializer(facebook_friends, many=True)
+            return serializer.data
+        else:
+            return None
 
 
 class UserPhoneSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = FriendSerializer(read_only=True)
     phone = PhoneNumberField()
 
     class Meta:
@@ -78,3 +96,7 @@ class UserPhoneSerializer(serializers.ModelSerializer):
 class ContactSerializer(serializers.Serializer):
     phone = PhoneNumberField()
     name = serializers.CharField()
+
+
+class FacebookSessionSerializer(serializers.Serializer):
+    access_token = serializers.CharField()

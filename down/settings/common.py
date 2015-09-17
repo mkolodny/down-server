@@ -18,6 +18,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'down.apps.auth',
+    'down.apps.client',
     'down.apps.events',
     'down.apps.friends',
     'down.apps.notifications',
@@ -66,6 +67,7 @@ STATICFILES_DIRS = (
 # Templates
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'down/templates'),
+    os.path.join(BASE_DIR, 'down/client/app'),
 )
 
 # Auth
@@ -96,7 +98,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
-        }
+        },
     },
     'loggers': {
         'console': {
@@ -107,6 +109,7 @@ LOGGING = {
 }
 
 # API
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning',
 }
@@ -114,15 +117,26 @@ REST_FRAMEWORK = {
 # CORS
 CORS_ORIGIN_ALLOW_ALL = True
 
+# Meteor server
+METEOR_KEY = os.environ['METEOR_KEY']
+METEOR_URL = os.environ['METEOR_URL']
+
 # Facebook
 FACEBOOK_APP_ID = os.environ['FACEBOOK_APP_ID']
 FACEBOOK_APP_SECRET = os.environ['FACEBOOK_APP_SECRET']
-
-# Firebase
-FIREBASE_URL = os.environ['FIREBASE_URL']
-FIREBASE_SECRET = os.environ['FIREBASE_SECRET']
 
 # Twilio
 TWILIO_ACCOUNT = os.environ['TWILIO_ACCOUNT']
 TWILIO_TOKEN = os.environ['TWILIO_TOKEN']
 TWILIO_PHONE = os.environ['TWILIO_PHONE']
+
+# Hashids
+HASHIDS_SALT = os.environ['HASHIDS_SALT']
+
+# Push notifications
+PUSH_NOTIFICATIONS_SETTINGS = {
+    'GCM_API_KEY': os.environ['GCM_API_KEY'],
+}
+
+# Branch
+BRANCH_API_KEY = os.environ['BRANCH_API_KEY']

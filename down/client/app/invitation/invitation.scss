@@ -1,0 +1,24 @@
+#invitation {
+  #respond-buttons {
+    padding-top: 5px;
+  }
+  .respond {
+    margin-left: 2px;
+    margin-right: 2px;
+    width: 76px;
+
+    &:active,
+    &.active,
+    &:disabled {
+      color: $btn-primary-color;
+      background-color: $btn-primary-bg;
+      border-color: $btn-primary-border;
+      opacity: 1;
+    }
+  }
+  .event-detail {
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+}

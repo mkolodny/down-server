@@ -62,3 +62,8 @@ target/
 
 # Mac
 .DS_Store
+
+# Client
+down/client/node_modules
+down/client/build
+down/client/tests

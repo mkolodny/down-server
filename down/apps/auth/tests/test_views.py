@@ -6,6 +6,7 @@ import mock
 from urllib import urlencode
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 import httpretty
 import pytz
 from rest_framework import status
@@ -21,10 +22,19 @@ from down.apps.auth.models import (
     User,
     UserPhone,
 )
-from down.apps.auth.serializers import UserSerializer, UserPhoneSerializer
-from down.apps.events.models import AllFriendsInvitation, Event, Invitation
-from down.apps.events.serializers import EventSerializer
+from down.apps.auth.serializers import (
+    FriendSerializer,
+    UserSerializer,
+    UserPhoneSerializer,
+)
+from down.apps.events.models import Event, Invitation
+from down.apps.events.serializers import (
+    EventSerializer,
+    InvitationSerializer,
+    MyInvitationSerializer,
+)
 from down.apps.friends.models import Friendship
+from down.apps.utils.exceptions import ServiceUnavailable
 
 
 class UserTests(APITestCase):
@@ -86,8 +96,7 @@ class UserTests(APITestCase):
         self.list_url = reverse('user-list')
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
         self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
-        self.invited_events_url = reverse('user-invited-events',
-                                          kwargs={'pk': self.user.id})
+        self.invitations_url = reverse('user-invitations')
 
     def tearDown(self):
         self.patcher.stop()
@@ -199,221 +208,92 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_friends(self):
-        url = reverse('user-friends', kwargs={'pk': self.user.id})
+        url = reverse('user-friends')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the user's friends.
-        serializer = UserSerializer([self.friend1], many=True)
+        serializer = FriendSerializer([self.friend1], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 
-    @mock.patch('down.apps.auth.views.requests')
-    def test_invited_events(self, mock_requests):
-        # Create an new event with an open invitation.
-        event = Event(creator=self.friend1, title='Ex Machina')
-        event.save()
-        all_friends_invitation = AllFriendsInvitation(from_user=self.friend1,
-                                                      event=event)
-        all_friends_invitation.save()
-
-        # Save the most recent time the event was updated.
-        updated_at = event.updated_at
-
-        # Have the friend add the user as their friend.
-        friendship = Friendship(user=self.friend1, friend=self.user)
-        friendship.save()
-
-        # Set the user to be within 5 miles of the friend.
-        self.user.location = 'POINT(40.685339 -73.979361)'
-        self.user.save()
-
-        response = self.client.get(self.invited_events_url)
+    def test_get_invitations(self):
+        response = self.client.get(self.invitations_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should create an open invitation for the user.
-        Invitation.objects.get(event=event, from_user=self.friend1,
-                               to_user=self.user, open=True)
+        # It should return the active invitations.
+        serializer = MyInvitationSerializer([self.user_invitation], many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
 
-        # It should add the users to the firebase members list.
-        url = ('{firebase_url}/events/members/{event_id}/.json'
-               '?auth={firebase_secret}').format(
-                firebase_url=settings.FIREBASE_URL, event_id=event.id,
-                firebase_secret=settings.FIREBASE_SECRET)
-        json_invitation = json.dumps({self.user.id: True})
-        mock_requests.patch.assert_called_with(url, json_invitation)
+    def test_get_invitations_created_expired(self):
+        # Mock an expired event without a datetime (by default, events expire after
+        # 24 hours).
+        self.event.created_at = timezone.now() - timedelta(hours=24)
+        self.event.save()
 
-        # It should update the event.
-        event = Event.objects.get(id=event.id)
-        self.assertGreater(event.updated_at, updated_at)
-
-        # It should return a list of the events that the user was invited to.
-        serializer = EventSerializer([self.event, event], many=True)
-        json_events = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_events)
-
-    @mock.patch('django.db.models.fields.timezone.now')
-    @mock.patch('down.apps.auth.views.requests')
-    def test_invited_events_min_updated_at(self, mock_requests, mock_now):
-        # Set the event to having been updated a significant amount later than
-        # the first event. Since `auto_now` sets the value of `updated_at` using
-        # `timezone.now()`, mock `timezone.now()` to return the time one minute
-        # after the current time.
-        dt = datetime.now().replace(tzinfo=pytz.utc) + timedelta(minutes=1)
-        mock_now.return_value = dt
-
-        # Mock another event that the user's invited to.
-        event = Event(title='rat fishing', creator=self.friend1)
+        # Mock not-expired event without a datetime.
+        event = Event(title='Beach Day', creator=self.user)
         event.save()
-        invitation = Invitation(from_user=self.friend1, to_user=self.user,
-                                event=event)
+        invitation = Invitation(event=event, from_user=self.user, to_user=self.user)
         invitation.save()
 
-        updated_at = int(time.mktime(event.updated_at.timetuple()))
-        self.invited_events_url += '?min_updated_at=' + unicode(updated_at)
-        response = self.client.get(self.invited_events_url)
+        response = self.client.get(self.invitations_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return a list of the user's invitations that have been updated
-        # since `min_updated_at`.
-        serializer = EventSerializer([event], many=True)
-        json_events = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_events)
+        # It should only return the active invitations.
+        serializer = MyInvitationSerializer([invitation], many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
 
-    @mock.patch('django.db.models.fields.timezone.now')
-    @mock.patch('down.apps.auth.views.requests')
-    def test_invited_events_invitation_updated(self, mock_requests, mock_now):
-        # Set the invitation to having been updated a significant amount later than
-        # the event. Since `auto_now` sets the value of `updated_at` using
-        # `timezone.now()`, mock `timezone.now()` to return the time one minute
-        # after the current time.
-        dt = datetime.now().replace(tzinfo=pytz.utc) + timedelta(minutes=1)
-        mock_now.return_value = dt
+    def test_get_invitations_datetime_expired(self):
+        # Mock an expired event with a datetime (by default, events expire 24 hours
+        # after the end of the event).
+        self.event.datetime = timezone.now() - timedelta(hours=24)
+        self.event.save()
 
-        # Update the invitation.
-        self.friend1_invitation.response = Invitation.DECLINED
-        self.friend1_invitation.save()
+        # Mock not-expired event with a datetime.
+        tomorrow = timezone.now() + timedelta(hours=24)
+        event = Event(title='Beach Day', creator=self.user, datetime=tomorrow)
+        event.save()
+        invitation = Invitation(event=event, from_user=self.user, to_user=self.user)
+        invitation.save()
 
-        timetuple = self.friend1_invitation.updated_at.timetuple()
-        updated_at = int(time.mktime(timetuple))
-        self.invited_events_url += '?min_updated_at=' + unicode(updated_at)
-        response = self.client.get(self.invited_events_url)
+        response = self.client.get(self.invitations_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return a list of the user's invitations that have been updated
-        # since `min_updated_at`.
-        event = Event.objects.get(id=self.event.id)
-        serializer = EventSerializer([event], many=True)
-        json_events = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_events)
+        # It should only return the active invitations.
+        serializer = MyInvitationSerializer([invitation], many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
 
-    @httpretty.activate
-    def test_facebook_friends(self):
-        # Mock the user's facebook friends.
-        body = json.dumps({
-            'data': [{
-                'name': 'Joan Clarke', 
-                'id': self.friend1_social.uid,
-            }],
-            'paging': {
-            },
-        })
-        httpretty.register_uri(httpretty.GET, self.friends_url, body=body,
-                               content_type='application/json')
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
+    @mock.patch('down.apps.auth.views.utils.get_facebook_friends')
+    def test_facebook_friends(self, mock_get_facebook_friends):
+        # Mock the friends Facebook returns.
+        facebook_friends = [self.friend1]
+        mock_get_facebook_friends.return_value = facebook_friends
+
+        url = reverse('user-facebook-friends')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should request the user's friends with their facebook access token.
-        querystring = {'access_token': [self.user_social.profile['access_token']]}
-        self.assertEqual(httpretty.last_request().querystring, querystring)
+        # It should request the user's facebook friends with their social account.
+        user_social = SocialAccount.objects.get(user=self.user)
+        mock_get_facebook_friends.assert_called_once_with(user_social)
 
         # It should return a list of the users facebook friends.
-        serializer = UserSerializer([self.friend1], many=True)
+        serializer = FriendSerializer(facebook_friends, many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
 
-    @httpretty.activate
-    def test_facebook_friends_next_page(self):
-        # Mock another of the user's friends.
-        friend = User(email='htubman@gmail.com', name='Harriet Tubman',
-                      image_url='http://imgur.com/tubby')
-        friend.save()
-        friendship = Friendship(user=self.user, friend=friend)
-        friendship.save()
-        friend_social = SocialAccount(user=friend,
-                                      provider=SocialAccount.FACEBOOK,
-                                      uid='30101293050283881',
-                                      profile={'access_token': '3234asdf'})
-        friend_social.save()
+    @mock.patch('down.apps.auth.views.utils.get_facebook_friends')
+    def test_facebook_friends_no_social(self, mock_get_facebook_friends):
+        # Mock the user having no social account yet.
+        self.user_social.delete()
 
-        # Mock the user having more than 25 friends on Down.
-        next_url = 'https://graph.facebook.com/v2.2/123/friends'
-        body = json.dumps({
-            'data': [{
-                'name': 'Joan Clarke', 
-                'id': self.friend1_social.uid,
-            } for i in xrange(25)],
-            'paging': {
-                'next': next_url,
-            },
-        })
-        httpretty.register_uri(httpretty.GET, self.friends_url, body=body,
-                               content_type='application/json')
-
-        # Mock the next url response.
-        body = json.dumps({
-            'data': [{
-                'name': 'Joan Clarke', 
-                'id': friend_social.uid,
-            }],
-            'paging': {
-            }
-        })
-        httpretty.register_uri(httpretty.GET, next_url, body=body,
-                               content_type='application/json')
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
+        url = reverse('user-facebook-friends')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return a list of the users facebook friends.
-        serializer = UserSerializer([self.friend1, friend], many=True)
-        json_friends = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_friends)
-
-    @httpretty.activate
-    def test_facebook_friends_bad_response(self):
-        # Mock a bad response from Facebook when requesting the user's facebook
-        # friends.
-        httpretty.register_uri(httpretty.GET, self.friends_url,
-                               status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    @httpretty.activate
-    def test_facebook_friends_no_content(self):
-        # Mock bad response data from Facebook when requesting the user's facebook
-        # friends.
-        httpretty.register_uri(httpretty.GET, self.friends_url, body='',
-                               status=status.HTTP_200_OK)
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    @httpretty.activate
-    def test_facebook_friends_no_data(self):
-        # Mock Facebook response data without a `data` property.
-        httpretty.register_uri(httpretty.GET, self.friends_url, body=json.dumps({}),
-                               status=status.HTTP_200_OK)
-        
-        url = reverse('user-facebook-friends', kwargs={'pk': self.user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class SocialAccountTests(APITestCase):
@@ -440,98 +320,141 @@ class SocialAccountTests(APITestCase):
 
         # Save URLs.
         self.url = reverse('social-account-login')
-        self.profile_url = 'https://graph.facebook.com/v2.2/me'
 
         # Save request data.
         self.facebook_token = 'asdf123'
-        self.facebook_user_id = 1207059
-        self.email = 'aturing@gmail.com'
-        self.name = 'Alan Tdog Turing'
-        self.image_url = 'https://graph.facebook.com/v2.2/{id}/picture'.format(
-                id=self.facebook_user_id)
-        self.hometown = 'Paddington, London'
+        self.facebook_user_id = '20101293050283881'
+        self.fb_profile = {
+            'id': self.facebook_user_id,
+            'email': 'aturing@gmail.com',
+            'name': 'Alan Turing',
+            'first_name': 'Alan',
+            'last_name': 'Turing',
+            'hometown': 'Paddington, London',
+            'image_url': 'https://graph.facebook.com/v2.2/{id}/picture'.format(
+                    id=self.facebook_user_id),
+            'access_token': self.facebook_token,
+        }
         self.post_data = {'access_token': self.facebook_token}
 
+
     @httpretty.activate
-    def test_create(self):
-        # Request the user's profile.
-        body = json.dumps({
-            'id': self.facebook_user_id,
-            'email': self.email,
-            'name': self.name,
-            'hometown': self.hometown,
-        })
-        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
-                               content_type='application/json')
+    @mock.patch('down.apps.auth.views.utils.get_facebook_profile')
+    @mock.patch('down.apps.auth.views.utils.get_facebook_friends')
+    def test_create(self, mock_get_facebook_friends, mock_get_facebook_profile):
+        profile = self.fb_profile
+
+        # Mock requesting the user's profile.
+        mock_get_facebook_profile.return_value = profile
+
+        # Mock the user's facebook friends.
+        facebook_friends = User.objects.filter(id=self.friend.id)
+        mock_get_facebook_friends.return_value = facebook_friends
 
         response = self.client.post(self.url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should update the user.
-        user = User.objects.get(id=self.user.id, email=self.email,
-                                name=self.name, image_url=self.image_url)
+        user = User.objects.get(id=self.user.id, email=profile['email'],
+                                name=profile['name'],
+                                first_name=profile['first_name'],
+                                last_name=profile['last_name'],
+                                image_url=profile['image_url'])
 
         # It should create the user's social account.
-        profile = {
-            'access_token': self.facebook_token,
-            'id': self.facebook_user_id,
-            'email': self.email,
-            'name': self.name,
-            'image_url': self.image_url,
-            'hometown': self.hometown,
-        }
         account = SocialAccount.objects.get(user=self.user,
                                             provider=SocialAccount.FACEBOOK,
                                             uid=self.facebook_user_id)
-        self.assertEqual(account.profile, profile)
+        self.assertEqual(account.profile, self.fb_profile)
 
         # It should give Facebook the access token.
-        params = {'access_token': [self.facebook_token]}
-        self.assertEqual(httpretty.last_request().querystring, params)
+        mock_get_facebook_profile.assert_called_once_with(self.facebook_token)
+
+        # It should request the user's facebook friends with their social account.
+        social_account = SocialAccount.objects.get(user=self.user)
+        mock_get_facebook_friends.assert_called_once_with(social_account)
 
         # It should return the user.
-        serializer = UserSerializer(user)
+        data = {'facebook_friends': facebook_friends, 'authtoken': self.token.key}
+        serializer = UserSerializer(user, context=data)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
-    @httpretty.activate
-    def test_create_no_email(self):
-        # Request the user's profile.
-        body = json.dumps({
-            'id': self.facebook_user_id,
-            'name': self.name,
-            'hometown': self.hometown,
-        })
-        httpretty.register_uri(httpretty.GET, self.profile_url, body=body,
-                               content_type='application/json')
+    @mock.patch('down.apps.auth.views.utils.get_facebook_friends')
+    def test_create_exists_for_user(self, mock_get_facebook_friends):
+        # Mock the user's social account.
+        profile = {'access_token': 'old-access-token'}
+        account = SocialAccount(user=self.user, provider=SocialAccount.FACEBOOK,
+                                uid=self.facebook_user_id, profile=profile)
+        account.save()
+
+        # Mock the user's facebook friends.
+        facebook_friends = []
+        mock_get_facebook_friends.return_value = facebook_friends
 
         response = self.client.post(self.url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should update the user with a default email.
-        default_email = 'no.email@down.life'
-        user = User.objects.get(id=self.user.id, name=self.name,
-                                email=default_email, image_url=self.image_url)
+        # It should update the user's social account.
+        account = SocialAccount.objects.get(id=account.id)
+        access_token = self.post_data['access_token']
+        self.assertEqual(account.profile['access_token'], access_token)
 
-        # It should create the user's social account.
-        profile = {
-            'access_token': self.facebook_token,
-            'id': self.facebook_user_id,
-            'name': self.name,
-            'image_url': self.image_url,
-            'hometown': self.hometown,
-        }
-        account = SocialAccount.objects.get(user=self.user,
-                                            provider=SocialAccount.FACEBOOK,
-                                            uid=self.facebook_user_id)
-        self.assertEqual(account.profile, profile)
-
-        # It should give Facebook the access token.
-        params = {'access_token': [self.facebook_token]}
-        self.assertEqual(httpretty.last_request().querystring, params)
+        # It should request the user's facebook friends with their social account.
+        social_account = SocialAccount.objects.get(user=self.user)
+        mock_get_facebook_friends.assert_called_once_with(social_account)
 
         # It should return the user.
-        serializer = UserSerializer(user)
+        data = {'facebook_friends': facebook_friends, 'authtoken': self.token.key}
+        serializer = UserSerializer(self.user, context=data)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
+    @mock.patch('down.apps.auth.views.utils.get_facebook_profile')
+    @mock.patch('down.apps.auth.views.utils.get_facebook_friends')
+    @mock.patch('down.apps.auth.views.utils.meteor_login')
+    def test_create_exists_for_profile(self, mock_meteor_login,
+                                       mock_get_facebook_friends,
+                                       mock_get_facebook_profile):
+        profile = self.fb_profile
+
+        # Mock requesting the user's profile.
+        mock_get_facebook_profile.return_value = profile
+
+        # Mock the user's social account.
+        account = SocialAccount(user=self.user, provider=SocialAccount.FACEBOOK,
+                                uid=self.facebook_user_id, profile=profile)
+        account.save()
+
+        # Log in as a different user.
+        user = User()
+        user.save()
+        user_phone = UserPhone(user=user, phone='+19176229626')
+        user_phone.save()
+        token = Token(user=user)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        # Mock the user's facebook friends.
+        facebook_friends = []
+        mock_get_facebook_friends.return_value = facebook_friends
+
+        response = self.client.post(self.url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should delete the old user.
+        with self.assertRaises(User.DoesNotExist):
+            User.objects.get(id=user.id)
+
+        # It should update the old user phone.
+        UserPhone.objects.get(user=self.user, phone=user_phone.phone)
+
+        # It should authenticate the user on the meteor server.
+        mock_meteor_login.assert_called_once_with(self.user.id, self.token)
+
+        # It should return the user.
+        data = {'facebook_friends': facebook_friends, 'authtoken': self.token.key}
+        serializer = UserSerializer(self.user, context=data)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
@@ -635,46 +558,59 @@ class AuthCodeTests(APITestCase):
 
 
 class SessionTests(APITestCase):
-    
-    @mock.patch('down.apps.auth.views.create_token')
-    def test_create(self, mock_create_token):
-        # Make sure no users have been created yet
-        self.assertEquals(User.objects.count(), 0)
 
-        # Generate a Firebase token.
-        firebase_token = 'qwer1234'
-        mock_create_token.return_value = firebase_token
+    def setUp(self):
+        # Mock data.
+        self.access_token = 'asdf1234'
+        facebook_id = '10101293050283881'
+        self.fb_profile = {
+            'id': facebook_id,
+            'email': 'aturing@gmail.com',
+            'name': 'Alan Turing',
+            'first_name': 'Alan',
+            'last_name': 'Turing',
+            'hometown': 'Paddington, London',
+            'image_url': 'https://graph.facebook.com/v2.2/{id}/picture'.format(
+                         id=facebook_id),
+            'access_token': self.access_token,
+        }
+
+        # Save URLs.
+        self.list_url = reverse('session-list')
+        self.facebook_url = reverse('session-facebook')
+    
+    @mock.patch('down.apps.auth.views.utils.meteor_login')
+    def test_create(self, mock_meteor_login):
+        # Make sure no users have been created yet.
+        self.assertEquals(User.objects.count(), 0)
 
         # Mock the user's auth code.
         auth = AuthCode(phone='+12345678910')
         auth.save()
 
-        url = reverse('session')
         data = {'phone': unicode(auth.phone), 'code': auth.code}
-        response = self.client.post(url, data)
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # It should delete the auth code
+        # It should delete the auth code.
         with self.assertRaises(AuthCode.DoesNotExist):
             AuthCode.objects.get(code=auth.code, phone=auth.phone)
 
-        # Make sure we've created a user for this number 
+        # It should create a user associated with the given number.
         user = User.objects.get()
 
-        # Make sure the phone number was created
+        # It should create a userphone.
         UserPhone.objects.get(user=user, phone=auth.phone)
 
-        # Get the token, which should've been created
+        # It should create a token.
         token = Token.objects.get(user=user)
 
-        # It should generate a Firebase token.
-        auth_payload = {'uid': unicode(user.id)}
-        mock_create_token.assert_called_with(settings.FIREBASE_SECRET, auth_payload)
+        # It should login to the meteor server.
+        mock_meteor_login.assert_called_once_with(user.id, token)
 
-        # Check that the response is the user we're expecting
-        user.authtoken = token.key
-        user.firebase_token = firebase_token
-        serializer = UserSerializer(user)
+        # It should return the user.
+        data = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=data)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
@@ -683,78 +619,187 @@ class SessionTests(APITestCase):
         auth = AuthCode(phone='+12345678910')
         auth.save()
 
-        url = reverse('session')
         data = {'phone': unicode(auth.phone), 'code': (auth.code + 'x')}
-        response = self.client.post(url, data)
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @mock.patch('down.apps.auth.views.create_token')
-    @mock.patch('down.apps.auth.views.uuid')
-    def create_already_created(self, phone_number, mock_uuid, mock_create_token):
-        firebase_uuid = 9876
-        firebase_token = 'qwer1234'
-        mock_uuid.uuid1.return_value = firebase_uuid
-        mock_create_token.return_value = firebase_token
-
+    def mock_user(self, phone='+12345678901'):
         # Mock an already created user
-        mock_user = User()
-        mock_user.save()
+        self.user = User()
+        self.user.save()
+        self.userphone = UserPhone(user=self.user, phone=phone)
+        self.userphone.save()
 
-        mock_user_number = UserPhone(user=mock_user, phone=phone_number)
-        mock_user_number.save()
-
-        # User has already logged in, so mock their token
-        token = Token(user=mock_user)
-        token.save()
-
-        url = reverse('session')
-        self.auth = AuthCode(phone=phone_number)
+        self.auth = AuthCode(phone=phone)
         self.auth.save()
 
+    @mock.patch('down.apps.auth.views.utils.meteor_login')
+    def test_create_already_created(self, mock_meteor_login):
+        self.mock_user()
+
         data = {'phone': unicode(self.auth.phone), 'code': self.auth.code}
-        response = self.client.post(url, data)
+        response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        mock_user.authtoken = token.key
-        mock_user.firebase_token = firebase_token
-        serializer = UserSerializer(mock_user)
-        mock_user_json = JSONRenderer().render(serializer.data)
+        # It should create a token.
+        token = Token.objects.get(user=self.user)
 
-        # Response should have the same user object
-        user_json = response.content
-        self.assertEqual(user_json, mock_user_json)
+        # It should login to the meteor server.
+        mock_meteor_login.assert_called_once_with(self.user.id, token)
+
+        # The response should have the same user object
+        data = {'authtoken': token.key}
+        serializer = UserSerializer(self.user, context=data)
+        user_json = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, user_json)
 
         # The number of users in the database should still be 1
         self.assertEqual(User.objects.count(), 1)
 
-    def test_create_already_created(self):
-        phone_number = '+12345678910'
-        self.create_already_created(phone_number)
+        # The user's auth code should be deleted.
+        with self.assertRaises(AuthCode.DoesNotExist):
+            AuthCode.objects.get(id=self.auth.id)
 
-    def test_create_apple_test_user(self):
-        phone_number = '+15555555555'
-        self.create_already_created(phone_number)
+    @mock.patch('down.apps.auth.views.utils.meteor_login')
+    def test_create_apple_test_user(self, mock_meteor_login):
+        # This is the phone number we let the Apple test user log in with.
+        phone = '+15555555555'
+        self.mock_user(phone)
+
+        data = {'phone': unicode(self.auth.phone), 'code': self.auth.code}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create a token.
+        token = Token.objects.get(user=self.user)
+
+        # It should login to the meteor server.
+        mock_meteor_login.assert_called_once_with(self.user.id, token)
+
+        # The response should have the same user object
+        data = {'authtoken': token.key}
+        serializer = UserSerializer(self.user, context=data)
+        user_json = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, user_json)
+
+        # The number of users in the database should still be 1
+        self.assertEqual(User.objects.count(), 1)
 
         # The user's auth code should still exist.
         AuthCode.objects.get(id=self.auth.id)
 
+    @mock.patch('down.apps.auth.views.utils.meteor_login')
+    def test_create_bad_meteor_response(self, mock_meteor_login):
+        mock_meteor_login.side_effect = ServiceUnavailable('Bad status')
 
-class UserPhoneViewSetTests(APITestCase):
+        # Mock the user's auth code.
+        auth = AuthCode(phone='+12345678910')
+        auth.save()
+
+        data = {'phone': unicode(auth.phone), 'code': auth.code}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # It should create a user associated with the given number.
+        user = User.objects.get()
+
+        # It should create a userphone.
+        UserPhone.objects.get(user=user, phone=auth.phone)
+
+        # It should create a token.
+        token = Token.objects.get(user=user)
+
+        # It should try to login to the meteor server.
+        mock_meteor_login.assert_called_once_with(user.id, token)
+
+        # The auth code should still exist.
+        AuthCode.objects.get(code=auth.code, phone=auth.phone)
+
+    @mock.patch('down.apps.auth.views.utils.get_facebook_profile')
+    @mock.patch('down.apps.auth.views.utils.meteor_login')
+    def test_facebook_login(self, mock_meteor_login, mock_get_facebook_profile):
+        self.mock_user()
+        profile = self.fb_profile
+
+        # Mock requesting the user's profile.
+        mock_get_facebook_profile.return_value = profile
+
+        data = {'access_token': self.access_token}
+        response = self.client.post(self.facebook_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the user.
+        user = User.objects.get(email=profile['email'], name=profile['name'],
+                                first_name=profile['first_name'],
+                                last_name=profile['last_name'],
+                                image_url=profile['image_url'])
+
+        # It should create the user's social account.
+        social_account = SocialAccount.objects.get(user=user,
+                                                   provider=SocialAccount.FACEBOOK,
+                                                   uid=profile['id'])
+        self.assertEqual(social_account.profile, profile)
+
+        # It should give Facebook the access token.
+        mock_get_facebook_profile.assert_called_once_with(self.access_token)
+
+        # It should create a token.
+        token = Token.objects.get(user=user)
+
+        # It should login to the meteor server.
+        mock_meteor_login.assert_called_once_with(user.id, token)
+
+        # It should return the user.
+        context = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=context)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
+    @mock.patch('down.apps.auth.views.utils.get_facebook_profile')
+    @mock.patch('down.apps.auth.views.utils.meteor_login')
+    def test_facebook_login_user_exists(self, mock_meteor_login,
+                                        mock_get_facebook_profile):
+        profile = self.fb_profile
+
+        # Mock the user, the user's auth token, and their social account.
+        user = User(email=profile['email'], name=profile['name'],
+                    first_name=profile['first_name'],
+                    last_name=profile['last_name'],
+                    image_url=profile['image_url'])
+        user.save()
+        token = Token(user=user)
+        token.save()
+        social_account = SocialAccount(user=user,
+                                       provider=SocialAccount.FACEBOOK,
+                                       uid=profile['id'])
+        social_account.save()
+
+        # Mock requesting the user's profile.
+        mock_get_facebook_profile.return_value = profile
+
+        data = {'access_token': profile['access_token']}
+        response = self.client.post(self.facebook_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should login to the meteor server.
+        mock_meteor_login.assert_called_once_with(user.id, token)
+
+        # It should return the user.
+        context = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=context)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
+
+class UserPhoneTests(APITestCase):
 
     def setUp(self):
-        # Mock two users.
+        # Mock the user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
                          username='tdog', image_url='http://imgur.com/tdog')
         self.user.save()
-        self.friend = User(email='jclarke@gmail.com', name='Joan Clarke',
-                           image_url='http://imgur.com/jcke')
-        self.friend.save()
-
-        # Mock the users' phone numbers.
-        self.friend_phone = UserPhone(user=self.friend, phone='+12036227310')
-        self.friend_phone.save()
-        self.user_phone = UserPhone(user=self.user, phone='+14388843460')
-        self.user_phone.save()
+        self.userphone = UserPhone(user=self.user, phone='+14388843460')
+        self.userphone.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user)
@@ -763,31 +808,38 @@ class UserPhoneViewSetTests(APITestCase):
 
         # Save URLs.
         self.list_url = reverse('userphone-list')
-        self.phones_url = reverse('userphone-phones')
-        self.contact_url = reverse('userphone-contact')
+        self.phones_url = reverse('userphone-contacts')
 
-    def test_query_by_phones(self):
-        # Mock a third user.
-        friend = User(email='blee@gmail.com', name='Bruce Lee',
-                      username='blee', image_url='http://imgur.com/blee')
-        friend.save()
-        friend_phone = UserPhone(user=friend, phone='+19176227310')
-        friend_phone.save()
+    def test_query_by_contacts(self):
+        contact_phone = '+19176227310'
+        contact_name = 'Ada Lovelace'
 
-        data = {'phones': [
-            unicode(self.user_phone.phone),
-            unicode(friend_phone.phone),
+        data = {'contacts': [
+            {
+                'name': self.user.name,
+                'phone': unicode(self.userphone.phone),
+            },
+            {
+                'name': contact_name,
+                'phone': contact_phone,
+            },
         ]}
         response = self.client.post(self.phones_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # It should create a userphone for the extra phone number.
+        contact_userphone = UserPhone.objects.get(phone=contact_phone)
+
+        # It should name the contact.
+        self.assertEqual(contact_userphone.user.name, contact_name)
+
         # It should return a list with the userphones.
-        userphones = [self.user_phone, friend_phone]
+        userphones = [self.userphone, contact_userphone]
         serializer = UserPhoneSerializer(userphones, many=True)
         json_user_phones = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phones)
 
-    def test_query_by_phones_not_logged_in(self):
+    def test_query_by_contacts_not_logged_in(self):
         # Unauth the user.
         self.client.credentials()
 
@@ -807,93 +859,6 @@ class UserPhoneViewSetTests(APITestCase):
 
         # It should create a new user.
         self.assertEqual(User.objects.count(), num_users+1)
-
-    @mock.patch('down.apps.auth.views.TwilioRestClient')
-    def test_create_for_contact(self, mock_twilio):
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
-        data = {
-            'phone': '+19178699626',
-            'name': 'Dickface Killah',
-        }
-        response = self.client.post(self.contact_url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # It should create a userphone with the given number.
-        UserPhone.objects.get(phone=data['phone'])
-
-        # It should create a new user with the POSTed name.
-        User.objects.get(name=data['name'])
-
-        # It should init the Twilio client with the proper params.
-        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
-                                       settings.TWILIO_TOKEN)
-
-        # It should text the contact.
-        message = ('{name} (@{username}) added you as a friend on Down!'
-                   ' - http://down.life/app').format(name=self.user.name,
-                                                     username=self.user.username)
-        mock_client.messages.create.assert_called_with(to=data['phone'], 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=message)
-
-    @mock.patch('down.apps.auth.views.TwilioRestClient')
-    def test_create_for_contact_user_exists(self, mock_twilio):
-        # Create a user with a name and phone.
-        user = User(name='Denise Tinder')
-        user.save()
-        user_phone = UserPhone(user=user, phone='+19178699626')
-        user_phone.save()
-
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
-        data = {
-            'phone': unicode(user_phone.phone),
-            'name': user.name,
-        }
-        response = self.client.post(self.contact_url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should init the Twilio client with the proper params.
-        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
-                                       settings.TWILIO_TOKEN)
-
-        # It should text the contact.
-        message = ('{name} (@{username}) added you as a friend on Down!'
-                   ' - http://down.life/app').format(name=self.user.name,
-                                                     username=self.user.username)
-        mock_client.messages.create.assert_called_with(to=data['phone'], 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=message)
-
-        # It should return the userphone.
-        serializer = UserPhoneSerializer(user_phone)
-        json_user_phone = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_user_phone)
-
-
-class TermsTests(APITestCase):
-
-    def test_get(self):
-        url = reverse('terms')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTemplateUsed(response, 'terms.html')
-
-
-class LandingTests(APITestCase):
-
-    def test_get(self):
-        url = reverse('landing')
-        response = self.client.get(url)
-        app_store_url = ('https://itunes.apple.com/us/app/down-connect-people'
-                         '-around/id969040287?mt=8')
-        self.assertRedirects(response, app_store_url,
-                             fetch_redirect_response=False)
 
 
 class LinfootFunnelTests(APITestCase):
@@ -916,41 +881,3 @@ class LinfootFunnelTests(APITestCase):
         data = {'phone': phone}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-class AppStoreTests(APITestCase):
-
-    def test_redirect(self):
-        url = reverse('app-store')
-        response = self.client.get(url)
-        app_store_url = ('https://itunes.apple.com/us/app/down-connect-people'
-                         '-around/id969040287?mt=8')
-        self.assertRedirects(response, app_store_url,
-                             fetch_redirect_response=False)
-
-
-class ArticleTests(APITestCase):
-
-    def test_get(self):
-        url = reverse('article')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTemplateUsed(response, 'festivals.html')
-
-
-class FellowshipFoundersTests(APITestCase):
-
-    def test_get(self):
-        url = reverse('founders')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTemplateUsed(response, 'founders.html')
-
-
-class FellowshipDemoTests(APITestCase):
-
-    def test_get(self):
-        url = reverse('demo')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTemplateUsed(response, 'demo.html')

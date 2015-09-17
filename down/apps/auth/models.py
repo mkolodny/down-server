@@ -9,27 +9,24 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 
 class User(AbstractBaseUser):
-    email = models.EmailField(null=True, blank=True, unique=True)
-    #name = models.TextField(null=True, blank=True)
-    # Temporarily give users a default name so that the app doesn't
-    # crash when users add from their address book.
-    # TODO: Remove the default after next release.
-    name = models.TextField(default='Down User')
+    email = models.EmailField(null=True, blank=True)
+    name = models.TextField(null=True, blank=True)
+    # Users who were added from contacts don't have first/last names.
+    first_name = models.TextField(null=True, blank=True)
+    last_name = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
     username = models.TextField(null=True, blank=True, unique=True)
     # Location can only be null from the time the user logs in to the
     # time that they give us permission to view their location.
     location = models.PointField(null=True, blank=True)
-    authtoken = models.TextField(null=True, blank=True)
-    firebase_token = models.TextField(null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     friends = models.ManyToManyField('self', through='friends.Friendship',
                                      symmetrical=False,
                                      related_name='related_friends+')
+    bulk_ref = models.TextField(null=True, blank=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Use name for the username field, since `self.username` might not be set.
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = 'username'
 
 
 def default_auth_code():
@@ -45,6 +42,7 @@ class AuthCode(models.Model):
 class UserPhone(models.Model):
     user = models.ForeignKey(User)
     phone = PhoneNumberField(unique=True)
+    bulk_ref = models.TextField(null=True, blank=True, db_index=True)
 
 
 class SocialAccount(models.Model):

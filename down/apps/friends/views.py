@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Friendship
 from .permissions import UserIsCurrentUser
 from .serializers import FriendshipSerializer, FriendSerializer
-from down.apps.events.models import AllFriendsInvitation, Invitation
+from down.apps.events.models import Invitation, Invitation
 
 
 class FriendshipViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
@@ -31,23 +31,6 @@ class FriendshipViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             raise PermissionDenied()
 
         return obj
-
-    def perform_create(self, serializer):
-        super(FriendshipViewSet, self).perform_create(serializer)
-
-        # Invite the new friend to any events with an all friends invitation.
-        user_id = serializer.data['user']
-        friend_id = serializer.data['friend']
-        all_friends_invitations = AllFriendsInvitation.objects.filter(
-                from_user_id=user_id)
-        for all_friends_invitation in all_friends_invitations:
-            event = all_friends_invitation.event
-            invitation = Invitation(from_user_id=user_id, to_user_id=friend_id,
-                                    event=event, open=True)
-            invitation.save()
-
-            # Update the event so that users see the friend as invited.
-            event.save()
 
     @list_route(methods=['delete'])
     def friend(self, request):

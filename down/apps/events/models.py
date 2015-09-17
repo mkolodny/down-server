@@ -6,7 +6,7 @@ from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
-from push_notifications.models import APNSDevice
+from hashids import Hashids
 import pytz
 import requests
 from twilio.rest import TwilioRestClient
@@ -29,6 +29,7 @@ class Event(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
+    comment = models.TextField(null=True, blank=True)
     members = models.ManyToManyField(User, through='Invitation',
                                      through_fields=('event', 'to_user'))
 
@@ -42,21 +43,21 @@ def get_invite_sms(from_user, event):
 
     if event.datetime and event.place:
         event_date = get_event_date(event, place.geo)
-        message = ('{name} invited you to {activity} at {place} on {date}'
+        message = ('{name} suggested: {activity} at {place} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, place=place.name,
                    date=event_date)
     elif event.place:
-        message = ('{name} invited you to {activity} at {place}'
+        message = ('{name} suggested: {activity} at {place}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, place=place.name)
     elif event.datetime:
         event_date = get_event_date(event, from_user.location)
-        message = ('{name} invited you to {activity} on {date}'
+        message = ('{name} suggested: {activity} on {date}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title, date=event_date)
     else:
-        message = ('{name} invited you to {activity}'
+        message = ('{name} suggested: {activity}'
                    '\n--\nSent from Down (http://down.life/app)').format(
                    name=from_user.name, activity=event.title)
     return message
@@ -90,71 +91,6 @@ def get_local_dt(dt, point):
     local_dt = dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
     return local_dt
 
-class InvitationManager(models.Manager):
-
-    def get_queryset(self):
-        return InvitationQuerySet(self.model)
-
-
-class InvitationQuerySet(models.query.QuerySet):
-
-    def send(self):
-        """
-        Send push notifications / SMS notifying people that they were invited to
-        an event. All of the invitations must be from the same user, for the same
-        event.
-        """
-        if self.count() == 0:
-            return
-
-        # Get the first invitation to use to grab the user sending the invitations,
-        # and the event.
-        first_invitation = self.first()
-        from_user = first_invitation.from_user
-        event = first_invitation.event
-
-        # Make sure that all of the invitations are from the same user, for the
-        # same event.
-        assert all((invitation.from_user_id == from_user.id) for invitation in self)
-        assert all((invitation.event_id == event.id) for invitation in self)
-
-        # Add the users to the Firebase members list.
-        url = ('{firebase_url}/events/members/{event_id}/.json?auth='
-               '{firebase_secret}').format(
-                firebase_url=settings.FIREBASE_URL, event_id=event.id,
-                firebase_secret=settings.FIREBASE_SECRET)
-        json_invitations = json.dumps({
-            invitation.to_user_id: True
-            for invitation in self
-        })
-        requests.patch(url, json_invitations)
-
-        # Don't notify the user who is sending the invitations, or users with
-        # open invitations.
-        invitations = [invitation for invitation in self
-                       if invitation.to_user_id != from_user.id
-                       and not invitation.open]
-
-        # Send users with devices push notifications.
-        message = '{name} invited you to {activity}'.format(name=from_user.name,
-                                                            activity=event.title)
-        user_ids = [invitation.to_user_id for invitation in invitations]
-        devices = APNSDevice.objects.filter(user_id__in=user_ids)
-        devices.send_message(message, badge=1)
-
-        # Text message everyone else their invitation.
-        message = get_invite_sms(from_user, event)
-        device_user_ids = [device.user_id for device in devices]
-        sms_user_ids = [invitation.to_user_id for invitation in invitations
-                        if invitation.to_user_id not in device_user_ids]
-        userphones = UserPhone.objects.filter(user_id__in=sms_user_ids)
-        client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
-        for userphone in userphones:
-            phone = unicode(userphone.phone)
-            client.messages.create(to=phone, from_=settings.TWILIO_PHONE,
-                                   body=message)
-
-
 class Invitation(models.Model):
     from_user = models.ForeignKey(User, related_name='related_from_user+')
     to_user = models.ForeignKey(User, related_name='related_to_user+')
@@ -162,20 +98,19 @@ class Invitation(models.Model):
     NO_RESPONSE = 0
     ACCEPTED = 1
     DECLINED = 2
+    MAYBE = 3
     RESPONSE_CHOICES = (
         (NO_RESPONSE, 'no response'),
         (ACCEPTED, 'accepted'),
         (DECLINED, 'declined'),
+        (MAYBE, 'maybe'),
     )
     response = models.SmallIntegerField(choices=RESPONSE_CHOICES,
                                         default=NO_RESPONSE)
     previously_accepted = models.BooleanField(default=False)
-    open = models.BooleanField(default=False)
-    to_user_messaged = models.BooleanField(default=False)
+    muted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    objects = InvitationManager()
 
     class Meta:
         unique_together = ('to_user', 'event')
@@ -196,80 +131,18 @@ class Invitation(models.Model):
             event.save()
 
 
-@receiver(post_save, sender=Invitation)
-def send_invitation_accept_notification(sender, instance, created, **kwargs):
-    """
-    Send a push notification to users who are already down for the event when
-    a user accepts the invitation.
-    """
-    if kwargs['update_fields'] == frozenset(['previously_accepted']):
-        # if we're only updating the previously_accepted field, don't
-        # send anything to anyone. Shhhhhhh
-        return
-
-    invitation = instance
-    # Since we're using PkOnlyPrimaryKeyRelatedFields, `invitation.to_user` and
-    # `invitation.event` are objects with only primary keys. So we need to use
-    # querysets to fetch the full objects.
-    # TODO: Update the tests - move the notification tests to `test_views.py`.
-    user = User.objects.get(id=invitation.to_user_id)
-    event = Event.objects.get(id=invitation.event_id)
-
-    # Don't notify the event creator that they accepted their own invitation.
-    if user.id == event.creator_id:
-        return
-
-    if invitation.response == Invitation.ACCEPTED:
-        message = '{name} is also down for {activity}'.format(
-                name=user.name,
-                activity=event.title)
-
-        # Get all other members who have accepted their invitation, or haven't
-        # responded yet, who've added the user as a friend. Always notify the
-        # creator.
-        invitations = Invitation.objects.filter(event=event) \
-                .exclude(response=Invitation.DECLINED) \
-                .exclude(to_user=user)
-        member_ids = [invitation.to_user_id for invitation in invitations]
-        added_me = Friendship.objects.filter(friend=user, user_id__in=member_ids)
-        to_user_ids = [friendship.user_id for friendship in added_me]
-        to_user_ids.append(event.creator_id)
-
-        # This filter operation will only return unique devices.
-        devices = APNSDevice.objects.filter(user_id__in=to_user_ids)
-        devices.send_message(message)
-    elif (invitation.response == Invitation.DECLINED
-            and invitation.previously_accepted):
-        # Only notify the user who invited them.
-        message = '{name} isn\'t down for {activity}'.format(
-                name=user.name,
-                activity=event.title)
-        devices = APNSDevice.objects.filter(user_id=invitation.from_user_id)
-        devices.send_message(message)
-
-
-class AllFriendsInvitation(models.Model):
+class LinkInvitation(models.Model):
     event = models.ForeignKey(Event)
     from_user = models.ForeignKey(User)
+    link_id = models.TextField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('event', 'from_user')
 
-@receiver(post_save, sender=AllFriendsInvitation)
-def send_open_invitation_notification(sender, instance, created, **kwargs):
-    """
-    Notify users with an open invitation to the event that the user is down for
-    something.
-    """
-    all_friends_invitation = instance
-    event = all_friends_invitation.event
-    from_user = all_friends_invitation.from_user
+    def save(self, *args, **kwargs):
+        if not self.link_id:
+            hashids = Hashids(salt=settings.HASHIDS_SALT, min_length=6)
+            self.link_id = hashids.encode(self.event_id, self.from_user_id)
 
-    invitations = Invitation.objects.filter(event=event, from_user=from_user,
-                                            open=True)
-    user_ids = [invitation.to_user_id for invitation in invitations]
-    devices = APNSDevice.objects.filter(user_id__in=user_ids)
-    message = '{name} is down for {activity}'.format(name=from_user.name,
-                                                     activity=event.title)
-    devices.send_message(message, badge=1)
+        super(LinkInvitation, self).save(*args, **kwargs)

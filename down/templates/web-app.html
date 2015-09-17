@@ -1,0 +1,27 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+  <meta name="description" content="Ephemeral group chats for events.">
+  <title>Down.</title>
+
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="http://fonts.googleapis.com/css?family=Viga" rel="stylesheet">
+
+  <link href="{% static 'client/app/main.css' %}" rel="stylesheet">
+  <script>
+    window.branchApiKey = '{{ BRANCH_API_KEY }}';
+    window.fbAppId = '{{ FACEBOOK_APP_ID }}';
+  </script>
+  <script src="{% static 'client/app/bundle.js' %}"></script>
+</head>
+<body>
+  <base href="/">
+  <div id="ui-view" ui-view>
+    <nav class="navbar navbar-default"></nav>
+  </div>
+</body>
+</html>

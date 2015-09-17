@@ -1,0 +1,171 @@
+/* Bootstrap */
+
+// Colors
+$brand-primary: #6a38ab;
+$link-color: darken(#428bca, 6.5%);
+
+// Scaffolding
+$body-bg: #fafafa;
+
+// Navbar
+$navbar-height: 77px;
+$navbar-default-color: #fff;
+$navbar-default-bg: $brand-primary;
+$navbar-default-border: $brand-primary;
+$navbar-border-radius: 0;
+$navbar-default-link-color: #fff;
+$navbar-default-link-hover-color: #fff;
+$navbar-default-link-active-color: #fff;
+
+// Buttons
+$btn-default-color: $brand-primary;
+$btn-default-border: $brand-primary;
+
+@import "sass/bootstrap-custom";
+
+/* App-specific app-wide sass */
+
+// Global
+body {
+  -webkit-font-smoothing: antialiased;
+}
+html,
+body,
+#ui-view {
+  height: 100%;
+}
+
+// Navbar
+.navbar-header {
+  float: left;
+}
+.navbar-right {
+  float: right !important;
+}
+.navbar-brand {
+  font-size: 36px;
+  font-family: 'Viga', 'Helvetica Neue', sans-serif;
+  margin-left: -15px;
+}
+@media (max-width: 767px) {
+  .navbar-nav {
+    & > li {
+      & > a {
+        padding-top: 15px;
+      }
+    }
+  }
+}
+.current-user {
+  font-weight: 700;
+  cursor: default;
+}
+
+// Non-member views
+.non-member-view {
+  #content {
+    text-align: center;
+    background-color: #fff;
+    border: 1px solid #edeeee;
+    border-radius: $border-radius-large;
+    padding: 20px;
+    padding-bottom: 40px;
+  }
+  #from-image {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+  }
+  #event-title {
+    font-size: 26px;
+    color: $brand-primary;
+    margin-top: 13px;
+    margin-bottom: 0;
+  }
+  #suggested-by {
+    font-size: 14px;
+    font-weight: $headings-font-weight;
+    margin-top: 5px;
+  }
+  #event-details {
+    width: 256px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: left;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+
+    i {
+      margin-right: 16px;
+    }
+    #event-comment {
+      max-height: 100px;
+      overflow: auto;
+    }
+  }
+  p {
+    color: $brand-primary;
+    max-width: 256px;
+    text-align: center;
+    margin: auto;
+    margin-top: 30px;
+  }
+  .download-images {
+    padding-top: 25px;
+    text-align: center;
+  }
+  .download-image {
+    height: 60px;
+    margin: 5px;
+  }
+
+  @media (max-width: $screen-xs-max) {
+    .download-image {
+      display: block;
+      width: 153px;
+      height: auto;
+      margin: auto;
+      margin-bottom: 10px;
+    }
+  }
+}
+
+// Event details
+.event-detail {
+  display: flex;
+  margin-bottom: 7px;
+
+  i {
+    width: 15px;
+    margin-right: 10px;
+    font-size: 1.2em;
+  }
+  .fa-calendar-o {
+    margin-top: 10px;
+  }
+  .fa-map-marker {
+    width: 12px;
+    margin-left: 3px;
+    margin-top: 2px;
+  }
+  .fa-comment-o {
+    margin-top: 1px;
+  }
+  a {
+    text-decoration: none;
+  }
+}
+
+// Intl-Phone
+@import "../node_modules/down-ionic/app/common/intl-phone/intlTelInput";
+
+/* View styles */
+@import "login/login";
+@import "invitation/invitation";
+@import "event/event";
+
