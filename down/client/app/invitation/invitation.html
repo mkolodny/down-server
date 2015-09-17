@@ -32,17 +32,17 @@
           </h2>
           <div id="event-details"
                ng-if="invitation.event.datetime || invitation.event.place || invitation.event.comment">
-            <div class="event-detail">
+            <div class="event-detail" ng-if="invitation.event.datetime">
               <i class="fa fa-calendar-o"></i>
               <div>
                 <div>{{invitation.event.datetime | date:'EEEE, MMM d'}}</div>
                 <div>{{invitation.event.datetime | date:'shortTime' | lowercase}}</div>
               </div>
             </div>
-            <div class="event-detail">
+            <div class="event-detail" ng-if="invitation.event.place">
               <a href><i class="fa fa-map-marker"></i>{{invitation.event.place.name}}</a>
             </div>
-            <div id="event-comment" class="event-detail">
+            <div id="event-comment" class="event-detail" ng-if="invitation.event.comment">
               <i class="fa fa-comment-o"></i>{{invitation.event.comment}}
             </div>
           </div>
