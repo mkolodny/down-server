@@ -20,10 +20,11 @@ class FriendshipSerializer(serializers.ModelSerializer):
         if Friendship.objects.filter(user=friendship.friend_id, friend=user):
             message = '{name} (@{username}) added you back!'.format(
                     name=user.name, username=user.username)
+            send_message(user_ids, message)
         else:
             message = '{name} (@{username}) added you as a friend!'.format(
                     name=user.name, username=user.username)
-        send_message(user_ids, message)
+            send_message(user_ids, message, added_friend=True)
 
         return friendship
 

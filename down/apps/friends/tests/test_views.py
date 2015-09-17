@@ -66,7 +66,7 @@ class FriendshipTests(APITestCase):
         user_ids = [self.friend.id]
         message = '{name} (@{username}) added you as a friend!'.format(
                 name=self.user.name, username=self.user.username)
-        mock_send_message.assert_any_call(user_ids, message)
+        mock_send_message.assert_any_call(user_ids, message, added_friend=True)
 
         # It should return the friendship.
         serializer = FriendshipSerializer(friendship)

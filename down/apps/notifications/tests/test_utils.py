@@ -172,3 +172,40 @@ class SendMessageTests(TestCase):
         mock_client.messages.create.assert_called_with(to=phone, 
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
+
+    @mock.patch('push_notifications.apns.apns_send_bulk_message')
+    @mock.patch('push_notifications.gcm.gcm_send_bulk_message')
+    @mock.patch('down.apps.notifications.utils.TwilioRestClient')
+    def test_send_message_added_friend(self, mock_twilio, mock_gcm, mock_apns):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        # Mock an event.
+        event = Event(title='Ball?', creator=self.user)
+        event.save()
+
+        user_ids = [self.user.id, self.contact.id]
+        message = 'Barack Obama (@bobama) added you as a friend!'
+        from_user = self.user
+        utils.send_message(user_ids, message, added_friend=True)
+
+        # It should send push notifications to users with ios devices.
+        token = self.ios_device.registration_id
+        mock_apns.assert_any_call(registration_ids=[token], alert=message,
+                                  badge=1)
+
+        # It should send push notifications to users with android devices.
+        token = self.android_device.registration_id
+        data = {'title': 'Down.', 'message': message}
+        mock_gcm.assert_any_call(registration_ids=[token], data=data)
+
+        # It should send SMS to users without devices.
+        message = message[:-1] # remove the exclamation point at the end.
+        emoji = '\U0001f447'
+        url = 'http://{emoji}.ws/app'.format(emoji=emoji)
+        message = '{message} on Down! - {url}'.format(message=message, url=url)
+        phone = unicode(self.contact_phone.phone)
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=message)

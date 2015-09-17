@@ -5,7 +5,8 @@ from twilio.rest import TwilioRestClient
 from down.apps.auth.models import UserPhone
 from down.apps.events.models import LinkInvitation
 
-def send_message(user_ids, message, sms=True, from_user=None, event_id=None):
+def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
+                 added_friend=False):
     # Notify users with iOS devices.
     apnsdevices = APNSDevice.objects.filter(user_id__in=user_ids)
     apnsdevices.send_message(message, badge=1)
@@ -29,6 +30,13 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None):
                 emoji=emoji, link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
         message = '{name} sent you a down - {link}'.format(name=name, link=link)
+    if added_friend:
+        # The message is a notification that the user added a contact as a friend
+        # on Down. Include a link to the app.
+        message = message[:-1] # remove the exclamation point at the end.
+        emoji = '\U0001f447'
+        url = 'http://{emoji}.ws/app'.format(emoji=emoji)
+        message = '{message} on Down! - {url}'.format(message=message, url=url)
     client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
     userphones = UserPhone.objects.filter(user_id__in=user_ids,
                                           user__username__isnull=True)
