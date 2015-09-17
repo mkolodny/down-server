@@ -21,6 +21,7 @@ httpretty==0.8.8
 ipython==2.4.1
 jsonfield==1.0.3
 mock==1.0.1
+newrelic==2.54.0.41
 phonenumbers==7.0.4
 psycopg2==2.6.1
 pytz==2014.10
