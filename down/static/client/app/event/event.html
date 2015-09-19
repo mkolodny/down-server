@@ -39,7 +39,9 @@
               </div>
             </div>
             <div class="event-detail" ng-if="event.event.place">
-              <a href><i class="fa fa-map-marker"></i>{{event.event.place.name}}</a>
+              <a href="https://maps.google.com?q={{event.place.name}}&ll={{event.event.place.lat}},{{event.event.place.long}}&z=14"
+                 target="_blank"
+                 ><i class="fa fa-map-marker"></i>{{event.event.place.name}}</a>
             </div>
             <div id="event-comment" class="event-detail"
                  ng-if="event.event.comment">
