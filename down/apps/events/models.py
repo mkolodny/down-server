@@ -33,64 +33,6 @@ class Event(models.Model):
     members = models.ManyToManyField(User, through='Invitation',
                                      through_fields=('event', 'to_user'))
 
-
-def get_invite_sms(from_user, event):
-    """
-    Return the message to SMS to invite the `from_user` to `event`.
-    """
-    if event.place:
-        place = event.place
-
-    if event.datetime and event.place:
-        event_date = get_event_date(event, place.geo)
-        message = ('{name} suggested: {activity} at {place} on {date}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=from_user.name, activity=event.title, place=place.name,
-                   date=event_date)
-    elif event.place:
-        message = ('{name} suggested: {activity} at {place}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=from_user.name, activity=event.title, place=place.name)
-    elif event.datetime:
-        event_date = get_event_date(event, from_user.location)
-        message = ('{name} suggested: {activity} on {date}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=from_user.name, activity=event.title, date=event_date)
-    else:
-        message = ('{name} suggested: {activity}'
-                   '\n--\nSent from Down (http://down.life/app)').format(
-                   name=from_user.name, activity=event.title)
-    return message
-
-def get_event_date(event, point):
-    """
-    Return a date string to include in the text message invitation.
-    """
-    event_dt = get_local_dt(event.datetime, point)
-    if event_dt:
-        event_date = event_dt.strftime('%A, %b. %-d @ %-I:%M %p')
-    else:
-        event_date = event.datetime.strftime('%A, %b. %-d')
-    return event_date
-
-def get_local_dt(dt, point):
-    """
-    Return a local datetime based on the timezone where `point` lays.
-
-    If there is an error connecting to the GeoNames API, return None.
-    """
-    coords = point.coords
-    url = ('http://api.geonames.org/timezone?lat={lat}&lng={long}'
-           '&username=mkolodny').format(lat=coords[0], long=coords[1])
-    r = requests.get(url)
-    match = GEONAMES_RE.search(r.content)
-    if not match:
-        return None
-    timezone = match.group(1)
-    local_tz = pytz.timezone(timezone)
-    local_dt = dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
-    return local_dt
-
 class Invitation(models.Model):
     from_user = models.ForeignKey(User, related_name='related_from_user+')
     to_user = models.ForeignKey(User, related_name='related_to_user+')

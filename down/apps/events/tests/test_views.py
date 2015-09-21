@@ -21,7 +21,6 @@ from down.apps.events.models import (
     Invitation,
     LinkInvitation,
     Place,
-    get_event_date,
 )
 from down.apps.events.serializers import (
     EventSerializer,
@@ -80,9 +79,6 @@ class EventTests(APITestCase):
                                              to_user=self.friend2,
                                              event=self.event)
         self.friend2_invitation.save()
-
-        # Save SMS details.
-        self.signature = '\n--\nSent from Down (http://down.life/app)'
 
         # Save post data.
         self.user_invitation_data = {

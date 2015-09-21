@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework_gis.serializers import GeoModelSerializer
 from twilio.rest import TwilioRestClient
-from .models import get_event_date, Event, Invitation, LinkInvitation, Place
+from .models import Event, Invitation, LinkInvitation, Place
 from .utils import add_member, remove_member
 from down.apps.auth.models import User, UserPhone
 from down.apps.auth.serializers import FriendSerializer
