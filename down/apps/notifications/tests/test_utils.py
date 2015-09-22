@@ -121,7 +121,7 @@ class SendMessageTests(TestCase):
                                                      from_user=from_user)
 
         # It should send SMS to users without devices.
-        link = 'http://down.life/e/{link_id}'.format(
+        link = 'https://down.life/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
         message = '{name} sent you a down - {link}'.format(name=name, link=link)
@@ -162,7 +162,7 @@ class SendMessageTests(TestCase):
         mock_gcm.assert_any_call(registration_ids=[token], data=data)
 
         # It should send SMS to users without devices.
-        link = 'http://down.life/e/{link_id}'.format(
+        link = 'https://down.life/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
         message = '{name} sent you a down - {link}'.format(name=name, link=link)
@@ -200,7 +200,7 @@ class SendMessageTests(TestCase):
 
         # It should send SMS to users without devices.
         message = message[:-1] # remove the exclamation point at the end.
-        url = 'http://down.life/app'
+        url = 'https://down.life/app'
         message = '{message} on Down! - {url}'.format(message=message, url=url)
         phone = unicode(self.contact_phone.phone)
         mock_client.messages.create.assert_called_with(to=phone, 

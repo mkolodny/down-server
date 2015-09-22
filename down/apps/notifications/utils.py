@@ -25,7 +25,7 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
         # invitation.
         link_invitation, created = LinkInvitation.objects.get_or_create(
                 event_id=event_id, from_user=from_user)
-        link = 'http://down.life/e/{link_id}'.format(
+        link = 'https://down.life/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
         message = '{name} sent you a down - {link}'.format(name=name, link=link)
@@ -33,7 +33,7 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
         # The message is a notification that the user added a contact as a friend
         # on Down. Include a link to the app.
         message = message[:-1] # remove the exclamation point at the end.
-        url = 'http://down.life/app'
+        url = 'https://down.life/app'
         message = '{message} on Down! - {url}'.format(message=message, url=url)
     client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
     userphones = UserPhone.objects.filter(user_id__in=user_ids,
