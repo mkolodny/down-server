@@ -85,8 +85,7 @@
                      name="phone"
                      class="form-control"
                      ng-class="{'submitted': sendSMSForm.$submitted}"
-                     ng-model="event.downloadPhone"
-                     placeholder="(917) 622-7310">
+                     ng-model="event.downloadPhone">
               <button type="submit"
                       class="btn btn-primary"
                       id="send-download-link">
@@ -95,14 +94,15 @@
             </form>
             <div class="form-error"
                  ng-if="sendSMSForm.$submitted && 
-                 sendSMSForm.phone.$error.validNumber && !sendSMSForm.phone.$error.required">
+                        sendSMSForm.phone.$error.validNumber &&
+                        !sendSMSForm.phone.$error.required">
               That phone number is invalid.
             </div>
           </div>
           <hr class="hidden-xs">
           <div class="hidden-xs download-images">
             <div>
-              <a href="">
+              <a href="http://im.xn--sp8h.ws/m/8yVxo9FKSm">
                 {% endverbatim %}
                 <img class="download-image"
                      src="{% static 'client/images/download-ios.png' %}"
@@ -111,7 +111,7 @@
               </a>
             </div>
             <div>
-              <a href="">
+              <a href="http://im.xn--sp8h.ws/m/o9ZhEZEKSm">
                 {% endverbatim %}
                 <img class="download-image"
                      src="{% static 'client/images/download-android.png' %}"
@@ -145,23 +145,19 @@
         </div>
       </div>
       <div class="hidden-sm hidden-md hidden-lg download-images">
-        <div>
-          <a href="http://im.xn--sp8h.ws/m/8yVxo9FKSm">
-            {% endverbatim %}
-            <img class="download-image" src="{% static 'client/images/download-ios.png' %}"
-                 alt="Download on the App Store">
-            {% verbatim %}
-          </a>
-        </div>
-        <div>
-          <a href="http://im.xn--sp8h.ws/m/o9ZhEZEKSm">
-            {% endverbatim %}
-            <img class="download-image"
-                 src="{% static 'client/images/download-android.png' %}"
-                 alt="Get it on Google Play">
-            {% verbatim %}
-          </a>
-        </div>
+        <a href="http://im.xn--sp8h.ws/m/8yVxo9FKSm">
+          {% endverbatim %}
+          <img class="download-image" src="{% static 'client/images/download-ios.png' %}"
+               alt="Download on the App Store">
+          {% verbatim %}
+        </a>
+        <a href="http://im.xn--sp8h.ws/m/o9ZhEZEKSm">
+          {% endverbatim %}
+          <img class="download-image"
+               src="{% static 'client/images/download-android.png' %}"
+               alt="Get it on Google Play">
+          {% verbatim %}
+        </a>
       </div>
     </div>
   </div>

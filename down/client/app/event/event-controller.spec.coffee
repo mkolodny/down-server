@@ -121,31 +121,14 @@ describe 'event controller', ->
   it 'should listen for new messages', ->
     expect(messagesRQ.on).toHaveBeenCalledWith 'change', ctrl.showMessages
 
-  # How to test?
-  xit 'should inititialize branch', ->
-    expect(ctrl.initBranch).toHaveBeenCalled()
-
-  describe 'setting up branch', ->
-
-    beforeEach ->
-      branchApiKey = 'key_test_ogfq42bC7tuGVWdMjNm3sjflvDdOBJiv'
-      $window.branchApiKey = branchApiKey
-      $window.branch =
-        init: jasmine.createSpy 'branch.init'
-
-      ctrl.initBranch()
-
-    it 'should init the branch sdk', ->
-      expect($window.branch.init).toHaveBeenCalledWith branchApiKey
-
-
   describe 'sending a download link', ->
     downloadPhone = null
 
     beforeEach ->
       scope.sendSMSForm =
         $valid: true
-      spyOn $window.branch, 'sendSMS'
+      $window.branch =
+        sendSMS: jasmine.createSpy 'branch.sendSMS'
       downloadPhone = '+19252852230'
       ctrl.downloadPhone = downloadPhone
 

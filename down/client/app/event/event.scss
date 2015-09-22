@@ -97,14 +97,6 @@
   .form-error {
     color: $brand-danger;
   }
-  .download-images {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  .download-image {
-    width: 153px;
-    margin-bottom: 10px;
-  }
   #group-chat-col {
     height: calc(100% - #{$navbar-height} - 40px); // 20px margin top and bottom
   }
@@ -221,6 +213,15 @@
     }
   }
 
+  @media (min-width: $screen-sm-min) {
+    .download-images {
+      padding-top: 0;
+    }
+    .download-image {
+      width: 153px;
+      height: auto;
+    }
+  }
   @media (min-width: $screen-md-min) and (max-width: 1102px) {
     .respond {
       width: 66px;
@@ -235,6 +236,9 @@
     }
     #members {
       text-align: center;
+    }
+    .download-images {
+      margin-bottom: 160px;
     }
   }
 }

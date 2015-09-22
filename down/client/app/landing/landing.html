@@ -1,0 +1,61 @@
+{% load staticfiles %}
+
+{% verbatim %}
+<div id="landing">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-4 col-md-offset-4">
+        <h1>Down.</h1>
+        <p id="tagline">Suggest something. See who's down. Make it happen.</p>
+        <div id="phone-form-container" class="hidden-xs hidden-sm">
+          <form role="form"
+                novalidate
+                name="sendSMSForm" 
+                class="form-inline"
+                id="phone-form" 
+                ng-submit="landing.sendSMS()">
+            <div id="phone-form-label">
+              Text yourself a link to download the app:
+            </div>
+            <input intl-phone
+                   required
+                   id="phone"
+                   name="phone"
+                   class="form-control"
+                   ng-class="{'submitted': sendSMSForm.$submitted}"
+                   ng-model="landing.downloadPhone">
+            <button type="submit"
+                    class="btn btn-primary"
+                    id="send-download-link">
+              Send
+            </button>
+          </form>
+          <div class="form-error"
+               ng-if="sendSMSForm.$submitted && 
+                      sendSMSForm.phone.$error.validNumber &&
+                      !sendSMSForm.phone.$error.required">
+            That phone number is invalid.
+          </div>
+        </div>
+        <hr class="hidden-xs hidden-sm">
+        <div class="download-images">
+          <a href="http://im.xn--sp8h.ws/m/8yVxo9FKSm">
+            {% endverbatim %}
+            <img class="download-image first"
+                 src="{% static 'client/images/download-ios.png' %}"
+                 alt="Download on the App Store">
+            {% verbatim %}
+          </a>
+          <a href="http://im.xn--sp8h.ws/m/o9ZhEZEKSm" target="_blank">
+            {% endverbatim %}
+            <img class="download-image"
+                 src="{% static 'client/images/download-android.png' %}"
+                 alt="Get it on Google Play">
+            {% verbatim %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endverbatim %}

@@ -115,24 +115,6 @@ body,
     margin: auto;
     margin-top: 30px;
   }
-  .download-images {
-    padding-top: 25px;
-    text-align: center;
-  }
-  .download-image {
-    height: 60px;
-    margin: 5px;
-  }
-
-  @media (max-width: $screen-xs-max) {
-    .download-image {
-      display: block;
-      width: 153px;
-      height: auto;
-      margin: auto;
-      margin-bottom: 10px;
-    }
-  }
 }
 
 // Event details
@@ -161,6 +143,16 @@ body,
   }
 }
 
+// Download buttons
+.download-images {
+  padding-top: 25px;
+  text-align: center;
+}
+.download-image {
+  height: 45px;
+  margin: 5px;
+}
+
 // Intl-Phone
 @import "../node_modules/down-ionic/app/common/intl-phone/intlTelInput";
 
@@ -168,4 +160,4 @@ body,
 @import "login/login";
 @import "invitation/invitation";
 @import "event/event";
-
+@import "landing/landing";

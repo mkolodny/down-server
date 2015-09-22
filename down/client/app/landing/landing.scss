@@ -1,0 +1,53 @@
+#landing {
+  background-color: $brand-primary;
+
+  &,
+  .container-fluid,
+  .row,
+  .col-md-4 {
+    min-height: 100%;
+  }
+  h1 {
+    text-align: center;
+    font-family: 'Viga', 'Helvetica Neue', sans-serif;
+    color: #fff;
+    font-size: 50px;
+    margin-top: 0;
+    padding-top: 100px;
+  }
+  #tagline {
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    width: 256px;
+    text-align: center;
+    margin: 20px auto 40px;
+  }
+  #phone-form-container {
+    display: flex;
+    margin-top: 100px;
+    margin-bottom: 30px;
+  }
+  #phone-form-label {
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #fff;
+  }
+  #phone-form {
+    margin: auto;
+  }
+  #send-download-link {
+    border-color: #fff;
+  }
+  .download-images {
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    padding-top: 0;
+  }
+  .download-image {
+    &.first {
+      margin-right: 5px;
+    }
+  }
+}

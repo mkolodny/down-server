@@ -14,24 +14,6 @@ class TermsTests(APITestCase):
         self.assertTemplateUsed(response, 'terms.html')
 
 
-class LandingTests(APITestCase):
-
-    """
-    def test_get(self):
-        url = reverse('landing')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTemplateUsed(response, 'landing.html')
-    """
-
-    def test_redirect(self):
-        url = reverse('landing')
-        response = self.client.get(url)
-        app_store_url = 'http://bnc.lt/m/cdhqhLhSSm'
-        self.assertRedirects(response, app_store_url,
-                             fetch_redirect_response=False)
-
-
 class AppStoreTests(APITestCase):
 
     def test_redirect(self):
@@ -70,6 +52,16 @@ class FellowshipDemoTests(APITestCase):
 
 
 class WebAppTests(APITestCase):
+
+    def test_get_landing(self):
+        url = reverse('web-app-landing')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.context['BRANCH_API_KEY'],
+                         settings.BRANCH_API_KEY)
+        self.assertEqual(response.context['FACEBOOK_APP_ID'],
+                         settings.FACEBOOK_APP_ID)
+        self.assertTemplateUsed(response, 'web-app.html')
 
     def test_get_event(self):
         url = reverse('web-app-event')

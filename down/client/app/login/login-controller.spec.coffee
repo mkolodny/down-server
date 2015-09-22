@@ -59,25 +59,6 @@ describe 'login controller', ->
   it 'should set the from user on the controller', ->
     expect(ctrl.fromUser).toEqual fromUser
 
-  describe 'initializing the facebook sdk', ->
-    fbAppId = null
-
-    beforeEach ->
-      fbAppId = '864552050271610'
-      $window.fbAppId = '864552050271610'
-      $window.FB =
-        init: jasmine.createSpy 'FB.init'
-
-      $window.fbAsyncInit()
-
-    it 'should call FB.init', ->
-      initOptions =
-        appId: fbAppId
-        cookie: true
-        version: 'v2.2'
-      expect($window.FB.init).toHaveBeenCalledWith initOptions
-
-
   describe 'logging in', ->
 
     beforeEach ->
@@ -167,7 +148,6 @@ describe 'login controller', ->
 
         deferred.resolve()
         $rootScope.$apply()
-
 
       it 'should save the user', ->
         expect(Auth.setUser).toHaveBeenCalledWith user

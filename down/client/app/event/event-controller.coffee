@@ -35,39 +35,6 @@ class EventCtrl
       , =>
         @membersError = true
 
-    # Add branch web sdk
-    ((b, r, a, n, c, h, _, s, d, k) ->
-      if !b[n] or !b[n]._q
-        while s < _.length
-          c h, _[s++]
-        d = r.createElement(a)
-        d.async = 1
-        d.src = 'https://cdn.branch.io/branch-v1.6.10.min.js'
-        k = r.getElementsByTagName(a)[0]
-        k.parentNode.insertBefore d, k
-        b[n] = h
-      return
-    ) window, document, 'script', 'branch', ((b, r) ->
-
-      b[r] = ->
-        b._q.push [
-          r
-          arguments
-        ]
-        return
-
-      return
-    ), {
-      _q: []
-      _v: 1
-    }, 'init data first addListener removeListener setIdentity logout track link sendSMS referrals credits creditHistory applyCode validateCode getCode redeem banner closeBanner'.split(' '), 0
-
-    @initBranch()
-
-  # used for text to download links
-  initBranch: ->
-    @$window.branch.init @$window.branchApiKey
-
   sendSMS: ->
     if not @$scope.sendSMSForm.$valid then return
 
