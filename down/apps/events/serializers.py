@@ -75,7 +75,7 @@ class EventSerializer(serializers.ModelSerializer):
             invitation.event = event
             invitation.from_user_id = event.creator_id
             if invitation.to_user_id == event.creator_id:
-                invitation.response = Invitation.MAYBE
+                invitation.response = Invitation.ACCEPTED
             else:
                 invitation.response = Invitation.NO_RESPONSE
         Invitation.objects.bulk_create(invitations)

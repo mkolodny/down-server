@@ -135,7 +135,7 @@ class EventTests(APITestCase):
 
         # It should create the invitations.
         Invitation.objects.get(to_user=self.user, from_user=self.user, event=event,
-                               response=Invitation.MAYBE)
+                               response=Invitation.ACCEPTED)
         Invitation.objects.get(to_user=self.friend1, from_user=self.user,
                                event=event, response=Invitation.NO_RESPONSE)
 
