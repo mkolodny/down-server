@@ -57,8 +57,7 @@ class FriendshipViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         serializer.is_valid()
 
         data = serializer.data
-        Friendship.objects.filter(user=request.user,
-                                  friend_id=data['friend']) \
+        Friendship.objects.filter(user=data['friend'], friend_id=request.user) \
                 .update(was_acknowledged=True)
 
         return Response()

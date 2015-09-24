@@ -129,11 +129,11 @@ class FriendshipTests(APITestCase):
 
     def test_update(self):
         data = {
-            'friend': self.user_friendship.friend_id,
+            'friend': self.friend.id,
         }
         response = self.client.put(self.ack_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should update the friendship.
-        user_friendship = Friendship.objects.get(id=self.user_friendship.id)
-        self.assertEqual(user_friendship.was_acknowledged, True)
+        friend_friendship = Friendship.objects.get(id=self.friend_friendship.id)
+        self.assertEqual(friend_friendship.was_acknowledged, True)
