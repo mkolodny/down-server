@@ -95,6 +95,11 @@ class FriendshipTests(APITestCase):
                 name=self.user.name, username=self.user.username)
         mock_send_message.assert_any_call(user_ids, message)
 
+        # It should set both friendships to acknowledged.
+        friend_friendship = Friendship.objects.get(id=self.friend_friendship.id)
+        self.assertTrue(friend_friendship.was_acknowledged)
+        self.assertTrue(friendship.was_acknowledged)
+
         # It should return the friendship.
         serializer = FriendshipSerializer(friendship)
         json_friendship = JSONRenderer().render(serializer.data)
@@ -190,3 +195,16 @@ class FriendshipTests(APITestCase):
         # It should delete the friendship.
         with self.assertRaises(Friendship.DoesNotExist):
             Friendship.objects.get(id=self.user_friendship.id)
+
+    def test_update(self):
+        data = {
+            'user': self.user_friendship.user_id,
+            'friend': self.user_friendship.friend_id,
+            'was_acknowledged': True,
+        }
+        response = self.client.put(self.detail_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the friendship.
+        user_friendship = Friendship.objects.get(id=self.user_friendship.id)
+        self.assertEqual(user_friendship.was_acknowledged, data['was_acknowledged'])

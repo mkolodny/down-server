@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from rest_framework import serializers
+from down.apps.auth.models import User
 from down.apps.notifications.utils import send_message
 from .models import Friendship
 
@@ -11,17 +12,32 @@ class FriendshipSerializer(serializers.ModelSerializer):
         read_only_fields = ('since', 'updated_at')
 
     def create(self, validated_data):
-        friendship = super(FriendshipSerializer, self).create(validated_data)
-
         # Notify the user's new friend that the user added them as a friend.
-        user = friendship.user
-        user_ids = [friendship.friend_id]
-        # Check if the user's new friend has already added the user as a friend.
-        if Friendship.objects.filter(user=friendship.friend_id, friend=user):
+        user = validated_data['user']
+        friend_id = validated_data['friend'].id
+        user_ids = [friend_id]
+
+        try:
+            # Check if the user's new friend has already added the user as a
+            # friend.
+            friend_friendship = Friendship.objects.get(user=friend_id,
+                                                       friend=user)
+
+            # Create the user's friendship with `was_acknowledged` already set to
+            # True.
+            data = dict(validated_data, **{'was_acknowledged': True})
+            friendship = super(FriendshipSerializer, self).create(data)
+
             message = '{name} (@{username}) added you back!'.format(
                     name=user.name, username=user.username)
             send_message(user_ids, message)
-        else:
+
+            # Set the friend's friendship to acknowledged.
+            if not friend_friendship.was_acknowledged:
+                friend_friendship.was_acknowledged = True
+                friend_friendship.save()
+        except Friendship.DoesNotExist:
+            friendship = super(FriendshipSerializer, self).create(validated_data)
             message = '{name} (@{username}) added you as a friend!'.format(
                     name=user.name, username=user.username)
             send_message(user_ids, message, added_friend=True)
