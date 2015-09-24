@@ -96,6 +96,25 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
+    @list_route(methods=['get'], url_path='added-me')
+    def added_me(self, request, pk=None):
+        """
+        Get a list of users who added the user as their friend. Only include users
+        whose friendship the user hasn't ackowledged yet - either by adding the
+        user back, or deleting the added me notification.
+        """
+        added_me = Friendship.objects.filter(friend=request.user,
+                                             was_acknowledged=False)
+        added_me_ids = [friendship.user_id for friendship in added_me]
+        added = Friendship.objects.filter(user=request.user,
+                                          friend_id__in=added_me_ids)
+        added_ids = set(friendship.friend_id for friendship in added)
+        new_added_me = [friendship.user for friendship in added_me
+                        if friendship.user_id not in added_ids]
+
+        serializer = FriendSerializer(new_added_me, many=True)
+        return Response(serializer.data)
+
 
 class UserUsernameDetail(APIView):
 

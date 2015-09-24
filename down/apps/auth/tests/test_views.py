@@ -67,8 +67,8 @@ class UserTests(APITestCase):
                             image_url='http://imgur.com/jcke',
                             location='POINT(40.7545645 -73.9813595)')
         self.friend1.save()
-        friendship = Friendship(user=self.user, friend=self.friend1)
-        friendship.save()
+        self.friendship = Friendship(user=self.user, friend=self.friend1)
+        self.friendship.save()
         self.friend1_social = SocialAccount(user=self.friend1,
                                             provider=SocialAccount.FACEBOOK,
                                             uid='20101293050283881',
@@ -294,6 +294,21 @@ class UserTests(APITestCase):
         url = reverse('user-facebook-friends')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_added_me(self):
+        # Mock the friend having added the user, but not vice versa.
+        self.friendship.delete()
+        friendship = Friendship(user=self.friend1, friend=self.user)
+        friendship.save()
+
+        url = reverse('user-added-me')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of users who added the current user.
+        serializer = FriendSerializer([self.friend1], many=True)
+        json_added_me = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_added_me)
 
 
 class SocialAccountTests(APITestCase):
