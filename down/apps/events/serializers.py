@@ -54,6 +54,7 @@ class EventSerializer(serializers.ModelSerializer):
         """
         invitations = [Invitation(**invitation)
                        for invitation in validated_data.pop('invitations')]
+        creator = self.context['request'].user
 
         has_place = validated_data.has_key('place')
         if has_place:
@@ -67,14 +68,14 @@ class EventSerializer(serializers.ModelSerializer):
 
         # Add the creator to the meteor server members list.
         try:
-            add_member(event.id, event.creator_id)
+            add_member(event.id, creator)
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
         for invitation in invitations:
             invitation.event = event
-            invitation.from_user_id = event.creator_id
-            if invitation.to_user_id == event.creator_id:
+            invitation.from_user_id = creator.id
+            if invitation.to_user_id == creator.id:
                 invitation.response = Invitation.ACCEPTED
             else:
                 invitation.response = Invitation.NO_RESPONSE
@@ -133,21 +134,21 @@ class InvitationSerializer(serializers.ModelSerializer):
         """
         invitation = instance
         new_response = validated_data['response']
+        user = self.context['request'].user
 
         # Update the meteor server's event member list.
         try:
             if new_response in [Invitation.ACCEPTED, Invitation.MAYBE]:
                 # Add the user to the meteor server members list.
-                add_member(invitation.event_id, invitation.to_user_id)
+                add_member(invitation.event_id, user)
             else:
                 # Remove the user from the meteor server members list.
-                remove_member(invitation.event_id, invitation.to_user_id)
+                remove_member(invitation.event_id, user.id)
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
         if invitation.response != new_response:
             # Notify people who want to know.
-            user = User.objects.get(id=invitation.to_user_id)
             event = Event.objects.get(id=invitation.event_id)
 
             if new_response == Invitation.ACCEPTED:
