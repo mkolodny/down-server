@@ -152,6 +152,11 @@ body,
   height: 42px;
   margin: 5px;
 }
+@media (max-width: $screen-xs-max) {
+  .download-images {
+    margin-bottom: 160px;
+  }
+}
 
 // Intl-Phone
 @import "../node_modules/down-ionic/app/common/intl-phone/intlTelInput";
