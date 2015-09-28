@@ -28,7 +28,8 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
         link = 'https://down.life/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
-        message = '{name} sent you a down - {link}'.format(name=name, link=link)
+        message = '{name} shared their plans with you - {link}'.format(name=name,
+                                                                       link=link)
     if added_friend:
         # The message is a notification that the user added a contact as a friend
         # on Down. Include a link to the app.

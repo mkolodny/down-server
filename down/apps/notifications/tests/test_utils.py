@@ -124,7 +124,8 @@ class SendMessageTests(TestCase):
         link = 'https://down.life/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
-        message = '{name} sent you a down - {link}'.format(name=name, link=link)
+        message = '{name} shared their plans with you - {link}'.format(name=name,
+                                                                       link=link)
         phone = unicode(self.contact_phone.phone)
         mock_client.messages.create.assert_called_with(to=phone, 
                                                        from_=settings.TWILIO_PHONE,
@@ -165,7 +166,8 @@ class SendMessageTests(TestCase):
         link = 'https://down.life/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
-        message = '{name} sent you a down - {link}'.format(name=name, link=link)
+        message = '{name} shared their plans with you - {link}'.format(name=name,
+                                                                       link=link)
         phone = unicode(self.contact_phone.phone)
         mock_client.messages.create.assert_called_with(to=phone, 
                                                        from_=settings.TWILIO_PHONE,
