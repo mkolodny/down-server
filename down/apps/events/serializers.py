@@ -133,21 +133,21 @@ class InvitationSerializer(serializers.ModelSerializer):
         """
         invitation = instance
         new_response = validated_data['response']
+        user = self.context['request'].user
 
         # Update the meteor server's event member list.
         try:
             if new_response in [Invitation.ACCEPTED, Invitation.MAYBE]:
                 # Add the user to the meteor server members list.
-                add_member(invitation.event_id, invitation.to_user_id)
+                add_member(invitation.event_id, user.id)
             else:
                 # Remove the user from the meteor server members list.
-                remove_member(invitation.event_id, invitation.to_user_id)
+                remove_member(invitation.event_id, user)
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
         if invitation.response != new_response:
             # Notify people who want to know.
-            user = User.objects.get(id=invitation.to_user_id)
             event = Event.objects.get(id=invitation.event_id)
 
             if new_response == Invitation.ACCEPTED:

@@ -18,13 +18,20 @@ def add_member(event_id, user_id):
     response = requests.post(url, data=data, headers=headers)
     response.raise_for_status()
 
-def remove_member(event_id, user_id):
+def remove_member(event_id, user):
     url = '{meteor_url}/events/{event_id}/members/{user_id}'.format(
-            meteor_url=settings.METEOR_URL, event_id=event_id, user_id=user_id)
-    auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
+            meteor_url=settings.METEOR_URL, event_id=event_id, user_id=user.id)
+    data = json.dumps({
+        'member': {
+            'name': user.name,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'image_url': user.image_url,
+        },
+    })
     headers = {
-        'Authorization': auth_header,
+        'Authorization': 'Token {api_key}'.format(api_key=settings.METEOR_KEY),
         'Content-Type': 'application/json',
     }
-    response = requests.delete(url, headers=headers)
+    response = requests.delete(url, data=data, headers=headers)
     response.raise_for_status()

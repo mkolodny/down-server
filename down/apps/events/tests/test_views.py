@@ -520,7 +520,7 @@ class InvitationTests(APITestCase):
 
         # It should add the user to the meteor server members list.
         mock_remove_member.assert_called_once_with(self.event.id,
-                                                   invitation.to_user_id)
+                                                   invitation.to_user)
 
         # It should notify the person who invited them.
         user_ids = [self.user2.id] # from_user
@@ -572,7 +572,7 @@ class InvitationTests(APITestCase):
 
         # It should add the user to the meteor server members list.
         mock_remove_member.assert_called_once_with(self.event.id,
-                                                   invitation.to_user_id)
+                                                   invitation.to_user)
 
         # It should notify users who are either down or might be down, and
         # haven't muted their notifications.
