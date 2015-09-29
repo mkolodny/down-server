@@ -4,17 +4,11 @@ from django.conf import settings
 import requests
 
 
-def add_member(event_id, user):
+def add_member(event_id, user_id):
     url = '{meteor_url}/events/{event_id}/members'.format(
             meteor_url=settings.METEOR_URL, event_id=event_id)
     data = json.dumps({
-        'member': {
-            'id': user.id,
-            'name': user.name,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'image_url': user.image_url,
-        },
+        'user_id': user_id,
     })
     auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
     headers = {
