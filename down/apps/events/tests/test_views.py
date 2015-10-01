@@ -26,6 +26,7 @@ from down.apps.events.serializers import (
     EventSerializer,
     InvitationSerializer,
     EventInvitationSerializer,
+    UserInvitationSerializer,
     LinkInvitationFkObjectsSerializer,
     LinkInvitationSerializer,
 )
@@ -623,6 +624,30 @@ class InvitationTests(APITestCase):
         response = self.client.put(url, data)
         self.assertEqual(response.status_code,
                          status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    def test_get_user_invitations(self):
+        # Delete the user's invitation to avoid a duplicate invitation.
+        to_friend_invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                          event=self.event)
+        to_friend_invitation.save()
+        from_friend_invitation = Invitation(from_user=self.user2,
+                                            to_user=self.user1, event=self.event)
+        from_friend_invitation.save()
+
+        user_invitations_url = '{list_url}?user={user_id}'.format(
+                list_url=self.list_url, user_id=self.user2.id)
+        response = self.client.get(user_invitations_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the invitations to/from the user.
+        invitations = [to_friend_invitation, from_friend_invitation]
+        serializer = UserInvitationSerializer(invitations, many=True)
+        json_invitations = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_invitations)
+
+    def test_get_user_invitations_no_user(self):
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class SuggestedEventsTests(APITestCase):

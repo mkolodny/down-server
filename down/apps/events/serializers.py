@@ -214,6 +214,16 @@ class EventInvitationSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'updated_at')
 
 
+class UserInvitationSerializer(serializers.ModelSerializer):
+    event = EventSerializer()
+    from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
+    to_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = Invitation
+        read_only_fields = ('created_at', 'updated_at')
+
+
 class LinkInvitationSerializer(GeoModelSerializer):
     event = PkOnlyPrimaryKeyRelatedField(queryset=Event.objects.all())
     from_user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())

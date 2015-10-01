@@ -1,13 +1,14 @@
 from __future__ import unicode_literals
+from datetime import datetime, timedelta
 import json
 from django.conf import settings
 from django.db.models import Q
 from django.views.generic.base import TemplateView
 from hashids import Hashids
+import pytz
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import ValidationError
-from rest_framework.filters import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError, ParseError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from down.apps.auth.models import User, UserPhone
@@ -28,6 +29,7 @@ from .serializers import (
     LinkInvitationFkObjectsSerializer,
     LinkInvitationSerializer,
     MessageSentSerializer,
+    UserInvitationSerializer,
 )
 
 
@@ -103,11 +105,30 @@ class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
 
 
 class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
-                        viewsets.GenericViewSet):
+                        mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
     permission_classes = (IsAuthenticated, InviterWasInvited)
     queryset = Invitation.objects.all()
     serializer_class = InvitationSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Return all active invitation to/from the given user.
+        """
+        friend = self.request.query_params.get('user')
+        if friend is None:
+            raise ParseError('The `user` query param is required.')
+        twenty_four_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=24)
+        queryset = self.queryset.filter(
+                (Q(from_user=request.user, to_user=friend) |
+                 Q(from_user=friend, to_user=request.user)) &
+                (Q(event__datetime__isnull=True,
+                  event__created_at__gt=twenty_four_hrs_ago) |
+                 Q(event__datetime__isnull=False,
+                   event__datetime__gt=twenty_four_hrs_ago)))
+
+        serializer = UserInvitationSerializer(queryset, many=True)
+        return Response(serializer.data)
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get('data')
