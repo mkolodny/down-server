@@ -33,6 +33,7 @@ class Event(models.Model):
     members = models.ManyToManyField(User, through='Invitation',
                                      through_fields=('event', 'to_user'))
 
+
 class Invitation(models.Model):
     from_user = models.ForeignKey(User, related_name='related_from_user+')
     to_user = models.ForeignKey(User, related_name='related_to_user+')
@@ -49,28 +50,12 @@ class Invitation(models.Model):
     )
     response = models.SmallIntegerField(choices=RESPONSE_CHOICES,
                                         default=NO_RESPONSE)
-    previously_accepted = models.BooleanField(default=False)
     muted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('to_user', 'event')
-
-    def save(self, *args, **kwargs):
-        super(Invitation, self).save(*args, **kwargs)
-
-        if self.response == self.ACCEPTED and not self.previously_accepted:
-            self.previously_accepted = True
-            self.save(update_fields=['previously_accepted'])
-
-        # Update the event whenever we update an invitation from anything other
-        # than no response.
-        if self.response != self.NO_RESPONSE:
-            # The event is an id-only model object, so we need to fetch the whole
-            # thing.
-            event = Event.objects.get(id=self.event.id)
-            event.save()
 
 
 class LinkInvitation(models.Model):
