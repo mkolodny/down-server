@@ -77,10 +77,12 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(friends)
 
-    @list_route(methods=['get'])
-    def invitations(self, request):
+    @list_route(methods=['get'], url_path='invitations')
+    def joined_invitations(self, request):
         twenty_four_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=24)
-        invitations = Invitation.objects.filter(to_user=request.user) \
+        joined_responses = [Invitation.ACCEPTED, Invitation.MAYBE]
+        invitations = Invitation.objects.filter(to_user=request.user,
+                                                response__in=joined_responses) \
                 .select_related('event') \
                 .filter(Q(event__datetime__isnull=True,
                           event__created_at__gt=twenty_four_hrs_ago) |

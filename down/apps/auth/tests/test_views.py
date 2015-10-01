@@ -79,7 +79,8 @@ class UserTests(APITestCase):
         self.event = Event(title='bars?!?!?!', creator=self.friend1)
         self.event.save()
         self.user_invitation = Invitation(from_user=self.friend1, to_user=self.user,
-                                          event=self.event)
+                                          event=self.event,
+                                          response=Invitation.ACCEPTED)
         self.user_invitation.save()
         self.friend1_invitation = Invitation(from_user=self.friend1,
                                              to_user=self.friend1, event=self.event)
@@ -218,11 +219,19 @@ class UserTests(APITestCase):
         self.assertEqual(response.content, json_friends)
 
     def test_get_invitations(self):
+        # Mock an invitation the user responded maybe to.
+        event = Event(title='do something', creator=self.user)
+        event.save()
+        invitation2 = Invitation(event=event, to_user=self.user,
+                                 from_user=self.user, response=Invitation.MAYBE)
+        invitation2.save()
+
         response = self.client.get(self.invitations_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # It should return the active invitations.
-        serializer = MyInvitationSerializer([self.user_invitation], many=True)
+        # It should return the active invitations you either accepted or maybed.
+        invitations = [self.user_invitation, invitation2]
+        serializer = MyInvitationSerializer(invitations, many=True)
         json_invitations = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitations)
 
@@ -235,7 +244,8 @@ class UserTests(APITestCase):
         # Mock not-expired event without a datetime.
         event = Event(title='Beach Day', creator=self.user)
         event.save()
-        invitation = Invitation(event=event, from_user=self.user, to_user=self.user)
+        invitation = Invitation(event=event, from_user=self.user, to_user=self.user,
+                                response=Invitation.MAYBE)
         invitation.save()
 
         response = self.client.get(self.invitations_url)
@@ -256,7 +266,8 @@ class UserTests(APITestCase):
         tomorrow = timezone.now() + timedelta(hours=24)
         event = Event(title='Beach Day', creator=self.user, datetime=tomorrow)
         event.save()
-        invitation = Invitation(event=event, from_user=self.user, to_user=self.user)
+        invitation = Invitation(event=event, from_user=self.user, to_user=self.user,
+                                response=Invitation.MAYBE)
         invitation.save()
 
         response = self.client.get(self.invitations_url)
