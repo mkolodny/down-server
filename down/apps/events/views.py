@@ -81,9 +81,6 @@ class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                     text=serializer.data['text'])
             send_message(member_ids, message, sms=False)
 
-            # Update the datetime the event was modified.
-            event.save()
-
             return Response(status=status.HTTP_201_CREATED)
         else:
             # TODO: Test for when the data is invalid.
