@@ -65,9 +65,9 @@ class FriendshipTests(APITestCase):
         mock_send_message.assert_any_call(user_ids, message, added_friend=True)
 
         # It should create a chat in the meteor database.
-        group_id = '{user_id},{friend_id}'.format(user_id=self.user.id,
-                                                  friend_id=self.friend.id)
-        mock_add_members.assert_any_call(group_id, [self.user.id, self.friend.id])
+        chat_id = '{user_id},{friend_id}'.format(user_id=self.user.id,
+                                                 friend_id=self.friend.id)
+        mock_add_members.assert_any_call(chat_id, [self.user.id, self.friend.id])
 
         # It should return the friendship.
         serializer = FriendshipSerializer(friendship)

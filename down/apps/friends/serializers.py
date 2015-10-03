@@ -42,9 +42,9 @@ class FriendshipSerializer(serializers.ModelSerializer):
             friendship = super(FriendshipSerializer, self).create(validated_data)
 
             # Create a group chat for this friendship.
-            group_id = '{user_id},{friend_id}'.format(user_id=user.id,
+            chat_id = '{user_id},{friend_id}'.format(user_id=user.id,
                                                       friend_id=friend_id)
-            add_members(group_id, [user.id, friend_id])
+            add_members(chat_id, [user.id, friend_id])
 
             # Send the friend this user added a notification.
             message = '{name} (@{username}) added you as a friend!'.format(
