@@ -8,7 +8,6 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework_gis.serializers import GeoModelSerializer
 from twilio.rest import TwilioRestClient
 from .models import Event, Invitation, LinkInvitation, Place
-from .utils import add_member, remove_member
 from down.apps.auth.models import User, UserPhone
 from down.apps.auth.serializers import FriendSerializer
 from down.apps.friends.models import Friendship
@@ -17,6 +16,7 @@ from down.apps.utils.exceptions import ServiceUnavailable
 from down.apps.utils.serializers import (
     PkOnlyPrimaryKeyRelatedField,
 )
+from down.apps.utils.utils import add_members, remove_member
 
 
 class PlaceSerializer(GeoModelSerializer):
@@ -67,7 +67,7 @@ class EventSerializer(serializers.ModelSerializer):
 
         # Add the creator to the meteor server members list.
         try:
-            add_member(event.id, event.creator_id)
+            add_members(event.id, event.creator_id)
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
@@ -139,7 +139,7 @@ class InvitationSerializer(serializers.ModelSerializer):
         try:
             if new_response in [Invitation.ACCEPTED, Invitation.MAYBE]:
                 # Add the user to the meteor server members list.
-                add_member(invitation.event_id, user.id)
+                add_members(invitation.event_id, user.id)
             elif invitation.response != new_response:
                 # The user changed their response from accepted or maybe to
                 # declined.

@@ -4,11 +4,11 @@ from django.conf import settings
 import requests
 
 
-def add_member(group_id, user_id):
+def add_members(group_id, user_ids):
     url = '{meteor_url}/groups/{group_id}/members'.format(
             meteor_url=settings.METEOR_URL, group_id=group_id)
     data = json.dumps({
-        'user_id': user_id,
+        'user_ids': user_ids,
     })
     auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
     headers = {

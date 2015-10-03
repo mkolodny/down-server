@@ -39,7 +39,8 @@ class FriendshipTests(APITestCase):
         self.ack_url = reverse('friendship-ack')
 
     @mock.patch('down.apps.friends.serializers.send_message')
-    def test_create(self, mock_send_message):
+    @mock.patch('down.apps.friends.serializers.add_members')
+    def test_create(self, mock_add_members, mock_send_message):
         # Delete the mocked friendships.
         self.user_friendship.delete()
         self.friend_friendship.delete()
@@ -59,6 +60,11 @@ class FriendshipTests(APITestCase):
         message = '{name} (@{username}) added you as a friend!'.format(
                 name=self.user.name, username=self.user.username)
         mock_send_message.assert_any_call(user_ids, message, added_friend=True)
+
+        # It should create a chat in the meteor database.
+        group_id = '{user_id},{friend_id}'.format(user_id=self.user.id,
+                                                  friend_id=self.friend.id)
+        mock_add_members.assert_any_call(group_id, [self.user.id, self.friend.id])
 
         # It should return the friendship.
         serializer = FriendshipSerializer(friendship)

@@ -118,9 +118,9 @@ class EventTests(APITestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    @mock.patch('down.apps.events.serializers.add_member')
+    @mock.patch('down.apps.events.serializers.add_members')
     @mock.patch('down.apps.events.serializers.send_message')
-    def test_create(self, mock_send_message, mock_add_member):
+    def test_create(self, mock_send_message, mock_add_members):
         data = self.post_data
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -141,7 +141,7 @@ class EventTests(APITestCase):
                                event=event, response=Invitation.NO_RESPONSE)
 
         # It should add the creator to the members list.
-        mock_add_member.assert_called_once_with(event.id, event.creator_id)
+        mock_add_members.assert_called_once_with(event.id, event.creator_id)
 
         # It should send notifications to the users who were invited aside from
         # the creator.
@@ -163,9 +163,9 @@ class EventTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @mock.patch('down.apps.events.serializers.add_member')
-    def test_create_add_member_error(self, mock_add_member):
-        mock_add_member.side_effect = requests.exceptions.HTTPError()
+    @mock.patch('down.apps.events.serializers.add_members')
+    def test_create_add_members_error(self, mock_add_members):
+        mock_add_members.side_effect = requests.exceptions.HTTPError()
 
         response = self.client.post(self.list_url, self.post_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -392,9 +392,9 @@ class InvitationTests(APITestCase):
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    @mock.patch('down.apps.events.serializers.add_member')
+    @mock.patch('down.apps.events.serializers.add_members')
     @mock.patch('down.apps.events.serializers.send_message')
-    def test_accept(self, mock_send_message, mock_add_member):
+    def test_accept(self, mock_send_message, mock_add_members):
         # Log in as user2.
         token = Token(user=self.user2)
         token.save()
@@ -434,7 +434,7 @@ class InvitationTests(APITestCase):
         invitation = Invitation.objects.get(**data)
 
         # It should add the user to the meteor server members list.
-        mock_add_member.assert_called_once_with(self.event.id,
+        mock_add_members.assert_called_once_with(self.event.id,
                                                 invitation.to_user_id)
 
         # It should notify users who are either down or might be down, and
@@ -445,9 +445,9 @@ class InvitationTests(APITestCase):
                 event=self.event.title)
         mock_send_message.assert_called_with(user_ids, message, sms=False)
 
-    @mock.patch('down.apps.events.serializers.add_member')
+    @mock.patch('down.apps.events.serializers.add_members')
     @mock.patch('down.apps.events.serializers.send_message')
-    def test_maybe(self, mock_send_message, mock_add_member):
+    def test_maybe(self, mock_send_message, mock_add_members):
         # Log in as user2.
         token = Token(user=self.user2)
         token.save()
@@ -487,7 +487,7 @@ class InvitationTests(APITestCase):
         invitation = Invitation.objects.get(**data)
 
         # It should add the user to the meteor server members list.
-        mock_add_member.assert_called_once_with(self.event.id,
+        mock_add_members.assert_called_once_with(self.event.id,
                                                 invitation.to_user_id)
 
         # It should notify users who are either down or might be down, and
@@ -583,10 +583,10 @@ class InvitationTests(APITestCase):
                 event=self.event.title)
         mock_send_message.assert_called_with(user_ids, message, sms=False)
 
-    @mock.patch('down.apps.events.serializers.add_member')
-    def test_accept_bad_meteor_response(self, mock_add_member):
+    @mock.patch('down.apps.events.serializers.add_members')
+    def test_accept_bad_meteor_response(self, mock_add_members):
         # Mock a bad response from the meteor server.
-        mock_add_member.side_effect = requests.exceptions.HTTPError()
+        mock_add_members.side_effect = requests.exceptions.HTTPError()
 
         # Mock an invitation.
         invitation = Invitation(from_user=self.user1, to_user=self.user2,

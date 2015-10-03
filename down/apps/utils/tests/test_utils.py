@@ -6,7 +6,7 @@ import httpretty
 import requests
 from rest_framework import status
 from down.apps.auth.models import User
-from ..utils import add_member, remove_member
+from ..utils import add_members, remove_member
 
 
 class MeteorTests(TestCase):
@@ -19,21 +19,21 @@ class MeteorTests(TestCase):
         self.user.save()
 
         # Save URLs.
-        self.add_member_url = '{meteor_url}/groups/{group_id}/members'.format(
+        self.add_members_url = '{meteor_url}/groups/{group_id}/members'.format(
                 meteor_url=settings.METEOR_URL, group_id=self.event_id)
         self.remove_member_url = '{meteor_url}/groups/{group_id}/members/{user_id}'\
                 .format(meteor_url=settings.METEOR_URL, group_id=self.event_id,
                         user_id=self.user.id)
 
     @httpretty.activate
-    def test_add_member(self):
+    def test_add_members(self):
         # Mock the response from the meteor server.
-        httpretty.register_uri(httpretty.POST, self.add_member_url)
+        httpretty.register_uri(httpretty.POST, self.add_members_url)
 
-        add_member(self.event_id, self.user.id)
+        add_members(self.event_id, [self.user.id])
 
         self.assertEqual(httpretty.last_request().body, json.dumps({
-            'user_id': self.user.id,
+            'user_ids': [self.user.id],
         }))
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
         self.assertEqual(httpretty.last_request().headers['Authorization'],
@@ -42,13 +42,13 @@ class MeteorTests(TestCase):
                          'application/json')
 
     @httpretty.activate
-    def test_add_member_bad_response(self):
+    def test_add_members_bad_response(self):
         # Mock a bad response from the meteor server.
-        httpretty.register_uri(httpretty.POST, self.add_member_url,
+        httpretty.register_uri(httpretty.POST, self.add_members_url,
                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         with self.assertRaises(requests.exceptions.HTTPError):
-            add_member(self.event_id, self.user.id)
+            add_members(self.event_id, [self.user.id])
 
     @httpretty.activate
     def test_remove_member(self):
