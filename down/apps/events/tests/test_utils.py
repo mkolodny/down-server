@@ -19,10 +19,10 @@ class MeteorTests(TestCase):
         self.user.save()
 
         # Save URLs.
-        self.add_member_url = '{meteor_url}/events/{event_id}/members'.format(
-                meteor_url=settings.METEOR_URL, event_id=self.event_id)
-        self.remove_member_url = '{meteor_url}/events/{event_id}/members/{user_id}'\
-                .format(meteor_url=settings.METEOR_URL, event_id=self.event_id,
+        self.add_member_url = '{meteor_url}/groups/{group_id}/members'.format(
+                meteor_url=settings.METEOR_URL, group_id=self.event_id)
+        self.remove_member_url = '{meteor_url}/groups/{group_id}/members/{user_id}'\
+                .format(meteor_url=settings.METEOR_URL, group_id=self.event_id,
                         user_id=self.user.id)
 
     @httpretty.activate

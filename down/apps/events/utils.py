@@ -4,9 +4,9 @@ from django.conf import settings
 import requests
 
 
-def add_member(event_id, user_id):
-    url = '{meteor_url}/events/{event_id}/members'.format(
-            meteor_url=settings.METEOR_URL, event_id=event_id)
+def add_member(group_id, user_id):
+    url = '{meteor_url}/groups/{group_id}/members'.format(
+            meteor_url=settings.METEOR_URL, group_id=group_id)
     data = json.dumps({
         'user_id': user_id,
     })
@@ -18,9 +18,9 @@ def add_member(event_id, user_id):
     response = requests.post(url, data=data, headers=headers)
     response.raise_for_status()
 
-def remove_member(event_id, user):
-    url = '{meteor_url}/events/{event_id}/members/{user_id}'.format(
-            meteor_url=settings.METEOR_URL, event_id=event_id, user_id=user.id)
+def remove_member(group_id, user):
+    url = '{meteor_url}/groups/{group_id}/members/{user_id}'.format(
+            meteor_url=settings.METEOR_URL, group_id=group_id, user_id=user.id)
     data = json.dumps({
         'member': {
             'name': user.name,
