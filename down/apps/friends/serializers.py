@@ -14,7 +14,7 @@ class FriendshipSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Notify the user's new friend that the user added them as a friend.
-        user = validated_data['user']
+        user = self.context['request'].user
         friend_id = validated_data['friend'].id
         user_ids = [friend_id]
 
@@ -56,3 +56,7 @@ class FriendshipSerializer(serializers.ModelSerializer):
 
 class FriendSerializer(serializers.Serializer):
     friend = serializers.IntegerField()
+
+
+class MessageSerializer(serializers.Serializer):
+    text = serializers.CharField()

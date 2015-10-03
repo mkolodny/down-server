@@ -37,6 +37,9 @@ class FriendshipTests(APITestCase):
         self.list_url = reverse('friendship-list')
         self.delete_url = reverse('friendship-friend')
         self.ack_url = reverse('friendship-ack')
+        self.send_message_url = reverse('friendship-messages', kwargs={
+            'pk': self.friend.id,
+        })
 
     @mock.patch('down.apps.friends.serializers.send_message')
     @mock.patch('down.apps.friends.serializers.add_members')
@@ -110,20 +113,6 @@ class FriendshipTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_create_not_current_user(self):
-        # Authorize the requests with the second user's token.
-        token = Token(user=self.friend)
-        token.save()
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
-
-        # Try to create a friendship with a different user as user.
-        data = {
-            'user': self.user.id,
-            'friend': self.friend.id,
-        }
-        response = self.client.post(self.list_url, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
     def test_delete_friend(self):
         data = {'friend': self.friend.id}
         response = self.client.delete(self.delete_url, data)
@@ -143,3 +132,14 @@ class FriendshipTests(APITestCase):
         # It should update the friendship.
         friend_friendship = Friendship.objects.get(id=self.friend_friendship.id)
         self.assertEqual(friend_friendship.was_acknowledged, True)
+
+    @mock.patch('down.apps.friends.views.send_message')
+    def test_send_message(self, mock_send_message):
+        data = {'text': 'So down!'}
+        response = self.client.post(self.send_message_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should send the friend a message.
+        user_ids = [self.friend.id]
+        message = '{name}: {text}'.format(name=self.user.name, text=data['text'])
+        mock_send_message.assert_any_call(user_ids, message, sms=False)
