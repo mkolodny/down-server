@@ -141,7 +141,7 @@ class EventTests(APITestCase):
                                event=event, response=Invitation.NO_RESPONSE)
 
         # It should add the creator to the members list.
-        mock_add_members.assert_called_once_with(event.id, event.creator_id)
+        mock_add_members.assert_called_once_with(event.id, [event.creator_id])
 
         # It should send notifications to the users who were invited aside from
         # the creator.
@@ -435,7 +435,7 @@ class InvitationTests(APITestCase):
 
         # It should add the user to the meteor server members list.
         mock_add_members.assert_called_once_with(self.event.id,
-                                                invitation.to_user_id)
+                                                 [invitation.to_user_id])
 
         # It should notify users who are either down or might be down, and
         # haven't muted their notifications.
@@ -488,7 +488,7 @@ class InvitationTests(APITestCase):
 
         # It should add the user to the meteor server members list.
         mock_add_members.assert_called_once_with(self.event.id,
-                                                invitation.to_user_id)
+                                                 [invitation.to_user_id])
 
         # It should notify users who are either down or might be down, and
         # haven't muted their notifications.

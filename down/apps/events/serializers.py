@@ -67,7 +67,7 @@ class EventSerializer(serializers.ModelSerializer):
 
         # Add the creator to the meteor server members list.
         try:
-            add_members(event.id, event.creator_id)
+            add_members(event.id, [event.creator_id])
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
@@ -139,7 +139,7 @@ class InvitationSerializer(serializers.ModelSerializer):
         try:
             if new_response in [Invitation.ACCEPTED, Invitation.MAYBE]:
                 # Add the user to the meteor server members list.
-                add_members(invitation.event_id, user.id)
+                add_members(invitation.event_id, [user.id])
             elif invitation.response != new_response:
                 # The user changed their response from accepted or maybe to
                 # declined.
