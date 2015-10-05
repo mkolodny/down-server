@@ -642,13 +642,20 @@ class InvitationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_user_invitations(self):
-        # Delete the user's invitation to avoid a duplicate invitation.
-        to_friend_invitation = Invitation(from_user=self.user1, to_user=self.user2,
-                                          event=self.event)
-        to_friend_invitation.save()
+        # Mock an invitation from the friend.
         from_friend_invitation = Invitation(from_user=self.user2,
                                             to_user=self.user1, event=self.event)
         from_friend_invitation.save()
+
+        # Mock inviting the friend to an event you were invited to.
+        event = Event(title='Chicken parms???', creator=self.user1)
+        event.save()
+        my_invitation = Invitation(from_user=self.user1, to_user=self.user1,
+                                   event=event)
+        my_invitation.save()
+        to_friend_invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                          event=event)
+        to_friend_invitation.save()
 
         user_invitations_url = '{list_url}?user={user_id}'.format(
                 list_url=self.list_url, user_id=self.user2.id)
@@ -656,7 +663,7 @@ class InvitationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the invitations to/from the user.
-        invitations = [to_friend_invitation, from_friend_invitation]
+        invitations = [from_friend_invitation, my_invitation]
         serializer = UserInvitationSerializer(invitations, many=True)
         json_invitations = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_invitations)

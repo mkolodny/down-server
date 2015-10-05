@@ -119,8 +119,10 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
         friend = self.request.query_params.get('user')
         if friend is None:
             raise ParseError('The `user` query param is required.')
+
+        # Get all invitations from the user to their friend, and vice versa.
         twenty_four_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=24)
-        queryset = self.queryset.filter(
+        all_invitations = Invitation.objects.filter(
                 (Q(from_user=request.user, to_user=friend) |
                  Q(from_user=friend, to_user=request.user)) &
                 (Q(event__datetime__isnull=True,
@@ -128,7 +130,20 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                  Q(event__datetime__isnull=False,
                    event__datetime__gt=twenty_four_hrs_ago)))
 
-        serializer = UserInvitationSerializer(queryset, many=True)
+        # For each of the friends invitation, include my invitation to the same
+        # event.
+        my_invitations = []
+        friend_events = []
+        for invitation in all_invitations:
+            if invitation.to_user_id == request.user.id:
+                my_invitations.append(invitation)
+            else:
+                friend_events.append(invitation.event_id)
+        invitations = Invitation.objects.filter(event_id__in=friend_events,
+                                                to_user=request.user)
+        my_invitations.extend(list(invitations))
+
+        serializer = UserInvitationSerializer(my_invitations, many=True)
         return Response(serializer.data)
 
     def update(self, request, *args, **kwargs):
