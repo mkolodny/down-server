@@ -8,7 +8,11 @@ from hashids import Hashids
 import pytz
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import ValidationError, ParseError
+from rest_framework.exceptions import (
+    ParseError,
+    PermissionDenied,
+    ValidationError,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from down.apps.auth.models import User, UserPhone
@@ -126,6 +130,13 @@ class InvitationViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
 
         serializer = UserInvitationSerializer(queryset, many=True)
         return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        if request.data.get('to_user') != request.user.id:
+            error = 'You can\'t update someone else\'s invitation, silly.'
+            raise PermissionDenied(error)
+            
+        return super(InvitationViewSet, self).update(request, *args, **kwargs)
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get('data')

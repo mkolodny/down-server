@@ -589,7 +589,7 @@ class InvitationTests(APITestCase):
         mock_add_members.side_effect = requests.exceptions.HTTPError()
 
         # Mock an invitation.
-        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+        invitation = Invitation(from_user=self.user2, to_user=self.user1,
                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
@@ -610,7 +610,7 @@ class InvitationTests(APITestCase):
         mock_remove_member.side_effect = requests.exceptions.HTTPError()
 
         # Mock an invitation.
-        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+        invitation = Invitation(from_user=self.user2, to_user=self.user1,
                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation.save()
 
@@ -624,6 +624,22 @@ class InvitationTests(APITestCase):
         response = self.client.put(url, data)
         self.assertEqual(response.status_code,
                          status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    def test_accept_not_your_invitation(self):
+        # Mock an invitation to another user.
+        invitation = Invitation(from_user=self.user1, to_user=self.user2,
+                                event=self.event, response=Invitation.NO_RESPONSE)
+        invitation.save()
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation.id})
+        data = {
+            'from_user': invitation.from_user_id,
+            'to_user': invitation.to_user_id,
+            'event': invitation.event_id,
+            'response': Invitation.ACCEPTED,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_user_invitations(self):
         # Delete the user's invitation to avoid a duplicate invitation.
