@@ -17,33 +17,21 @@ class FriendshipSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         friend_id = validated_data['friend'].id
         user_ids = [friend_id]
+        friendship = super(FriendshipSerializer, self).create(validated_data)
 
         try:
             # Check if the user's new friend has already added the user as a
             # friend.
-            friend_friendship = Friendship.objects.get(user=friend_id,
-                                                       friend=user)
-
-            # Create the user's friendship with `was_acknowledged` already set to
-            # True.
-            data = dict(validated_data, **{'was_acknowledged': True})
-            friendship = super(FriendshipSerializer, self).create(data)
+            Friendship.objects.get(user=friend_id, friend=user)
 
             # Send the friend this user added a notification.
             message = '{name} (@{username}) added you back!'.format(
                     name=user.name, username=user.username)
             send_message(user_ids, message)
-
-            # Set the friend's friendship to acknowledged.
-            if not friend_friendship.was_acknowledged:
-                friend_friendship.was_acknowledged = True
-                friend_friendship.save()
         except Friendship.DoesNotExist:
-            friendship = super(FriendshipSerializer, self).create(validated_data)
-
             # Create a group chat for this friendship.
             chat_id = '{user_id},{friend_id}'.format(user_id=user.id,
-                                                      friend_id=friend_id)
+                                                     friend_id=friend_id)
             add_members(chat_id, [user.id, friend_id])
 
             # Send the friend this user added a notification.

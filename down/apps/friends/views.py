@@ -49,20 +49,6 @@ class FriendshipViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         return Response()
 
-    @list_route(methods=['put'])
-    def ack(self, request):
-        """
-        Mark the user's friendship with the given friend as acknowledged.
-        """
-        serializer = FriendSerializer(data=request.data)
-        serializer.is_valid()
-
-        data = serializer.data
-        Friendship.objects.filter(user=data['friend'], friend_id=request.user) \
-                .update(was_acknowledged=True)
-
-        return Response()
-
     @detail_route(methods=['post'])
     def messages(self, request, pk=None):
         serializer = MessageSerializer(data=request.data)

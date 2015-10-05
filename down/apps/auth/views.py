@@ -105,8 +105,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         whose friendship the user hasn't ackowledged yet - either by adding the
         user back, or deleting the added me notification.
         """
-        added_me = Friendship.objects.filter(friend=request.user,
-                                             was_acknowledged=False)
+        added_me = Friendship.objects.filter(friend=request.user)
         added_me_ids = [friendship.user_id for friendship in added_me]
         added = Friendship.objects.filter(user=request.user,
                                           friend_id__in=added_me_ids)
