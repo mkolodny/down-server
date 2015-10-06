@@ -498,9 +498,8 @@ class InvitationTests(APITestCase):
                 event=self.event.title)
         mock_send_message.assert_called_with(user_ids, message, sms=False)
 
-    @mock.patch('down.apps.events.serializers.remove_member')
     @mock.patch('down.apps.events.serializers.send_message')
-    def test_decline(self, mock_send_message, mock_remove_member):
+    def test_decline(self, mock_send_message):
         # Mock an invitation.
         invitation = Invitation(from_user=self.user2, to_user=self.user1,
                                 event=self.event, response=Invitation.NO_RESPONSE)
@@ -518,10 +517,6 @@ class InvitationTests(APITestCase):
 
         # It should update the invitation.
         invitation = Invitation.objects.get(**data)
-
-        # It should add the user to the meteor server members list.
-        mock_remove_member.assert_called_once_with(self.event.id,
-                                                   invitation.to_user)
 
         # It should notify the person who invited them.
         user_ids = [self.user2.id] # from_user
@@ -605,13 +600,13 @@ class InvitationTests(APITestCase):
                          status.HTTP_503_SERVICE_UNAVAILABLE)
 
     @mock.patch('down.apps.events.serializers.remove_member')
-    def test_decline_bad_meteor_response(self, mock_remove_member):
+    def test_accept_then_decline_bad_meteor_response(self, mock_remove_member):
         # Mock a bad response from the meteor server.
         mock_remove_member.side_effect = requests.exceptions.HTTPError()
 
-        # Mock an invitation.
+        # Mock an accepted invitation.
         invitation = Invitation(from_user=self.user2, to_user=self.user1,
-                                event=self.event, response=Invitation.NO_RESPONSE)
+                                event=self.event, response=Invitation.ACCEPTED)
         invitation.save()
 
         url = reverse('invitation-detail', kwargs={'pk': invitation.id})

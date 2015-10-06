@@ -140,7 +140,7 @@ class InvitationSerializer(serializers.ModelSerializer):
             if new_response in [Invitation.ACCEPTED, Invitation.MAYBE]:
                 # Add the user to the meteor server members list.
                 add_members(invitation.event_id, [user.id])
-            elif invitation.response != new_response:
+            elif invitation.response != Invitation.NO_RESPONSE:
                 # The user changed their response from accepted or maybe to
                 # declined.
                 # Remove the user from the meteor server members list.
