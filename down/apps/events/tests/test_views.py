@@ -493,7 +493,7 @@ class InvitationTests(APITestCase):
         # It should notify users who are either down or might be down, and
         # haven't muted their notifications.
         user_ids = [self.user1.id, self.user4.id, self.user1.id]
-        message = '{name} might be down for {event}'.format(
+        message = '{name} joined the chat: {event}'.format(
                 name=self.user2.name,
                 event=self.event.title)
         mock_send_message.assert_called_with(user_ids, message, sms=False)

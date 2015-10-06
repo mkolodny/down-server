@@ -156,7 +156,7 @@ class InvitationSerializer(serializers.ModelSerializer):
                 message = '{name} is down for {event}'.format(name=user.name,
                                                               event=event.title)
             elif new_response == Invitation.MAYBE:
-                message = '{name} might be down for {event}'.format(
+                message = '{name} joined the chat: {event}'.format(
                         name=user.name, event=event.title)
             elif new_response == Invitation.DECLINED:
                 message = '{name} can\'t make it to {event}'.format(
