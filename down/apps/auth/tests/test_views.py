@@ -39,10 +39,7 @@ from down.apps.utils.exceptions import ServiceUnavailable
 
 class UserTests(APITestCase):
 
-    # We have to mock the function that sends push notifications, since adding
-    # mock friends will send push notifications.
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    def setUp(self, mock_send):
+    def setUp(self):
         self.patcher = mock.patch('requests.patch')
         self.mock_patch = self.patcher.start()
 
@@ -320,6 +317,22 @@ class UserTests(APITestCase):
         serializer = FriendSerializer([self.friend1], many=True)
         json_added_me = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_added_me)
+
+    @mock.patch('down.apps.auth.views.send_message')
+    def test_match(self, mock_send_message):
+        url = reverse('user-match')
+        data = {
+            'first_user': self.friend1.id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should send a push notification to the second user who tapped on their
+        # Friend.
+        user_ids = [self.friend1.id]
+        message = 'You and {name} are both down to do something!'.format(
+                name=self.friend1.name)
+        mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
 
 class SocialAccountTests(APITestCase):

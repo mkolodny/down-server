@@ -100,3 +100,7 @@ class ContactSerializer(serializers.Serializer):
 
 class FacebookSessionSerializer(serializers.Serializer):
     access_token = serializers.CharField()
+
+
+class MatchSerializer(serializers.Serializer):
+    first_user = serializers.IntegerField()

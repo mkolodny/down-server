@@ -32,6 +32,7 @@ from .serializers import (
     FacebookSessionSerializer,
     FriendSerializer,
     LinfootFunnelSerializer,
+    MatchSerializer,
     SessionSerializer,
     SocialAccountSyncSerializer,
     UserSerializer,
@@ -45,6 +46,7 @@ from down.apps.events.serializers import (
     MyInvitationSerializer,
 )
 from down.apps.friends.models import Friendship
+from down.apps.notifications.utils import send_message
 from down.apps.utils.exceptions import ServiceUnavailable
 
 
@@ -99,7 +101,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         return Response(serializer.data)
 
     @list_route(methods=['get'], url_path='added-me')
-    def added_me(self, request, pk=None):
+    def added_me(self, request):
         """
         Get a list of users who added the user as their friend. Only include users
         whose friendship the user hasn't ackowledged yet - either by adding the
@@ -115,6 +117,23 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
         serializer = FriendSerializer(new_added_me, many=True)
         return Response(serializer.data)
+
+    @list_route(methods=['post'])
+    def match(self, request):
+        """
+        Send the first user who selected their friend a push notification about a
+        match.
+        """
+        serializer = MatchSerializer(data=request.data)
+        serializer.is_valid()
+
+        friend_id = serializer.data['first_user']
+        friend = User.objects.get(id=friend_id)
+        message = 'You and {name} are both down to do something!'.format(
+                name=friend.name)
+        send_message([friend_id], message, sms=False)
+
+        return Response()
 
 
 class UserUsernameDetail(APIView):
