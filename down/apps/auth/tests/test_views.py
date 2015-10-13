@@ -95,6 +95,8 @@ class UserTests(APITestCase):
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
         self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
         self.invitations_url = reverse('user-invitations')
+        self.match_url = reverse('user-match')
+        self.friend_selected_url = reverse('user-friend-selected')
 
     def tearDown(self):
         self.patcher.stop()
@@ -320,11 +322,10 @@ class UserTests(APITestCase):
 
     @mock.patch('down.apps.auth.views.send_message')
     def test_match(self, mock_send_message):
-        url = reverse('user-match')
         data = {
             'first_user': self.friend1.id,
         }
-        response = self.client.post(url, data)
+        response = self.client.post(self.match_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should send a push notification to the second user who tapped on their
@@ -333,6 +334,34 @@ class UserTests(APITestCase):
         message = 'You and {name} are both down to do something!'.format(
                 name=self.friend1.name)
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
+
+    @mock.patch('down.apps.auth.views.send_message')
+    def test_friend_selected(self, mock_send_message):
+        data = {
+            'user': self.friend1.id,
+            'friend': self.user.id,
+        }
+        response = self.client.post(self.friend_selected_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should send a push notification to the second user who tapped on their
+        # Friend.
+        user_ids = [self.user.id]
+        message = 'One of your friends is down to hang out with you.'
+        mock_send_message.assert_called_once_with(user_ids, message, sms=False)
+
+    @mock.patch('down.apps.auth.views.send_message')
+    def test_friend_selected_not_added_back(self, mock_send_message):
+        # Delete the user's friendship with friend1 to mock user not adding
+        # friend1 back.
+        self.friendship.delete()
+
+        data = {
+            'user': self.friend1.id,
+            'friend': self.user.id,
+        }
+        response = self.client.post(self.friend_selected_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class SocialAccountTests(APITestCase):

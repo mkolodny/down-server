@@ -31,6 +31,7 @@ from .serializers import (
     ContactSerializer,
     FacebookSessionSerializer,
     FriendSerializer,
+    FriendSelectedSerializer,
     LinfootFunnelSerializer,
     MatchSerializer,
     SessionSerializer,
@@ -134,6 +135,27 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         send_message([friend_id], message, sms=False)
 
         return Response()
+
+    @list_route(methods=['post'], url_path='friend-selected')
+    def friend_selected(self, request):
+        """
+        Send a user a push notification letting them know that one of their friends
+        are down to hang out.
+        """
+        serializer = FriendSelectedSerializer(data=request.data)
+        serializer.is_valid()
+
+        user_id = serializer.data['user']
+        friend_id = serializer.data['friend']
+        try:
+            # Make sure the friend has added the user back.
+            Friendship.objects.get(user_id=friend_id, friend_id=user_id)
+            message = 'One of your friends is down to hang out with you.'
+            send_message([friend_id], message, sms=False)
+
+            return Response()
+        except Friendship.DoesNotExist:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 class UserUsernameDetail(APIView):
