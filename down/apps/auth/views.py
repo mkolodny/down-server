@@ -136,8 +136,8 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
         return Response()
 
-    @list_route(methods=['post'], url_path='friend-selected')
-    def friend_selected(self, request):
+    @list_route(methods=['post'], url_path='friend-select')
+    def friend_select(self, request):
         """
         Send a user a push notification letting them know that one of their friends
         are down to hang out.

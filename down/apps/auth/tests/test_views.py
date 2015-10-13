@@ -96,7 +96,7 @@ class UserTests(APITestCase):
         self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
         self.invitations_url = reverse('user-invitations')
         self.match_url = reverse('user-match')
-        self.friend_selected_url = reverse('user-friend-selected')
+        self.friend_select_url = reverse('user-friend-select')
 
     def tearDown(self):
         self.patcher.stop()
@@ -336,12 +336,12 @@ class UserTests(APITestCase):
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
     @mock.patch('down.apps.auth.views.send_message')
-    def test_friend_selected(self, mock_send_message):
+    def test_friend_select(self, mock_send_message):
         data = {
             'user': self.friend1.id,
             'friend': self.user.id,
         }
-        response = self.client.post(self.friend_selected_url, data)
+        response = self.client.post(self.friend_select_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should send a push notification to the second user who tapped on their
@@ -351,7 +351,7 @@ class UserTests(APITestCase):
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
     @mock.patch('down.apps.auth.views.send_message')
-    def test_friend_selected_not_added_back(self, mock_send_message):
+    def test_friend_select_not_added_back(self, mock_send_message):
         # Delete the user's friendship with friend1 to mock user not adding
         # friend1 back.
         self.friendship.delete()
@@ -360,7 +360,7 @@ class UserTests(APITestCase):
             'user': self.friend1.id,
             'friend': self.user.id,
         }
-        response = self.client.post(self.friend_selected_url, data)
+        response = self.client.post(self.friend_select_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
