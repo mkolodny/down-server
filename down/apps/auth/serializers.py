@@ -106,6 +106,6 @@ class MatchSerializer(serializers.Serializer):
     first_user = serializers.IntegerField()
 
 
-class FriendSelectedSerializer(serializers.Serializer):
+class FriendSelectSerializer(serializers.Serializer):
     user = serializers.IntegerField()
     friend = serializers.IntegerField()

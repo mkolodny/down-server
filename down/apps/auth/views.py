@@ -9,6 +9,7 @@ from django.contrib.gis.measure import D
 from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import render
+from django.utils import timezone
 from django.views.generic.base import RedirectView, TemplateView
 from hashids import Hashids
 import pytz
@@ -32,7 +33,7 @@ from .serializers import (
     ContactSerializer,
     FacebookSessionSerializer,
     FriendSerializer,
-    FriendSelectedSerializer,
+    FriendSelectSerializer,
     LinfootFunnelSerializer,
     MatchSerializer,
     SessionSerializer,
@@ -48,6 +49,7 @@ from down.apps.events.serializers import (
     MyInvitationSerializer,
 )
 from down.apps.friends.models import Friendship
+from down.apps.notifications.models import FriendSelectPushNotification
 from down.apps.notifications.utils import send_message
 from down.apps.utils.exceptions import ServiceUnavailable
 
@@ -146,7 +148,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         Send a user a push notification letting them know that one of their friends
         are down to hang out.
         """
-        serializer = FriendSelectedSerializer(data=request.data)
+        serializer = FriendSelectSerializer(data=request.data)
         serializer.is_valid()
 
         user_id = serializer.data['user']
@@ -154,8 +156,24 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         try:
             # Make sure the friend has added the user back.
             Friendship.objects.get(user_id=friend_id, friend_id=user_id)
-            message = 'One of your friends is down to hang out with you.'
-            send_message([friend_id], message, sms=False)
+
+            # Create/update the most recent time this user sent their friend a
+            # friend select notification.
+            try:
+                fspn = FriendSelectPushNotification.objects.get(
+                    user_id=user_id, friend_id=friend_id)
+                send_notification = timezone.now() > (
+                        fspn.latest_sent_at + timedelta(hours=6))
+            except FriendSelectPushNotification.DoesNotExist:
+                fspn = FriendSelectPushNotification(user_id=user_id,
+                                                    friend_id=friend_id)
+                send_notification = True
+
+            if send_notification:
+                message = 'One of your friends is down to hang out with you.'
+                send_message([friend_id], message, sms=False)
+                fspn.latest_sent_at = timezone.now()
+                fspn.save()
 
             return Response()
         except Friendship.DoesNotExist:

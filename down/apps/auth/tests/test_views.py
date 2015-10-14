@@ -34,6 +34,7 @@ from down.apps.events.serializers import (
     MyInvitationSerializer,
 )
 from down.apps.friends.models import Friendship
+from down.apps.notifications.models import FriendSelectPushNotification
 from down.apps.utils.exceptions import ServiceUnavailable
 
 
@@ -365,6 +366,10 @@ class UserTests(APITestCase):
         response = self.client.post(self.friend_select_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # It should create a friend select push notification.
+        FriendSelectPushNotification.objects.get(user=self.friend1,
+                                                 friend=self.user)
+
         # It should send a push notification to the second user who tapped on their
         # Friend.
         user_ids = [self.user.id]
@@ -401,6 +406,39 @@ class UserTests(APITestCase):
         }
         response = self.client.post(self.friend_select_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @mock.patch('down.apps.auth.views.timezone')
+    @mock.patch('down.apps.auth.views.send_message')
+    def test_friend_select_notified_a_while_ago(self, mock_send_message,
+                                                mock_timezone):
+        # This request is coming from the Meteor server, so accept the server's
+        # authentication token instead of the user's auth token.
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + settings.METEOR_KEY)
+
+        # Mock the friend select push notification already being created.
+        fspn = FriendSelectPushNotification(user=self.friend1, friend=self.user)
+        fspn.save()
+
+        # Mock the time being more than 6 hours later.
+        over_six_hours_later = fspn.latest_sent_at + timedelta(hours=6, seconds=1)
+        mock_timezone.now.return_value = over_six_hours_later
+
+        data = {
+            'user': self.friend1.id,
+            'friend': self.user.id,
+        }
+        response = self.client.post(self.friend_select_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the friend select push notification.
+        updated_fspn = FriendSelectPushNotification.objects.get(id=fspn.id)
+        self.assertEqual(updated_fspn.latest_sent_at, over_six_hours_later)
+
+        # It should send a push notification to the second user who tapped on their
+        # Friend.
+        user_ids = [self.user.id]
+        message = 'One of your friends is down to hang out with you.'
+        mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
 
 class SocialAccountTests(APITestCase):
