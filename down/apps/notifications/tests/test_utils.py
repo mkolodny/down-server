@@ -39,8 +39,8 @@ class SendMessageTests(TestCase):
         self.contact_phone = UserPhone(user=self.contact, phone='+12036227310')
         self.contact_phone.save()
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('push_notifications.gcm.gcm_send_bulk_message')
+    @mock.patch('push_notifications.apns.apns_send_message')
+    @mock.patch('push_notifications.gcm.gcm_send_message')
     @mock.patch('down.apps.notifications.utils.TwilioRestClient')
     def test_send_message(self, mock_twilio, mock_gcm, mock_apns):
         # Mock the Twilio SMS API.
@@ -53,13 +53,12 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with ios devices.
         token = self.ios_device.registration_id
-        mock_apns.assert_any_call(registration_ids=[token], alert=message,
-                                  badge=1)
+        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
         data = {'title': 'Down.', 'message': message}
-        mock_gcm.assert_any_call(registration_ids=[token], data=data)
+        mock_gcm.assert_any_call(registration_id=token, data=data)
 
         # It should init the Twilio client with the proper params.
         mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
@@ -71,8 +70,8 @@ class SendMessageTests(TestCase):
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('push_notifications.gcm.gcm_send_bulk_message')
+    @mock.patch('push_notifications.apns.apns_send_message')
+    @mock.patch('push_notifications.gcm.gcm_send_message')
     def test_send_message_devices_only(self, mock_gcm, mock_apns):
         user_ids = [self.user.id, self.contact.id]
         message = 'Bars?!?!?!'
@@ -80,16 +79,15 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with ios devices.
         token = self.ios_device.registration_id
-        mock_apns.assert_any_call(registration_ids=[token], alert=message,
-                                  badge=1)
+        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
         data = {'title': 'Down.', 'message': message}
-        mock_gcm.assert_any_call(registration_ids=[token], data=data)
+        mock_gcm.assert_any_call(registration_id=token, data=data)
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('push_notifications.gcm.gcm_send_bulk_message')
+    @mock.patch('push_notifications.apns.apns_send_message')
+    @mock.patch('push_notifications.gcm.gcm_send_message')
     @mock.patch('down.apps.notifications.utils.TwilioRestClient')
     def test_send_message_invitation(self, mock_twilio, mock_gcm, mock_apns):
         # Mock the Twilio SMS API.
@@ -108,13 +106,12 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with ios devices.
         token = self.ios_device.registration_id
-        mock_apns.assert_any_call(registration_ids=[token], alert=message,
-                                  badge=1)
+        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
         data = {'title': 'Down.', 'message': message}
-        mock_gcm.assert_any_call(registration_ids=[token], data=data)
+        mock_gcm.assert_any_call(registration_id=token, data=data)
 
         # It should create a link invitation.
         link_invitation = LinkInvitation.objects.get(event=event,
@@ -131,8 +128,8 @@ class SendMessageTests(TestCase):
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('push_notifications.gcm.gcm_send_bulk_message')
+    @mock.patch('push_notifications.apns.apns_send_message')
+    @mock.patch('push_notifications.gcm.gcm_send_message')
     @mock.patch('down.apps.notifications.utils.TwilioRestClient')
     def test_send_message_invitation_link_exists(self, mock_twilio, mock_gcm,
                                                  mock_apns):
@@ -154,13 +151,12 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with ios devices.
         token = self.ios_device.registration_id
-        mock_apns.assert_any_call(registration_ids=[token], alert=message,
-                                  badge=1)
+        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
         data = {'title': 'Down.', 'message': message}
-        mock_gcm.assert_any_call(registration_ids=[token], data=data)
+        mock_gcm.assert_any_call(registration_id=token, data=data)
 
         # It should send SMS to users without devices.
         link = 'https://down.life/e/{link_id}'.format(
@@ -173,8 +169,8 @@ class SendMessageTests(TestCase):
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
 
-    @mock.patch('push_notifications.apns.apns_send_bulk_message')
-    @mock.patch('push_notifications.gcm.gcm_send_bulk_message')
+    @mock.patch('push_notifications.apns.apns_send_message')
+    @mock.patch('push_notifications.gcm.gcm_send_message')
     @mock.patch('down.apps.notifications.utils.TwilioRestClient')
     def test_send_message_added_friend(self, mock_twilio, mock_gcm, mock_apns):
         # Mock the Twilio SMS API.
@@ -192,13 +188,12 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with ios devices.
         token = self.ios_device.registration_id
-        mock_apns.assert_any_call(registration_ids=[token], alert=message,
-                                  badge=1)
+        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
         data = {'title': 'Down.', 'message': message}
-        mock_gcm.assert_any_call(registration_ids=[token], data=data)
+        mock_gcm.assert_any_call(registration_id=token, data=data)
 
         # It should send SMS to users without devices.
         message = message[:-1] # remove the exclamation point at the end.

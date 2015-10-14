@@ -9,12 +9,14 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
                  added_friend=False):
     # Notify users with iOS devices.
     apnsdevices = APNSDevice.objects.filter(user_id__in=user_ids)
-    apnsdevices.send_message(message, badge=1)
+    for device in apnsdevices:
+        device.send_message(message, badge=1)
 
     # Notify users with Android devices.
     gcmdevices = GCMDevice.objects.filter(user_id__in=user_ids)
     extra = {'title': 'Down.', 'message': message}
-    gcmdevices.send_message(None, extra=extra)
+    for device in gcmdevices:
+        device.send_message(None, extra=extra)
 
     if not sms:
         return
