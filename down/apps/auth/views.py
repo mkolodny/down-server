@@ -148,9 +148,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         Send a user a push notification letting them know that one of their friends
         are down to hang out.
         """
-        import logging
-        logger = logging.getLogger('console')
-        logger.info(request.data)
         serializer = FriendSelectSerializer(data=request.data)
         serializer.is_valid()
 
@@ -159,7 +156,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         try:
             # Make sure the friend has added the user back.
             Friendship.objects.get(user_id=friend_id, friend_id=user_id)
-            logger.info('got the friendship')
 
             # Create/update the most recent time this user sent their friend a
             # friend select notification.
@@ -174,7 +170,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                 send_notification = True
 
             if send_notification:
-                logger.info('sending a notification')
                 message = 'One of your friends is down to hang out with you.'
                 send_message([friend_id], message, sms=False)
                 fspn.latest_sent_at = timezone.now()
@@ -182,7 +177,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
             return Response()
         except Friendship.DoesNotExist:
-            logger.info('the friendship didn\'t exist')
             return Response(status=status.HTTP_403_FORBIDDEN)
 
 
