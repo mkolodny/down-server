@@ -104,6 +104,7 @@ class FacebookSessionSerializer(serializers.Serializer):
 
 class MatchSerializer(serializers.Serializer):
     first_user = serializers.IntegerField()
+    second_user = serializers.IntegerField()
 
 
 class FriendSelectSerializer(serializers.Serializer):

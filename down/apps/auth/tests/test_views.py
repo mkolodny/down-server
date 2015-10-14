@@ -46,7 +46,8 @@ class UserTests(APITestCase):
 
         # Mock a user.
         self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
-                         username='tdog', image_url='http://imgur.com/tdog',
+                         first_name='Alan', last_name='Turing', username='tdog',
+                         image_url='http://imgur.com/tdog',
                          location='POINT(50.7545645 -73.9813595)')
         self.user.save()
         self.user_social = SocialAccount(user=self.user,
@@ -62,6 +63,7 @@ class UserTests(APITestCase):
 
         # Mock two of the user's friends.
         self.friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
+                            first_name='Joan', last_name='Clarke',
                             image_url='http://imgur.com/jcke',
                             location='POINT(40.7545645 -73.9813595)')
         self.friend1.save()
@@ -81,7 +83,8 @@ class UserTests(APITestCase):
                                           response=Invitation.ACCEPTED)
         self.user_invitation.save()
         self.friend1_invitation = Invitation(from_user=self.friend1,
-                                             to_user=self.friend1, event=self.event)
+                                             to_user=self.friend1,
+                                             event=self.event)
         self.friend1_invitation.save()
 
         # Mock the users' phone numbers.
@@ -329,6 +332,7 @@ class UserTests(APITestCase):
 
         data = {
             'first_user': self.friend1.id,
+            'second_user': self.user.id,
         }
         response = self.client.post(self.match_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -337,7 +341,7 @@ class UserTests(APITestCase):
         # Friend.
         user_ids = [self.friend1.id]
         message = 'You and {name} are both down to do something!'.format(
-                name=self.friend1.name)
+                name=self.user.first_name)
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
     @mock.patch('down.apps.auth.views.send_message')
@@ -349,6 +353,7 @@ class UserTests(APITestCase):
 
         data = {
             'first_user': self.friend1.id,
+            'second_user': self.user.id,
         }
         response = self.client.post(self.match_url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
