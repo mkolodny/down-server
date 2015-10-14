@@ -322,6 +322,10 @@ class UserTests(APITestCase):
 
     @mock.patch('down.apps.auth.views.send_message')
     def test_match(self, mock_send_message):
+        # This request is coming from the Meteor server, so accept the server's
+        # authentication token instead of the user's auth token.
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + settings.METEOR_KEY)
+
         data = {
             'first_user': self.friend1.id,
         }
@@ -336,7 +340,24 @@ class UserTests(APITestCase):
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
     @mock.patch('down.apps.auth.views.send_message')
+    def test_match_not_authorized(self, mock_send_message):
+        # This request is coming from the Meteor server, so accept the server's
+        # authentication token instead of the user's auth token.
+        bad_key = '{correct_key}1'.format(correct_key=settings.METEOR_KEY)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + bad_key)
+
+        data = {
+            'first_user': self.friend1.id,
+        }
+        response = self.client.post(self.match_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @mock.patch('down.apps.auth.views.send_message')
     def test_friend_select(self, mock_send_message):
+        # This request is coming from the Meteor server, so accept the server's
+        # authentication token instead of the user's auth token.
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + settings.METEOR_KEY)
+
         data = {
             'user': self.friend1.id,
             'friend': self.user.id,
@@ -352,9 +373,27 @@ class UserTests(APITestCase):
 
     @mock.patch('down.apps.auth.views.send_message')
     def test_friend_select_not_added_back(self, mock_send_message):
+        # This request is coming from the Meteor server, so accept the server's
+        # authentication token instead of the user's auth token.
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + settings.METEOR_KEY)
+
         # Delete the user's friendship with friend1 to mock user not adding
         # friend1 back.
         self.friendship.delete()
+
+        data = {
+            'user': self.friend1.id,
+            'friend': self.user.id,
+        }
+        response = self.client.post(self.friend_select_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @mock.patch('down.apps.auth.views.send_message')
+    def test_friend_select_not_authorized(self, mock_send_message):
+        # This request is coming from the Meteor server, so accept the server's
+        # authentication token instead of the user's auth token.
+        bad_key = '{correct_key}1'.format(correct_key=settings.METEOR_KEY)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + bad_key)
 
         data = {
             'user': self.friend1.id,

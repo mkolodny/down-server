@@ -23,6 +23,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
+from .authentication import MeteorAuthentication
 from .filters import UserFilter
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
 from .permissions import IsCurrentUserOrReadOnly
@@ -119,7 +120,8 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         serializer = FriendSerializer(new_added_me, many=True)
         return Response(serializer.data)
 
-    @list_route(methods=['post'])
+    @list_route(methods=['post'], authentication_classes=(MeteorAuthentication,),
+                permission_classes=())
     def match(self, request):
         """
         Send the first user who selected their friend a push notification about a
@@ -136,7 +138,9 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
         return Response()
 
-    @list_route(methods=['post'], url_path='friend-select')
+    @list_route(methods=['post'], url_path='friend-select',
+                authentication_classes=(MeteorAuthentication,),
+                permission_classes=())
     def friend_select(self, request):
         """
         Send a user a push notification letting them know that one of their friends
