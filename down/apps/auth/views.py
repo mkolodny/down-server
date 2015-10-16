@@ -49,7 +49,6 @@ from down.apps.events.serializers import (
     MyInvitationSerializer,
 )
 from down.apps.friends.models import Friendship
-from down.apps.notifications.models import FriendSelectPushNotification
 from down.apps.notifications.utils import send_message
 from down.apps.utils.exceptions import ServiceUnavailable
 
@@ -158,23 +157,9 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             # Make sure the friend has added the user back.
             Friendship.objects.get(user_id=friend_id, friend_id=user_id)
 
-            # Create/update the most recent time this user sent their friend a
-            # friend select notification.
-            try:
-                fspn = FriendSelectPushNotification.objects.get(
-                    user_id=user_id, friend_id=friend_id)
-                send_notification = timezone.now() > (
-                        fspn.latest_sent_at + timedelta(hours=6))
-            except FriendSelectPushNotification.DoesNotExist:
-                fspn = FriendSelectPushNotification(user_id=user_id,
-                                                    friend_id=friend_id)
-                send_notification = True
-
-            if send_notification:
-                message = 'One of your friends is down to hang out with you.'
-                send_message([friend_id], message, sms=False)
-                fspn.latest_sent_at = timezone.now()
-                fspn.save()
+            # Send a stealthy notification.
+            message = 'One of your friends is down to hang out with you.'
+            send_message([friend_id], message, sms=False)
 
             return Response()
         except Friendship.DoesNotExist:
