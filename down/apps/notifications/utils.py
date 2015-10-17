@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from django.conf import settings
+from push_notifications.gcm import GCMError
 from push_notifications.models import APNSDevice, GCMDevice
 from twilio.rest import TwilioRestClient
 from down.apps.auth.models import UserPhone
@@ -16,7 +17,10 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
     gcmdevices = GCMDevice.objects.filter(user_id__in=user_ids)
     extra = {'title': 'Down.', 'message': message}
     for device in gcmdevices:
-        device.send_message(None, extra=extra)
+        try:
+            device.send_message(None, extra=extra)
+        except GCMError:
+            continue
 
     if not sms:
         return

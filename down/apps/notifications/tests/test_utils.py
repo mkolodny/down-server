@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.test import TestCase
 import mock
+from push_notifications.gcm import GCMError
 from push_notifications.models import APNSDevice, GCMDevice
 from down.apps.auth.models import User, UserPhone
 from down.apps.events.models import Event, LinkInvitation
@@ -203,3 +204,17 @@ class SendMessageTests(TestCase):
         mock_client.messages.create.assert_called_with(to=phone, 
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
+
+    @mock.patch('push_notifications.apns.apns_send_message')
+    @mock.patch('push_notifications.gcm.gcm_send_message')
+    def test_send_message_gcm_error(self, mock_gcm, mock_apns):
+        # Mock an error when sending an Android device a push notification.
+        mock_gcm.side_effect = GCMError
+
+        user_ids = [self.user.id, self.contact.id]
+        message = 'Bars?!?!?!'
+        utils.send_message(user_ids, message, sms=False)
+
+        # It should send push notifications to users with ios devices.
+        token = self.ios_device.registration_id
+        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
