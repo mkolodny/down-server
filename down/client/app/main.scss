@@ -4,6 +4,9 @@
 $brand-primary: #6a38ab;
 $link-color: darken(#428bca, 6.5%);
 
+// Font
+$font-family-sans-serif:  Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
+
 // Scaffolding
 $body-bg: #fafafa;
 
@@ -44,7 +47,7 @@ body,
 }
 .navbar-brand {
   font-size: 36px;
-  font-family: 'Viga', 'Helvetica Neue', sans-serif;
+  font-family: 'Carter One', 'Helvetica Neue', sans-serif;
   margin-left: -15px;
 }
 @media (max-width: 767px) {
