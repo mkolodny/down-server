@@ -15,7 +15,7 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
 
     # Notify users with Android devices.
     gcmdevices = GCMDevice.objects.filter(user_id__in=user_ids)
-    extra = {'title': 'Down.', 'message': message}
+    extra = {'title': 'Rallytap', 'message': message}
     for device in gcmdevices:
         try:
             device.send_message(None, extra=extra)

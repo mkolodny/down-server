@@ -58,7 +58,7 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
-        data = {'title': 'Down.', 'message': message}
+        data = {'title': 'Rallytap', 'message': message}
         mock_gcm.assert_any_call(registration_id=token, data=data)
 
         # It should init the Twilio client with the proper params.
@@ -84,7 +84,7 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
-        data = {'title': 'Down.', 'message': message}
+        data = {'title': 'Rallytap', 'message': message}
         mock_gcm.assert_any_call(registration_id=token, data=data)
 
     @mock.patch('push_notifications.apns.apns_send_message')
@@ -111,7 +111,7 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
-        data = {'title': 'Down.', 'message': message}
+        data = {'title': 'Rallytap', 'message': message}
         mock_gcm.assert_any_call(registration_id=token, data=data)
 
         # It should create a link invitation.
@@ -156,7 +156,7 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
-        data = {'title': 'Down.', 'message': message}
+        data = {'title': 'Rallytap', 'message': message}
         mock_gcm.assert_any_call(registration_id=token, data=data)
 
         # It should send SMS to users without devices.
@@ -193,7 +193,7 @@ class SendMessageTests(TestCase):
 
         # It should send push notifications to users with android devices.
         token = self.android_device.registration_id
-        data = {'title': 'Down.', 'message': message}
+        data = {'title': 'Rallytap', 'message': message}
         mock_gcm.assert_any_call(registration_id=token, data=data)
 
         # It should send SMS to users without devices.
