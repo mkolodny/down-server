@@ -29,13 +29,13 @@
                     id="send-download-link">
               Send
             </button>
+            <div class="form-error"
+                 ng-if="sendSMSForm.$submitted && 
+                        sendSMSForm.phone.$error.validNumber &&
+                        !sendSMSForm.phone.$error.required">
+              That phone number is invalid.
+            </div>
           </form>
-          <div class="form-error"
-               ng-if="sendSMSForm.$submitted && 
-                      sendSMSForm.phone.$error.validNumber &&
-                      !sendSMSForm.phone.$error.required">
-            That phone number is invalid.
-          </div>
         </div>
         <hr class="hidden-xs hidden-sm">
         <div class="download-images">
