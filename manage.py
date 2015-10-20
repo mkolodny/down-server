@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from down.scripts import env
+from rallytap.scripts import env
 
 
 if __name__ == '__main__':
@@ -8,7 +8,7 @@ if __name__ == '__main__':
     env.read_env()
 
     environ = os.environ['ENV']
-    settings_module = 'down.settings.{environ}'.format(environ=environ)
+    settings_module = 'rallytap.settings.{environ}'.format(environ=environ)
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
 
     from django.core.management import execute_from_command_line

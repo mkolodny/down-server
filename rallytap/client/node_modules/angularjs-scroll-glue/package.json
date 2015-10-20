@@ -1,0 +1,40 @@
+{
+  "author": {
+    "name": "Lukas Wegmann"
+  },
+  "name": "angularjs-scroll-glue",
+  "version": "2.0.4",
+  "main": "src/scrollglue.js",
+  "dependencies": {},
+  "devDependencies": {
+    "karma": "~0.12.0",
+    "karma-jasmine": "~0.1.0",
+    "karma-firefox-launcher": "~0.1.3",
+    "karma-phantomjs-launcher": "~0.1.4"
+  },
+  "scripts": {
+    "test": "./node_modules/karma/bin/karma start --browsers Firefox --single-run"
+  },
+  "gitHead": "28deb79a05c8ebcef5662312090577a00417619d",
+  "description": "An AngularJs directive that automatically scrolls to the bottom of an element on changes in its scope.",
+  "_id": "angularjs-scroll-glue@2.0.4",
+  "_shasum": "5853eed2d601f67238db2a27b28399ddafcfabb6",
+  "_from": "angularjs-scroll-glue@*",
+  "_npmVersion": "1.4.21",
+  "_npmUser": {
+    "name": "alejonext",
+    "email": "alejonext@gmail.com"
+  },
+  "maintainers": [
+    {
+      "name": "alejonext",
+      "email": "alejonext@gmail.com"
+    }
+  ],
+  "dist": {
+    "shasum": "5853eed2d601f67238db2a27b28399ddafcfabb6",
+    "tarball": "http://registry.npmjs.org/angularjs-scroll-glue/-/angularjs-scroll-glue-2.0.4.tgz"
+  },
+  "directories": {},
+  "_resolved": "https://registry.npmjs.org/angularjs-scroll-glue/-/angularjs-scroll-glue-2.0.4.tgz"
+}
