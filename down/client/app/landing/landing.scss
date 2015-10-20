@@ -37,7 +37,14 @@
     margin: auto;
   }
   #send-download-link {
-    border-color: #fff;
+    border-color: #ed6700;
+    background-color: #ed6700;
+
+    &:hover,
+    &:active {
+      border-color: darken(#ed6700, 10%);
+      background-color: darken(#ed6700, 10%);
+    }
   }
   .download-images {
     text-align: center;
