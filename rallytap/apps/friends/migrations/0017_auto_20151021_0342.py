@@ -31,5 +31,4 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(teamrallytap),
     ]
