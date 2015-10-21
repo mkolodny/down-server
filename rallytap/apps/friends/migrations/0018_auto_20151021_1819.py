@@ -15,6 +15,8 @@ def create_teamrallytap_chats(apps, schema_editor):
     teamrallytap = User.objects.get(username='teamrallytap')
     chats = []
     for user in User.objects.all().exclude(id=teamrallytap.id):
+        chat_id = '{user_id},{team_id}'.format(user_id=user.id,
+                                               team_id=teamrallytap.id)
         chats.append({'chat_id': chat_id, 'user_ids': [user.id, teamrallytap.id]})
 
     # Create the chats.
