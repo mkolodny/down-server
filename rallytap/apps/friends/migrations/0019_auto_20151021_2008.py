@@ -34,8 +34,9 @@ def create_teamrallytap_chats(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('friends', '0017_auto_20151021_1810'),
+        ('friends', '0018_auto_20151021_1819'),
     ]
 
     operations = [
+        migrations.RunPython(create_teamrallytap_chats),
     ]
