@@ -25,6 +25,7 @@ class User(AbstractBaseUser):
                                      related_name='related_friends+')
     bulk_ref = models.TextField(null=True, blank=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'username'
 

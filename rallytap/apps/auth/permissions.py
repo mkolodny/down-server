@@ -15,3 +15,12 @@ class IsCurrentUserOrReadOnly(permissions.BasePermission):
             return True
 
         return obj == request.user
+
+
+class IsStaff(permissions.BasePermission):
+    """
+    Only allow staff members to touch a resource.
+    """
+
+    def has_permission(self, request, view):
+        return request.user.is_staff

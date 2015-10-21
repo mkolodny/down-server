@@ -77,7 +77,8 @@ class UserTests(APITestCase):
         # Mock an event that the user's invited to.
         self.event = Event(title='bars?!?!?!', creator=self.friend1)
         self.event.save()
-        self.user_invitation = Invitation(from_user=self.friend1, to_user=self.user,
+        self.user_invitation = Invitation(from_user=self.friend1,
+                                          to_user=self.user,
                                           event=self.event,
                                           response=Invitation.ACCEPTED)
         self.user_invitation.save()
@@ -709,6 +710,7 @@ class SessionTests(APITestCase):
         # Save URLs.
         self.list_url = reverse('session-list')
         self.facebook_url = reverse('session-facebook')
+        self.teamrallytap_url = reverse('session-teamrallytap')
     
     @mock.patch('rallytap.apps.auth.views.utils.meteor_login')
     def test_create(self, mock_meteor_login):
@@ -920,6 +922,46 @@ class SessionTests(APITestCase):
         serializer = UserSerializer(user, context=context)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
+
+    def test_get_teamrallytap(self):
+        # Mock the rallytap user.
+        user = User(username='teamrallytap')
+        user.save()
+        token = Token(user=user)
+        token.save()
+
+        # Mock the rallytap user's friend.
+        friend = User()
+        friend.save()
+        friendship = Friendship(user=user, friend=friend)
+        friendship.save()
+
+        # Mock a staff member.
+        staff_user = User(is_staff=True)
+        staff_user.save()
+        staff_token = Token(user=staff_user)
+        staff_token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + staff_token.key)
+
+        response = self.client.get(self.teamrallytap_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the rallytap user.
+        context = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=context)
+        json_user = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user)
+
+    def test_get_teamrallytap_non_staff(self):
+        # Mock a non-staff member.
+        user = User(is_staff=False)
+        user.save()
+        token = Token(user=user)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        response = self.client.get(self.teamrallytap_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class UserPhoneTests(APITestCase):

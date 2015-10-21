@@ -27,7 +27,7 @@ from twilio.rest import TwilioRestClient
 from .authentication import MeteorAuthentication
 from .filters import UserFilter
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
-from .permissions import IsCurrentUserOrReadOnly
+from .permissions import IsCurrentUserOrReadOnly, IsStaff
 from .serializers import (
     AuthCodeSerializer,
     ContactSerializer,
@@ -359,6 +359,16 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         context = {'authtoken': token.key}
         serializer = UserSerializer(user, context=context)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @list_route(methods=['get'], permission_classes=(IsAuthenticated, IsStaff),
+                authentication_classes=(TokenAuthentication,))
+    def teamrallytap(self, request):
+        user = User.objects.get(username='teamrallytap')
+        token = Token.objects.get(user=user)
+
+        context = {'authtoken': token.key}
+        serializer = UserSerializer(user, context=context)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
