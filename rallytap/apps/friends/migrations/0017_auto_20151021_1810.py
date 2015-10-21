@@ -16,9 +16,9 @@ def befriend_teamrallytap(apps, schema_editor):
     friendships = []
     for user in User.objects.all().exclude(id=teamrallytap.id):
         # Make the user friends with Team Rallytap.
-        friendship.append(Friendship(user=user, friend=teamrallytap))
-        friendship.append(Friendship(user=teamrallytap, friend=user))
-    friendships.bulk_create(friendships)
+        friendships.append(Friendship(user=user, friend=teamrallytap))
+        friendships.append(Friendship(user=teamrallytap, friend=user))
+    Friendship.objects.bulk_create(friendships)
 
 class Migration(migrations.Migration):
 
