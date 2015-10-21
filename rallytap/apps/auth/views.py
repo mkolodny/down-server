@@ -24,6 +24,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
+from rallytap.apps.events.models import Event, Invitation
+from rallytap.apps.events.serializers import (
+    EventSerializer,
+    InvitationSerializer,
+    MyInvitationSerializer,
+)
+from rallytap.apps.friends.models import Friendship
+from rallytap.apps.notifications.utils import send_message
+from rallytap.apps.utils.exceptions import ServiceUnavailable
+from rallytap.apps.utils.utils import add_members
 from .authentication import MeteorAuthentication
 from .filters import UserFilter
 from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
@@ -42,15 +52,6 @@ from .serializers import (
     UserPhoneSerializer,
 )
 from . import utils
-from rallytap.apps.events.models import Event, Invitation
-from rallytap.apps.events.serializers import (
-    EventSerializer,
-    InvitationSerializer,
-    MyInvitationSerializer,
-)
-from rallytap.apps.friends.models import Friendship
-from rallytap.apps.notifications.utils import send_message
-from rallytap.apps.utils.exceptions import ServiceUnavailable
 
 
 class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
@@ -308,13 +309,21 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             user = user_number.user
             token, created = Token.objects.get_or_create(user=user)
         except UserPhone.DoesNotExist:
-            # User doesn't already exist, so create a blank new user and phone
+            # User doesn't exist yet, so create a blank new user and phone
             # number.
             user = User()
             user.save()
-
             userphone = UserPhone(user=user, phone=serializer.data['phone'])
             userphone.save()
+
+            # Make the user friends with Team Rallytap.
+            teamrallytap = User.objects.get(username='teamrallytap')
+            Friendship.objects.create(user=user, friend=teamrallytap)
+            Friendship.objects.create(user=teamrallytap, friend=user)
+            chat_id = '{user_id},{friend_id}'.format(user_id=user.id,
+                                                     friend_id=teamrallytap.id)
+            user_ids = [user.id, teamrallytap.id]
+            add_members(chat_id, user_ids)
 
             token = Token.objects.create(user=user)
 

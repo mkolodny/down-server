@@ -247,7 +247,8 @@ class UserTests(APITestCase):
         # Mock not-expired event without a datetime.
         event = Event(title='Beach Day', creator=self.user)
         event.save()
-        invitation = Invitation(event=event, from_user=self.user, to_user=self.user,
+        invitation = Invitation(event=event, from_user=self.user,
+                                to_user=self.user,
                                 response=Invitation.MAYBE)
         invitation.save()
 
@@ -269,7 +270,8 @@ class UserTests(APITestCase):
         tomorrow = timezone.now() + timedelta(hours=24)
         event = Event(title='Beach Day', creator=self.user, datetime=tomorrow)
         event.save()
-        invitation = Invitation(event=event, from_user=self.user, to_user=self.user,
+        invitation = Invitation(event=event, from_user=self.user,
+                                to_user=self.user,
                                 response=Invitation.MAYBE)
         invitation.save()
 
@@ -707,16 +709,18 @@ class SessionTests(APITestCase):
             'access_token': self.access_token,
         }
 
+        # Mock the teamrallytap user.
+        self.teamrallytap_user = User(username='teamrallytap')
+        self.teamrallytap_user.save()
+
         # Save URLs.
         self.list_url = reverse('session-list')
         self.facebook_url = reverse('session-facebook')
         self.teamrallytap_url = reverse('session-teamrallytap')
     
+    @mock.patch('rallytap.apps.auth.views.add_members')
     @mock.patch('rallytap.apps.auth.views.utils.meteor_login')
-    def test_create(self, mock_meteor_login):
-        # Make sure no users have been created yet.
-        self.assertEquals(User.objects.count(), 0)
-
+    def test_create(self, mock_meteor_login, mock_add_members):
         # Mock the user's auth code.
         auth = AuthCode(phone='+12345678910')
         auth.save()
@@ -729,17 +733,25 @@ class SessionTests(APITestCase):
         with self.assertRaises(AuthCode.DoesNotExist):
             AuthCode.objects.get(code=auth.code, phone=auth.phone)
 
-        # It should create a user associated with the given number.
-        user = User.objects.get()
-
         # It should create a userphone.
-        UserPhone.objects.get(user=user, phone=auth.phone)
+        userphone = UserPhone.objects.get(phone=auth.phone)
+        user = userphone.user
 
         # It should create a token.
         token = Token.objects.get(user=user)
 
         # It should login to the meteor server.
         mock_meteor_login.assert_called_once_with(user.id, token)
+
+        # The user should be friends with Team Rallytap.
+        Friendship.objects.get(user=user, friend=self.teamrallytap_user)
+        Friendship.objects.get(user=self.teamrallytap_user, friend=user)
+
+        # It should create a chat in the meteor database.
+        chat_id = '{user_id},{friend_id}'.format(
+                user_id=user.id, friend_id=self.teamrallytap_user.id)
+        user_ids = [user.id, self.teamrallytap_user.id]
+        mock_add_members.assert_any_call(chat_id, user_ids)
 
         # It should return the user.
         data = {'authtoken': token.key}
@@ -786,9 +798,6 @@ class SessionTests(APITestCase):
         user_json = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, user_json)
 
-        # The number of users in the database should still be 1
-        self.assertEqual(User.objects.count(), 1)
-
         # The user's auth code should be deleted.
         with self.assertRaises(AuthCode.DoesNotExist):
             AuthCode.objects.get(id=self.auth.id)
@@ -815,9 +824,6 @@ class SessionTests(APITestCase):
         user_json = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, user_json)
 
-        # The number of users in the database should still be 1
-        self.assertEqual(User.objects.count(), 1)
-
         # The user's auth code should still exist.
         AuthCode.objects.get(id=self.auth.id)
 
@@ -833,11 +839,9 @@ class SessionTests(APITestCase):
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        # It should create a user associated with the given number.
-        user = User.objects.get()
-
         # It should create a userphone.
-        UserPhone.objects.get(user=user, phone=auth.phone)
+        userphone = UserPhone.objects.get(phone=auth.phone)
+        user = userphone.user
 
         # It should create a token.
         token = Token.objects.get(user=user)
@@ -924,16 +928,14 @@ class SessionTests(APITestCase):
         self.assertEqual(response.content, json_user)
 
     def test_get_teamrallytap(self):
-        # Mock the rallytap user.
-        user = User(username='teamrallytap')
-        user.save()
-        token = Token(user=user)
+        # Mock the rallytap user's auth token.
+        token = Token(user=self.teamrallytap_user)
         token.save()
 
         # Mock the rallytap user's friend.
         friend = User()
         friend.save()
-        friendship = Friendship(user=user, friend=friend)
+        friendship = Friendship(user=self.teamrallytap_user, friend=friend)
         friendship.save()
 
         # Mock a staff member.
@@ -948,7 +950,7 @@ class SessionTests(APITestCase):
 
         # It should return the rallytap user.
         context = {'authtoken': token.key}
-        serializer = UserSerializer(user, context=context)
+        serializer = UserSerializer(self.teamrallytap_user, context=context)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
@@ -1020,18 +1022,12 @@ class UserPhoneTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_create(self):
-        # Save the number of users so far.
-        num_users = User.objects.count()
-
         data = {'phone': '+19178699626'}
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create a userphone with the given number.
         UserPhone.objects.get(**data)
-
-        # It should create a new user.
-        self.assertEqual(User.objects.count(), num_users+1)
 
 
 class LinfootFunnelTests(APITestCase):
