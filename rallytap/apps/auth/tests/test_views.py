@@ -155,6 +155,21 @@ class UserTests(APITestCase):
         response = self.client.put(detail_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_put_username_rallytap(self):
+        new_username = 'rallytap'
+        data = {
+            'email': self.user.email,
+            'name': self.user.name,
+            'username': new_username,
+            'image_url': self.user.image_url,
+        }
+        response = self.client.put(self.detail_url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_put_username_taken(self):
+        # TODO
+        pass
+
     def test_query_by_ids(self):
         ids = ','.join([unicode(self.user.id)])
         url = self.list_url + '?ids=' + ids
@@ -827,8 +842,10 @@ class SessionTests(APITestCase):
         # The user's auth code should still exist.
         AuthCode.objects.get(id=self.auth.id)
 
+    @mock.patch('rallytap.apps.auth.views.add_members')
     @mock.patch('rallytap.apps.auth.views.utils.meteor_login')
-    def test_create_bad_meteor_response(self, mock_meteor_login):
+    def test_create_bad_meteor_response(self, mock_meteor_login,
+                                        mock_add_members):
         mock_meteor_login.side_effect = ServiceUnavailable('Bad status')
 
         # Mock the user's auth code.

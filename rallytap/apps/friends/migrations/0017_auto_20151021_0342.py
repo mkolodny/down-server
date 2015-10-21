@@ -7,6 +7,9 @@ from rallytap.apps.utils.utils import add_members
 
 
 def teamrallytap(apps, schema_editor):
+    if settings.ENV == 'dev':
+        return
+
     User = apps.get_model('down_auth', 'User')
     Friendship = apps.get_model('friends', 'Friendship')
     teamrallytap = User.objects.get(username='teamrallytap')
@@ -14,9 +17,6 @@ def teamrallytap(apps, schema_editor):
         # Make the user friends with Team Rallytap.
         Friendship.objects.create(user=user, friend=teamrallytap)
         Friendship.objects.create(user=teamrallytap, friend=user)
-
-        if settings.ENV == 'dev':
-            continue
 
         # Create a chat on the Meteor server.
         chat_id = '{user_id},{friend_id}'.format(user_id=user.id,

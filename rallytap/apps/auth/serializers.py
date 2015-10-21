@@ -73,6 +73,12 @@ class UserSerializer(GeoModelSerializer):
         else:
             return None
 
+    def update(self, instance, validated_data):
+        if validated_data['username'] == 'rallytap':
+            raise ValidationError('Username is taken.')
+
+        return super(UserSerializer, self).update(instance, validated_data)
+
 
 class UserPhoneSerializer(serializers.ModelSerializer):
     user = FriendSerializer(read_only=True)
