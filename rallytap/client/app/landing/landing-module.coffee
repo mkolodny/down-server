@@ -3,9 +3,9 @@ require 'angular-ui-router'
 require 'down-ionic/app/common/intl-phone/intl-phone-module'
 LandingCtrl = require './landing-controller'
 
-angular.module 'down.landing', [
+angular.module 'rallytapWeb.landing', [
     'ui.router'
-    'down.intlPhone'
+    'rallytapWeb.intlPhone'
   ]
   .config ($stateProvider) ->
     $stateProvider

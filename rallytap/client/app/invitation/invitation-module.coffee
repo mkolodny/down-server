@@ -4,10 +4,10 @@ require 'down-ionic/app/common/auth/auth-module'
 require 'down-ionic/app/common/resources/resources-module'
 InvitationCtrl = require './invitation-controller'
 
-angular.module 'down.invitation', [
+angular.module 'rallytapWeb.invitation', [
     'ui.router'
-    'down.auth'
-    'down.resources'
+    'rallytapWeb.auth'
+    'rallytapWeb.resources'
   ]
   .config ($stateProvider) ->
     $stateProvider

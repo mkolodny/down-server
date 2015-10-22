@@ -18,9 +18,9 @@ describe 'event service', ->
   invitation = null
   linkId = null
 
-  beforeEach angular.mock.module('down.auth')
+  beforeEach angular.mock.module('rallytapWeb.auth')
 
-  beforeEach angular.mock.module('down.resources')
+  beforeEach angular.mock.module('rallytapWeb.resources')
 
   beforeEach angular.mock.module('ui.router')
 

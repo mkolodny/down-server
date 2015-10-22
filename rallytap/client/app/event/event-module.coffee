@@ -7,11 +7,11 @@ require 'down-ionic/app/common/intl-phone/intl-phone-module'
 EventCtrl = require './event-controller'
 EventService = require './event-service'
 
-angular.module 'down.event', [
+angular.module 'rallytapWeb.event', [
     'ui.router'
-    'down.auth'
-    'down.intlPhone'
-    'down.resources'
+    'rallytapWeb.auth'
+    'rallytapWeb.intlPhone'
+    'rallytapWeb.resources'
     'luegg.directives'
   ]
   .config ($stateProvider) ->

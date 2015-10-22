@@ -9,15 +9,15 @@ require './login/login-module'
 require './invitation/invitation-module'
 require './landing/landing-module'
 
-angular.module 'down', [
+angular.module 'rallytapWeb', [
     'ui.router'
-    'down.auth'
-    'down.asteroid'
-    'down.event'
-    'down.landing'
-    'down.login'
-    'down.invitation'
-    'down.resources'
+    'rallytapWeb.auth'
+    'rallytapWeb.asteroid'
+    'rallytapWeb.event'
+    'rallytapWeb.landing'
+    'rallytapWeb.login'
+    'rallytapWeb.invitation'
+    'rallytapWeb.resources'
     'LocalStorageModule'
   ]
   .config ($httpProvider, $locationProvider, $urlRouterProvider,

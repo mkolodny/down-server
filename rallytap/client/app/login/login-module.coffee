@@ -5,11 +5,11 @@ require 'down-ionic/app/common/asteroid/asteroid-module'
 require 'down-ionic/app/common/resources/resources-module'
 LoginCtrl = require './login-controller'
 
-angular.module 'down.login', [
+angular.module 'rallytapWeb.login', [
     'ui.router'
-    'down.auth'
-    'down.asteroid'
-    'down.resources'
+    'rallytapWeb.auth'
+    'rallytapWeb.asteroid'
+    'rallytapWeb.resources'
   ]
   .config ($stateProvider) ->
     $stateProvider

@@ -30,11 +30,11 @@ describe 'event controller', ->
 
   beforeEach angular.mock.module('ui.router')
 
-  beforeEach angular.mock.module('down.auth')
+  beforeEach angular.mock.module('rallytapWeb.auth')
 
-  beforeEach angular.mock.module('down.asteroid')
+  beforeEach angular.mock.module('rallytapWeb.asteroid')
 
-  beforeEach angular.mock.module('down.resources')
+  beforeEach angular.mock.module('rallytapWeb.resources')
 
   beforeEach inject(($injector) ->
     $controller = $injector.get '$controller'
