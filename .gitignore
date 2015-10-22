@@ -64,6 +64,6 @@ target/
 .DS_Store
 
 # Client
-down/client/node_modules
-down/client/build
-down/client/tests
+rallytap/client/node_modules
+rallytap/client/build
+rallytap/client/tests
