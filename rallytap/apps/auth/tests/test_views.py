@@ -644,7 +644,7 @@ class AuthCodeTests(APITestCase):
                                                  settings.TWILIO_TOKEN)
 
         # It should text the user the auth code.
-        message = 'Your Down code: {}'.format(auth.code)
+        message = 'Your Rallytap code: {}'.format(auth.code)
         mock_client.messages.create.assert_called_with(to=self.phone_number, 
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
@@ -674,7 +674,7 @@ class AuthCodeTests(APITestCase):
                                                  settings.TWILIO_TOKEN)
 
         # It should text the user the auth code.
-        message = 'Your Down code: {}'.format(auth.code)
+        message = 'Your Rallytap code: {}'.format(auth.code)
         mock_client.messages.create.assert_called_with(to=self.phone_number, 
                                                        from_=settings.TWILIO_PHONE,
                                                        body=message)
