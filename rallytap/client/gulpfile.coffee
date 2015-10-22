@@ -1,12 +1,8 @@
-require 'coffee-script/register'
 autoprefixer = require 'gulp-autoprefixer'
 browserify = require 'browserify'
 childProcess = require 'child_process'
 del = require 'del'
-concat = require 'gulp-concat'
-glob = require 'glob'
 gulp = require 'gulp'
-gutil = require 'gulp-util'
 imagemin = require 'gulp-imagemin'
 livereload = require 'gulp-livereload'
 karma = require('karma').server
@@ -122,7 +118,7 @@ gulp.task 'minify', [
 
 gulp.task 'unit', ->
   # Watch all test files for changes, and re-browserify.
-  glob "#{appDir}/**/*.spec.coffee", null, (err, files) ->
+  gulp.src "#{appDir}/**/*.spec.coffee", null, (err, files) ->
     bundler = browserify
       cache: {}
       packageCache: {}
