@@ -747,9 +747,8 @@ class SessionTests(APITestCase):
         self.facebook_url = reverse('session-facebook')
         self.teamrallytap_url = reverse('session-teamrallytap')
     
-    @mock.patch('rallytap.apps.auth.views.add_members')
     @mock.patch('rallytap.apps.auth.views.utils.meteor_login')
-    def test_create(self, mock_meteor_login, mock_add_members):
+    def test_create(self, mock_meteor_login):
         # Mock the user's auth code.
         auth = AuthCode(phone='+12345678910')
         auth.save()
@@ -775,12 +774,6 @@ class SessionTests(APITestCase):
         # The user should be friends with Team Rallytap.
         Friendship.objects.get(user=user, friend=self.teamrallytap_user)
         Friendship.objects.get(user=self.teamrallytap_user, friend=user)
-
-        # It should create a chat in the meteor database.
-        chat_id = '{user_id},{friend_id}'.format(
-                user_id=user.id, friend_id=self.teamrallytap_user.id)
-        user_ids = [user.id, self.teamrallytap_user.id]
-        mock_add_members.assert_any_call(chat_id, user_ids)
 
         # It should return the user.
         data = {'authtoken': token.key, 'friends': user.friends}

@@ -318,6 +318,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             # number.
             user = User()
             user.save()
+            token = Token.objects.create(user=user)
             userphone = UserPhone(user=user, phone=serializer.data['phone'])
             userphone.save()
 
@@ -325,12 +326,6 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             teamrallytap = User.objects.get(username='teamrallytap')
             Friendship.objects.create(user=user, friend=teamrallytap)
             Friendship.objects.create(user=teamrallytap, friend=user)
-            chat_id = '{user_id},{friend_id}'.format(user_id=user.id,
-                                                     friend_id=teamrallytap.id)
-            user_ids = [user.id, teamrallytap.id]
-            add_members(chat_id, user_ids)
-
-            token = Token.objects.create(user=user)
 
         # Authenticate the user on the meteor server.
         utils.meteor_login(user.id, token)
