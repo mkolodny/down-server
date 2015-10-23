@@ -45,6 +45,26 @@ class APNSDeviceTests(APITestCase):
         response = self.client.post(self.create_url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_create_device_id_exists(self):
+        # Create another user's APNSDevice with the same device id.
+        user = User()
+        user.save()
+        data = self.post_data.copy()
+        data['user'] = user
+        registration_id = ('9670dc75c6fa765ae1f5d16e34bccdd5fe24b'
+                           '9fa90dd5af81634ea167291a3d7')
+        data['registration_id'] = registration_id
+        device = APNSDevice(**data)
+        device.save()
+
+        response = self.client.post(self.create_url, self.post_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the old device.
+        APNSDevice.objects.get(id=device.id, user=self.user,
+                               registration_id=self.post_data['registration_id'],
+                               device_id=data['device_id'])
+
 
 class GCMDeviceTests(APITestCase):
 

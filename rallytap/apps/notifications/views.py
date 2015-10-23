@@ -15,9 +15,24 @@ class APNSDeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(status=status.HTTP_201_CREATED, headers=headers)
+
+            try:
+                # Check whether a device with the given device id already
+                # exists.
+                device_id = serializer.data['device_id']
+                apnsdevice = APNSDevice.objects.get(device_id=device_id)
+                
+                # Update the device.
+                apnsdevice.registration_id = serializer.data['registration_id']
+                apnsdevice.user_id = serializer.data['user']
+                apnsdevice.save()
+
+                headers = self.get_success_headers(serializer.data)
+                return Response(status=status.HTTP_200_OK, headers=headers)
+            except APNSDevice.DoesNotExist:
+                self.perform_create(serializer)
+                headers = self.get_success_headers(serializer.data)
+                return Response(status=status.HTTP_201_CREATED, headers=headers)
         except ValidationError as e:
             # If this user has already created a device return a 200 response.
             if e.detail == {'registration_id': [u'This field must be unique.']}:
@@ -35,7 +50,7 @@ class GCMDeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         try:
             registration_id = serializer.data['registration_id']
-            gcmdevice = GCMDevice.objects.get(registration_id=registration_id)
+            GCMDevice.objects.get(registration_id=registration_id)
             headers = self.get_success_headers(serializer.data)
             return Response(status=status.HTTP_200_OK, headers=headers)
         except GCMDevice.DoesNotExist:
