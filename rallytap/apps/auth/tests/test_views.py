@@ -60,7 +60,7 @@ class UserTests(APITestCase):
         self.token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
-        # Mock two of the user's friends.
+        # Mock one of the user's friends.
         self.friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
                             first_name='Joan', last_name='Clarke',
                             image_url='http://imgur.com/jcke',
@@ -457,6 +457,8 @@ class SocialAccountTests(APITestCase):
         # Mock the user's friend.
         self.friend = User(email='jclarke@gmail.com', name='Joan Clarke')
         self.friend.save()
+        self.friendship = Friendship(user=self.user, friend=self.friend)
+        self.friendship.save()
         self.friend_account = SocialAccount(user=self.friend,
                                             provider=SocialAccount.FACEBOOK,
                                             uid='10101293050283881')
@@ -497,8 +499,8 @@ class SocialAccountTests(APITestCase):
         mock_get_facebook_profile.return_value = profile
 
         # Mock the user's facebook friends.
-        facebook_friends = User.objects.filter(id=self.friend.id)
-        mock_get_facebook_friends.return_value = facebook_friends
+        friends = User.objects.filter(id=self.friend.id)
+        mock_get_facebook_friends.return_value = friends
 
         response = self.client.post(self.url, self.post_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -524,7 +526,11 @@ class SocialAccountTests(APITestCase):
         mock_get_facebook_friends.assert_called_once_with(social_account)
 
         # It should return the user.
-        data = {'facebook_friends': facebook_friends, 'authtoken': self.token.key}
+        data = {
+            'facebook_friends': friends,
+            'friends': friends,
+            'authtoken': self.token.key,
+        }
         serializer = UserSerializer(user, context=data)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
@@ -554,7 +560,11 @@ class SocialAccountTests(APITestCase):
         mock_get_facebook_friends.assert_called_once_with(social_account)
 
         # It should return the user.
-        data = {'facebook_friends': facebook_friends, 'authtoken': self.token.key}
+        data = {
+            'facebook_friends': facebook_friends,
+            'friends': [self.friend],
+            'authtoken': self.token.key,
+        }
         serializer = UserSerializer(self.user, context=data)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
@@ -602,7 +612,11 @@ class SocialAccountTests(APITestCase):
         mock_meteor_login.assert_called_once_with(self.user.id, self.token)
 
         # It should return the user.
-        data = {'facebook_friends': facebook_friends, 'authtoken': self.token.key}
+        data = {
+            'facebook_friends': facebook_friends,
+            'friends': self.user.friends,
+            'authtoken': self.token.key,
+        }
         serializer = UserSerializer(self.user, context=data)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
@@ -769,7 +783,7 @@ class SessionTests(APITestCase):
         mock_add_members.assert_any_call(chat_id, user_ids)
 
         # It should return the user.
-        data = {'authtoken': token.key}
+        data = {'authtoken': token.key, 'friends': user.friends}
         serializer = UserSerializer(user, context=data)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
@@ -808,7 +822,7 @@ class SessionTests(APITestCase):
         mock_meteor_login.assert_called_once_with(self.user.id, token)
 
         # The response should have the same user object
-        data = {'authtoken': token.key}
+        data = {'authtoken': token.key, 'friends': self.user.friends}
         serializer = UserSerializer(self.user, context=data)
         user_json = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, user_json)
@@ -834,7 +848,7 @@ class SessionTests(APITestCase):
         mock_meteor_login.assert_called_once_with(self.user.id, token)
 
         # The response should have the same user object
-        data = {'authtoken': token.key}
+        data = {'authtoken': token.key, 'friends': self.user.friends}
         serializer = UserSerializer(self.user, context=data)
         user_json = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, user_json)
@@ -904,7 +918,7 @@ class SessionTests(APITestCase):
         mock_meteor_login.assert_called_once_with(user.id, token)
 
         # It should return the user.
-        context = {'authtoken': token.key}
+        context = {'authtoken': token.key, 'friends': user.friends}
         serializer = UserSerializer(user, context=context)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
@@ -939,7 +953,7 @@ class SessionTests(APITestCase):
         mock_meteor_login.assert_called_once_with(user.id, token)
 
         # It should return the user.
-        context = {'authtoken': token.key}
+        context = {'authtoken': token.key, 'friends': user.friends}
         serializer = UserSerializer(user, context=context)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
@@ -951,7 +965,7 @@ class SessionTests(APITestCase):
         token.save()
 
         # Mock the rallytap user's friend.
-        friend = User()
+        friend = User(username='teamtaprally')
         friend.save()
         friendship = Friendship(user=self.teamrallytap_user, friend=friend)
         friendship.save()
@@ -970,7 +984,7 @@ class SessionTests(APITestCase):
         mock_meteor_login.assert_called_once_with(self.teamrallytap_user.id, token)
 
         # It should return the rallytap user.
-        context = {'authtoken': token.key}
+        context = {'authtoken': token.key, 'friends': [friend]}
         serializer = UserSerializer(self.teamrallytap_user, context=context)
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)

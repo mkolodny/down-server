@@ -223,12 +223,13 @@ class SocialAccountSync(APIView):
             except SocialAccount.DoesNotExist:
                 # Update the user with the new data from Facebook.
                 # Facebook users might not have emails.
-                request.user.email = profile.get('email')
-                request.user.name = profile['name']
-                request.user.first_name = profile['first_name']
-                request.user.last_name = profile['last_name']
-                request.user.image_url = profile['image_url']
-                request.user.save()
+                user = request.user
+                user.email = profile.get('email')
+                user.name = profile['name']
+                user.first_name = profile['first_name']
+                user.last_name = profile['last_name']
+                user.image_url = profile['image_url']
+                user.save()
 
                 # Create the user's social account.
                 social_account = SocialAccount(user_id=request.user.id,
@@ -237,7 +238,11 @@ class SocialAccountSync(APIView):
                 social_account.save()
 
         facebook_friends = utils.get_facebook_friends(social_account)
-        data = {'facebook_friends': facebook_friends, 'authtoken': token.key}
+        data = {
+            'facebook_friends': facebook_friends,
+            'friends': user.friends,
+            'authtoken': token.key,
+        }
         serializer = UserSerializer(user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -334,7 +339,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         if serializer.data['phone'] != '+15555555555':
             auth.delete()
 
-        data = {'authtoken': token.key}
+        data = {'authtoken': token.key, 'friends': user.friends}
         serializer = UserSerializer(user, context=data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -365,7 +370,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         token, created = Token.objects.get_or_create(user=user)
         utils.meteor_login(user.id, token)
 
-        context = {'authtoken': token.key}
+        context = {'authtoken': token.key, 'friends': user.friends}
         serializer = UserSerializer(user, context=context)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -378,7 +383,9 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         # Log in to the meteor server.
         utils.meteor_login(user.id, token)
 
-        context = {'authtoken': token.key}
+        # Only return friends with usernames to make the response smaller.
+        friends = user.friends.filter(username__isnull=False)
+        context = {'authtoken': token.key, 'friends': friends}
         serializer = UserSerializer(user, context=context)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

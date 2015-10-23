@@ -52,7 +52,7 @@ class FriendSerializer(GeoModelSerializer):
 
 class UserSerializer(GeoModelSerializer):
     authtoken = serializers.SerializerMethodField(required=False)
-    friends = FriendSerializer(required=False, many=True)
+    friends = serializers.SerializerMethodField(required=False)
     facebook_friends = serializers.SerializerMethodField(required=False)
 
     class Meta:
@@ -64,6 +64,14 @@ class UserSerializer(GeoModelSerializer):
 
     def get_authtoken(self, obj):
         return self.context.get('authtoken')
+
+    def get_friends(self, obj):
+        friends = self.context.get('friends')
+        if friends is not None:
+            serializer = FriendSerializer(friends, many=True)
+            return serializer.data
+        else:
+            return None
 
     def get_facebook_friends(self, obj):
         facebook_friends = self.context.get('facebook_friends')

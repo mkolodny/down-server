@@ -29,6 +29,9 @@ class User(AbstractBaseUser):
 
     USERNAME_FIELD = 'username'
 
+    def __unicode__(self):
+        return unicode(self.name) or ''
+
 
 def default_auth_code():
     first_digit = random.choice(string.digits[1:])
