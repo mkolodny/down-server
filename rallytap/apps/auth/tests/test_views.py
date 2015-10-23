@@ -944,7 +944,8 @@ class SessionTests(APITestCase):
         json_user = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user)
 
-    def test_get_teamrallytap(self):
+    @mock.patch('rallytap.apps.auth.views.utils.meteor_login')
+    def test_get_teamrallytap(self, mock_meteor_login):
         # Mock the rallytap user's auth token.
         token = Token(user=self.teamrallytap_user)
         token.save()
@@ -964,6 +965,9 @@ class SessionTests(APITestCase):
 
         response = self.client.get(self.teamrallytap_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should login to the meteor server.
+        mock_meteor_login.assert_called_once_with(self.teamrallytap_user.id, token)
 
         # It should return the rallytap user.
         context = {'authtoken': token.key}

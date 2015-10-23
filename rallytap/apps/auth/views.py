@@ -375,6 +375,9 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         user = User.objects.get(username='teamrallytap')
         token = Token.objects.get(user=user)
 
+        # Log in to the meteor server.
+        utils.meteor_login(user.id, token)
+
         context = {'authtoken': token.key}
         serializer = UserSerializer(user, context=context)
         return Response(serializer.data, status=status.HTTP_200_OK)
