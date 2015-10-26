@@ -9,9 +9,9 @@ EventService = require './event-service'
 
 angular.module 'rallytapWeb.event', [
     'ui.router'
-    'rallytapWeb.auth'
-    'rallytapWeb.intlPhone'
-    'rallytapWeb.resources'
+    'rallytap.auth'
+    'rallytap.intlPhone'
+    'rallytap.resources'
     'luegg.directives'
   ]
   .config ($stateProvider) ->

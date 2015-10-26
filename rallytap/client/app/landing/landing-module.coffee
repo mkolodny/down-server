@@ -5,7 +5,7 @@ LandingCtrl = require './landing-controller'
 
 angular.module 'rallytapWeb.landing', [
     'ui.router'
-    'rallytapWeb.intlPhone'
+    'rallytap.intlPhone'
   ]
   .config ($stateProvider) ->
     $stateProvider

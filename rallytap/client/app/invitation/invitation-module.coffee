@@ -6,8 +6,8 @@ InvitationCtrl = require './invitation-controller'
 
 angular.module 'rallytapWeb.invitation', [
     'ui.router'
-    'rallytapWeb.auth'
-    'rallytapWeb.resources'
+    'rallytap.auth'
+    'rallytap.resources'
   ]
   .config ($stateProvider) ->
     $stateProvider

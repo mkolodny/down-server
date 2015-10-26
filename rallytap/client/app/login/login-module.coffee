@@ -7,9 +7,9 @@ LoginCtrl = require './login-controller'
 
 angular.module 'rallytapWeb.login', [
     'ui.router'
-    'rallytapWeb.auth'
-    'rallytapWeb.asteroid'
-    'rallytapWeb.resources'
+    'rallytap.auth'
+    'rallytap.asteroid'
+    'rallytap.resources'
   ]
   .config ($stateProvider) ->
     $stateProvider

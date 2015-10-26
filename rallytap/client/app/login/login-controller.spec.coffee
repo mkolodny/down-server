@@ -22,11 +22,9 @@ describe 'login controller', ->
 
   beforeEach angular.mock.module('ui.router')
 
-  beforeEach angular.mock.module('rallytapWeb.auth')
+  beforeEach angular.mock.module('rallytap.auth')
 
-  beforeEach angular.mock.module('rallytapWeb.asteroid')
-
-  beforeEach angular.mock.module('rallytapWeb.resources')
+  beforeEach angular.mock.module('rallytap.resources')
 
   beforeEach inject(($injector) ->
     $controller = $injector.get '$controller'

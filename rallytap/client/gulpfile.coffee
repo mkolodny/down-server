@@ -1,14 +1,17 @@
+argv = require('yargs').argv
 autoprefixer = require 'gulp-autoprefixer'
 browserify = require 'browserify'
 childProcess = require 'child_process'
 del = require 'del'
+glob = require 'glob'
 gulp = require 'gulp'
 imagemin = require 'gulp-imagemin'
 livereload = require 'gulp-livereload'
-karma = require('karma').server
-karmaConf = require './config/karma.conf'
+karma = require('karma').Server
+karmaConfig = require './config/karma.conf'
 minifyCss = require 'gulp-minify-css'
 ngAnnotate = require 'gulp-ng-annotate'
+preprocess = require 'gulp-preprocess'
 rename = require 'gulp-rename'
 runSequence = require 'run-sequence'
 sass = require 'gulp-sass'
@@ -41,6 +44,7 @@ scripts = (watch) ->
       .pipe source('bundle.js')
       # wrap plugins to support streams
       # i.e. .pipe streamify(plugin())
+      .pipe streamify(preprocess({context: {BUILD_ENV: env}}))
       .pipe gulp.dest("#{buildDir}/app")
     bundleStream
 
@@ -118,7 +122,7 @@ gulp.task 'minify', [
 
 gulp.task 'unit', ->
   # Watch all test files for changes, and re-browserify.
-  gulp.src "#{appDir}/**/*.spec.coffee", null, (err, files) ->
+  glob "#{appDir}/**/*.spec.coffee", null, (err, files) ->
     bundler = browserify
       cache: {}
       packageCache: {}
@@ -136,7 +140,8 @@ gulp.task 'unit', ->
     bundle()
 
     # run the unit tests using karma
-    karma.start karmaConf
+    server = new karma karmaConfig
+    server.start()
 
 
 gulp.task 'webdriver-update', (done) ->

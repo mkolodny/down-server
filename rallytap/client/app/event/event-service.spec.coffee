@@ -12,15 +12,15 @@ describe 'event service', ->
   Invitation = null
   LinkInvitation = null
   deferredAuth = null
-  isAuthenticated = null
+  getMe = null
   event = null
   fromUser = null
   invitation = null
   linkId = null
 
-  beforeEach angular.mock.module('rallytapWeb.auth')
+  beforeEach angular.mock.module('rallytap.auth')
 
-  beforeEach angular.mock.module('rallytapWeb.resources')
+  beforeEach angular.mock.module('rallytap.resources')
 
   beforeEach angular.mock.module('ui.router')
 
@@ -30,7 +30,7 @@ describe 'event service', ->
     Auth =
       user:
         id: 1
-      isAuthenticated: jasmine.createSpy('Auth.isAuthenticated').and.callFake ->
+      getMe: jasmine.createSpy('Auth.getMe').and.callFake ->
         deferredAuth.promise
     $provide.value 'Auth', Auth
     return
@@ -90,21 +90,26 @@ describe 'event service', ->
             data = _data_
 
       it 'should check if the user is logged in', ->
-        expect(Auth.isAuthenticated).toHaveBeenCalled()
+        expect(Auth.getMe).toHaveBeenCalled()
 
       describe 'when the user is logged in', ->
         deferredLinkInvitation = null
+        user = null
 
         beforeEach ->
+          user = id: 1
           deferredLinkInvitation = $q.defer()
           spyOn(LinkInvitation, 'getByLinkId').and.returnValue
             $promise: deferredLinkInvitation.promise
 
-          deferredAuth.resolve true
+          deferredAuth.resolve user
           $rootScope.$apply()
 
         it 'should get the link invitation', ->
           expect(LinkInvitation.getByLinkId).toHaveBeenCalledWith {linkId: linkId}
+
+        it 'should set the user on auth', ->
+          expect(Auth.user).toBe user
 
         describe 'getting the link invitation successfully', ->
           linkInvitation = null
@@ -190,13 +195,14 @@ describe 'event service', ->
           spyOn(LinkInvitation, 'getByLinkId').and.returnValue
             $promise: deferredLinkInvitation.promise
 
-          deferredAuth.resolve false
+          deferredAuth.reject {status: 401}
           $rootScope.$apply()
 
         describe 'getting the link invitation', ->
           linkInvitation = null
 
           beforeEach ->
+            console.log 'yo!'
             linkInvitation =
               event:
                 id: 1
