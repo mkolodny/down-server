@@ -17,6 +17,7 @@ runSequence = require 'run-sequence'
 sass = require 'gulp-sass'
 sh = require 'shelljs'
 source = require 'vinyl-source-stream'
+streamify = require 'gulp-streamify'
 uglify = require 'gulp-uglify'
 watchify = require 'watchify'
 protractor = require('gulp-protractor').protractor
@@ -36,6 +37,9 @@ scripts = (watch) ->
     extensions: ['.coffee']
   if watch
     bundler = watchify bundler
+
+  # Check enviroment
+  env = argv.e or 'staging'
 
   bundle = ->
     bundleStream = bundler.bundle()

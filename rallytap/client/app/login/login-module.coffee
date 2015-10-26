@@ -1,14 +1,12 @@
 require 'angular'
 require 'angular-ui-router'
 require 'down-ionic/app/common/auth/auth-module'
-require 'down-ionic/app/common/asteroid/asteroid-module'
 require 'down-ionic/app/common/resources/resources-module'
 LoginCtrl = require './login-controller'
 
 angular.module 'rallytapWeb.login', [
     'ui.router'
     'rallytap.auth'
-    'rallytap.asteroid'
     'rallytap.resources'
   ]
   .config ($stateProvider) ->
