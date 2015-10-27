@@ -30,8 +30,6 @@ describe 'event service', ->
     Auth =
       user:
         id: 1
-      getMe: jasmine.createSpy('Auth.getMe').and.callFake ->
-        deferredAuth.promise
     $provide.value 'Auth', Auth
     return
   )

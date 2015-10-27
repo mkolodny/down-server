@@ -16,7 +16,7 @@ class EventService
     @Auth.isAuthenticated()
       .then (isAuthenticated) =>
         @isAuthenticated = isAuthenticated
-        @LinkInvitation.getByLinkId({linkId: params.linkId}).$promise
+        @LinkInvitation.getByLinkId(linkId: params.linkId).$promise
       .then (data) =>
         nonMemberResponses = [@Invitation.noResponse, @Invitation.declined]
         if data.invitation?.response in nonMemberResponses

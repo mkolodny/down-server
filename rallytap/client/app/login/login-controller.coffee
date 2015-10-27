@@ -1,10 +1,11 @@
 class LoginCtrl
-  @$inject: ['$state', '$stateParams', '$window', 'Auth', 'Asteroid',
-             'Invitation', 'LinkInvitation']
-  constructor: (@$state, @$stateParams, @$window, @Auth, @Asteroid,
-                @Invitation, @LinkInvitation) ->
+  @$inject: ['$meteor', '$state', '$stateParams', '$window', 'Auth',
+             'Invitation', 'LinkInvitation', 'localStorageService', 'User']
+  constructor: (@$meteor, @$state, @$stateParams, @$window, @Auth,
+                @Invitation, @LinkInvitation, localStorageService, @User) ->
     @event = @$stateParams.event
     @fromUser = @$stateParams.fromUser
+    @localStorage = localStorageService
 
   login: ->
     @$window.FB.login @handleFBLogin
@@ -20,12 +21,14 @@ class LoginCtrl
       @fbLoginCanceled = true
 
   meteorLogin: (user) ->
-    @Asteroid.login().then =>
-      # Persist the user to local storage.
-      @Auth.setUser user
-      @getLinkData()
-    , =>
-      @error = 'Oops, something went wrong.'
+    @$meteor.loginWithPassword "#{user.id}", user.authtoken
+      .then =>
+        # Persist the user to local storage.
+        @Auth.user = new @User user
+        @localStorage.set 'currentUser', @Auth.user
+        @getLinkData()
+      , =>
+        @error = 'Oops, something went wrong.'
 
   getLinkData: ->
     @LinkInvitation.getByLinkId {linkId: @$stateParams.linkId}

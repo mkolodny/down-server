@@ -1,11 +1,14 @@
 require 'angular'
 require 'angular-mocks'
+require 'down-ionic/app/common/meteor/meteor-mocks'
 LandingCtrl = require './landing-controller'
 
 describe 'landing controller', ->
   $window = null
   ctrl = null
   scope = null
+
+  beforeEach angular.mock.module('angular-meteor')
 
   beforeEach inject(($injector) ->
     $controller = $injector.get '$controller'

@@ -1,26 +1,30 @@
 require 'angular'
+require 'angular-local-storage'
 require 'angular-mocks'
 require 'angular-ui-router'
+require 'down-ionic/app/common/meteor/meteor-mocks'
 require 'down-ionic/app/common/auth/auth-module'
-require 'down-ionic/app/common/asteroid/asteroid-module'
 require 'down-ionic/app/common/resources/resources-module'
 LoginCtrl = require './login-controller'
 
 describe 'login controller', ->
+  $meteor = null
   $q = null
   $rootScope = null
   $state = null
   $stateParams = null
   $window = null
   Auth = null
-  Asteroid = null
   Invitation = null
   LinkInvitation = null
+  localStorage = null
   ctrl = null
   event = null
   fromUser = null
 
   beforeEach angular.mock.module('ui.router')
+
+  beforeEach angular.mock.module('angular-meteor')
 
   beforeEach angular.mock.module('rallytap.auth')
 
@@ -28,15 +32,16 @@ describe 'login controller', ->
 
   beforeEach inject(($injector) ->
     $controller = $injector.get '$controller'
+    $meteor = $injector.get '$meteor'
     $q = $injector.get '$q'
     $rootScope = $injector.get '$rootScope'
     $state = $injector.get '$state'
     $stateParams = $injector.get '$stateParams'
     $window = $injector.get '$window'
-    Auth = angular.copy $injector.get('Auth')
-    Asteroid = $injector.get 'Asteroid'
+    Auth = $injector.get 'Auth'
     Invitation = $injector.get 'Invitation'
     LinkInvitation = $injector.get 'LinkInvitation'
+    localStorage = $injector.get 'localStorageService'
 
     event =
       id: 123
@@ -128,15 +133,17 @@ describe 'login controller', ->
 
     beforeEach ->
       deferred = $q.defer()
-      spyOn(Asteroid, 'login').and.returnValue deferred.promise
+      $meteor.loginWithPassword.and.returnValue deferred.promise
 
       user =
         id: 1
         email: 'aturing@gmail.com'
+        authtoken: '1234'
       ctrl.meteorLogin user
 
     it 'should attempt to login', ->
-      expect(Asteroid.login).toHaveBeenCalled()
+      expect($meteor.loginWithPassword).toHaveBeenCalledWith("#{user.id}",
+          user.authtoken)
 
     describe 'successfully', ->
 
@@ -147,8 +154,17 @@ describe 'login controller', ->
         deferred.resolve()
         $rootScope.$apply()
 
-      it 'should save the user', ->
-        expect(Auth.setUser).toHaveBeenCalledWith user
+      afterEach ->
+        localStorage.clearAll()
+
+      it 'should set the user on auth', ->
+        expect(Auth.user).toAngularEqual user
+
+      it 'should save the user in local storage', ->
+        expect(localStorage.get 'currentUser').toEqual user
+
+      it 'should get the link data', ->
+        expect(ctrl.getLinkData).toHaveBeenCalled()
 
 
     describe 'unsuccessfully', ->

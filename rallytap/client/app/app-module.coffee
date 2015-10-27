@@ -1,5 +1,7 @@
 require 'angular'
 require 'angular-ui-router'
+require 'down-ionic/app/common/env/env-module'
+require 'down-ionic/app/common/meteor/meteor'
 require 'down-ionic/app/common/auth/auth-module'
 require 'down-ionic/app/common/resources/resources-module'
 require './event/event-module'
@@ -41,3 +43,9 @@ angular.module 'rallytapWeb', [
           authHeader = "Token #{Auth.user.authtoken}"
           config.headers.Authorization = authHeader
         config
+  .run ($meteor, Auth, localStorageService, User) ->
+    # Check local storage for currentUser and currentPhone
+    currentUser = localStorageService.get 'currentUser'
+    if currentUser isnt null
+      Auth.user = new User currentUser
+      $meteor.loginWithPassword "#{Auth.user.id}", Auth.user.authtoken

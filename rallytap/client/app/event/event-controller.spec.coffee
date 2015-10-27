@@ -1,33 +1,39 @@
 require 'angular'
 require 'angular-mocks'
 require 'angular-ui-router'
+require 'down-ionic/app/common/meteor/meteor-mocks'
 require 'down-ionic/app/common/auth/auth-module'
 EventCtrl = require './event-controller'
 
-describe 'event controller', ->
+fdescribe 'event controller', ->
   $controller = null
+  $meteor = null
   $state = null
   $q = null
   $rootScope = null
   $window = null
   Auth = null
-  Asteroid = null
-  Event = null
-  Invitation = null
+  chatsCollection = null
   ctrl = null
   data = null
   deferredGetMemberInvitations = null
+  deferredSubscribe = null
+  Event = null
   event = null
   fromUser = null
+  Invitation = null
   invitation = null
   linkId = null
   Messages = null
   messages = null
+  messagesCollection = null
   messagesRQ = null
   scope = null
   User = null
 
   beforeEach angular.mock.module('ui.router')
+
+  beforeEach angular.mock.module('angular-meteor')
 
   beforeEach angular.mock.module('rallytap.auth')
 
@@ -35,11 +41,11 @@ describe 'event controller', ->
 
   beforeEach inject(($injector) ->
     $controller = $injector.get '$controller'
+    $meteor = $injector.get '$meteor'
     $state = $injector.get '$state'
     $q = $injector.get '$q'
     $window = $injector.get '$window'
-    Auth = angular.copy $injector.get('Auth')
-    Asteroid = $injector.get 'Asteroid'
+    Auth = $injector.get 'Auth'
     Event = $injector.get 'Event'
     Invitation = $injector.get 'Invitation'
     scope = $injector.get '$rootScope'
@@ -63,18 +69,15 @@ describe 'event controller', ->
       linkId: linkId
 
     # Create mocks/spies for getting the messages for this event.
-    spyOn Asteroid, 'subscribe'
-    messagesRQ =
-      on: jasmine.createSpy 'messagesRQ.on'
-      result: []
-    Messages =
-      reactiveQuery: jasmine.createSpy('Messages.reactiveQuery') \
-          .and.returnValue messagesRQ
-    spyOn(Asteroid, 'getCollection').and.returnValue Messages
+    messagesCollection = 'messagesCollection'
+    chatsCollection = 'chatsCollection'
+    $meteor.getCollectionByName.and.callFake (collectionName) ->
+      if collectionName is 'messages' then return messagesCollection
+      if collectionName is 'chats' then return chatsCollection
 
-    deferredGetMemberInvitations = $q.defer()
-    spyOn(Invitation, 'getMemberInvitations').and.returnValue
-      $promise: deferredGetMemberInvitations.promise
+    deferredSubscribe = $q.defer()
+    scope.$meteorSubscribe = jasmine.createSpy '$scope.$meteorSubscribe'
+      .and.returnValue deferredSubscribe.promise
 
     ctrl = $controller EventCtrl,
       Auth: Auth
@@ -97,26 +100,258 @@ describe 'event controller', ->
   it 'should set the linkId on the controller', ->
     expect(ctrl.linkId).toBe linkId
 
-  it 'should request the event members\' invitations', ->
-    expect(Invitation.getMemberInvitations).toHaveBeenCalledWith {id: event.id}
+  it 'should set the messages collection on the controller', ->
+    expect($meteor.getCollectionByName).toHaveBeenCalledWith 'messages'
+    expect(ctrl.Messages).toBe messagesCollection
+
+  it 'should set the events collection on the controller', ->
+    expect($meteor.getCollectionByName).toHaveBeenCalledWith 'chats'
+    expect(ctrl.Chats).toBe chatsCollection
 
   it 'should subscribe to the events messages', ->
-    expect(Asteroid.subscribe).toHaveBeenCalledWith 'event', event.id
+    expect(scope.$meteorSubscribe).toHaveBeenCalledWith 'chat', "#{event.id}"
 
-  it 'should get the messages collection', ->
-    expect(Asteroid.getCollection).toHaveBeenCalledWith 'messages'
+  describe 'when the view begins loading', ->
+    message = null
+    messages = null
+    chat = null
 
-  it 'should set the messages collection on the controller', ->
-    expect(ctrl.Messages).toBe Messages
+    beforeEach ->
+      spyOn ctrl, 'updateMembers'
+      spyOn ctrl, 'getMessages'
+      spyOn ctrl, 'handleNewMessage'
 
-  it 'should ask for the messages for the event', ->
-    expect(Messages.reactiveQuery).toHaveBeenCalledWith {eventId: "#{event.id}"}
+      message =
+        _id: 1
+        creator: new User Auth.user
+        createdAt:
+          $date: new Date().getTime()
+        text: 'I\'m in love with a robot.'
+        chatId: "#{event.id}"
+        type: 'text'
+      messages = [message]
+      $meteor.collection.and.returnValue messages
 
-  it 'should set the messages reactive query on the controller', ->
-    expect(ctrl.messagesRQ).toBe messagesRQ
+      chat =
+        members: []
+      spyOn(ctrl, 'getChat').and.returnValue chat
 
-  it 'should listen for new messages', ->
-    expect(messagesRQ.on).toHaveBeenCalledWith 'change', ctrl.showMessages
+      spyOn ctrl, 'handleChatMembersChange'
+      spyOn ctrl, 'watchNewestMessage'
+
+      scope.$emit '$viewContentLoading'
+      scope.$apply()
+
+    it 'should watch the newestMessage', ->
+      expect(ctrl.watchNewestMessage).toHaveBeenCalled()
+
+    it 'should bind the messages to the controller', ->
+      # TODO: Check that controller property is set
+      expect($meteor.collection).toHaveBeenCalledWith ctrl.getMessages, false
+
+    it 'should bind the meteor event members to the controller', ->
+      expect(ctrl.chat).toEqual chat
+      expect(ctrl.getChat).toHaveBeenCalled()
+
+    it 'should update the members array', ->
+      expect(ctrl.updateMembers).toHaveBeenCalled()
+
+    describe 'when the chat changes', ->
+      chatMembers = null
+
+      beforeEach ->
+        chatMembers = [
+          userId: '1'
+        ,
+          userId: '2'
+        ]
+        ctrl.chat.members = chatMembers
+
+        ctrl.handleChatMembersChange.calls.reset()
+        scope.$apply()
+
+      it 'should handle the change', ->
+        expect(ctrl.handleChatMembersChange).toHaveBeenCalled()
+
+
+  ##watchNewestMessage
+  describe 'watching new messages coming in', ->
+
+    describe 'when new messages get posted', ->
+
+      beforeEach ->
+        spyOn ctrl, 'handleNewMessage'
+
+        message =
+          _id: 'asdfs'
+          creator: new User Auth.user
+          createdAt: new Date()
+          text: 'I\'m in love with a robot.'
+          type: 'text'
+
+        ctrl.watchNewestMessage()
+
+        # Trigger watch
+        ctrl.messages = [message]
+        scope.$apply()
+
+      it 'should handle the new message', ->
+        expect(ctrl.handleNewMessage).toHaveBeenCalled()
+
+
+  describe 'handling a new message', ->
+    newMessageId = null
+
+    beforeEach ->
+      newMessageId = '1jkhkgfjgfhftxhgdxf'
+
+      ctrl.handleNewMessage newMessageId
+
+    it 'should mark the message as read', ->
+      expect($meteor.call).toHaveBeenCalledWith 'readMessage', newMessageId
+
+
+  describe 'getting messages', ->
+    cursor = null
+    result = null
+
+    beforeEach ->
+      cursor = 'messagesCursor'
+      ctrl.Messages =
+        find: jasmine.createSpy('Messages.find').and.returnValue cursor
+      result = ctrl.getMessages()
+
+    it 'should return a messages reactive cursor', ->
+      expect(result).toBe cursor
+
+    it 'should query, sort and transform messages', ->
+      selector =
+        chatId: "#{ctrl.event.id}"
+      options =
+        sort:
+          createdAt: 1
+        transform: ctrl.transformMessage
+      expect(ctrl.Messages.find).toHaveBeenCalledWith selector, options
+
+
+  describe 'getting the newest message', ->
+    result = null
+    newestMessage = null
+
+    beforeEach ->
+      newestMessage = 'newestMessage'
+      $meteor.object.and.returnValue newestMessage
+      result = ctrl.getNewestMessage()
+
+    it 'should return a AngularMeteorObject', ->
+      expect(result).toEqual newestMessage
+
+    it 'should filter object by event id and sort by created at', ->
+      selector =
+        chatId: "#{ctrl.event.id}"
+      options =
+        sort:
+          createdAt: -1
+      expect($meteor.object).toHaveBeenCalledWith(ctrl.Messages, selector, false,
+          options)
+
+
+  describe 'getting meteor chat', ->
+    result = null
+    chat = null
+
+    beforeEach ->
+      chat = 'chat'
+      $meteor.object.and.returnValue chat
+      result = ctrl.getChat()
+
+    it 'should return an AngularMeteorObject', ->
+      expect(result).toEqual chat
+
+    it 'should filter for the current event', ->
+      selector =
+        chatId: "#{ctrl.event.id}"
+      expect($meteor.object).toHaveBeenCalledWith ctrl.Chats, selector, false
+
+
+  describe 'transforming messages', ->
+    message = null
+    result = null
+
+    beforeEach ->
+      message =
+        creator: {}
+      result = ctrl.transformMessage message
+
+    it 'should create a new User object with the message.creator', ->
+      expectedResult = angular.copy message
+      expectedResult.creator = new User expectedResult.creator
+
+      expect(result).toEqual expectedResult
+
+
+  describe 'handling chat members changes', ->
+
+    describe 'when users are added or removed', ->
+      member1 = null
+      member2 = null
+
+      beforeEach ->
+        member1 =
+          id: 1
+          name: 'Jim Bob'
+        member2 =
+          id: 2
+          name: 'The Other Guy'
+        ctrl.members = [member1, member2]
+
+        spyOn ctrl, 'updateMembers'
+        ctrl.handleChatMembersChange [{userId: 1}]
+
+      it 'should update members', ->
+        expect(ctrl.updateMembers).toHaveBeenCalled()
+
+
+  describe 'updating the members array', ->
+    deferred = null
+
+    beforeEach ->
+      deferred = $q.defer()
+      spyOn(Invitation, 'getMemberInvitations').and.returnValue
+        $promise: deferred.promise
+
+      ctrl.updateMembers()
+
+    describe 'successfully', ->
+      acceptedInvitation = null
+      maybeInvitation = null
+      invitations = null
+
+      beforeEach ->
+        acceptedInvitation = angular.extend {}, invitation,
+          response: Invitation.accepted
+        maybeInvitation = angular.extend {}, invitation,
+          response: Invitation.maybe
+        invitations = [acceptedInvitation, maybeInvitation]
+        deferred.resolve invitations
+        scope.$apply()
+
+      it 'should set the accepted/maybe invitations on the controller', ->
+        memberInvitations = [acceptedInvitation, maybeInvitation]
+        members = (invitation.toUser for invitation in memberInvitations)
+        expect(ctrl.members).toEqual members
+
+
+    describe 'unsuccessfully', ->
+
+      beforeEach ->
+        deferred.reject()
+        scope.$apply()
+
+      it 'should show an error', ->
+        # TODO: Show the error in the view.
+        expect(ctrl.membersError).toBe true
+
 
   describe 'sending a download link', ->
     downloadPhone = null
@@ -177,37 +412,6 @@ describe 'event controller', ->
     it 'should return without doing anything', ->
 
 
-  describe 'when the invitations return successfully', ->
-    acceptedInvitation = null
-    maybeInvitation = null
-    invitations = null
-
-    beforeEach ->
-      acceptedInvitation = angular.extend {}, invitation,
-        response: Invitation.accepted
-      maybeInvitation = angular.extend {}, invitation,
-        response: Invitation.maybe
-      invitations = [acceptedInvitation, maybeInvitation]
-      deferredGetMemberInvitations.resolve invitations
-      scope.$apply()
-
-    it 'should set the accepted/maybe invitations on the controller', ->
-      memberInvitations = [acceptedInvitation, maybeInvitation]
-      members = (invitation.toUser for invitation in memberInvitations)
-      expect(ctrl.members).toEqual members
-
-
-  describe 'when the invitations return unsuccessfully', ->
-
-    beforeEach ->
-      deferredGetMemberInvitations.reject()
-      scope.$apply()
-
-    it 'should show an error', ->
-      # TODO: Show the error in the view.
-      expect(ctrl.membersError).toBe true
-
-
   describe 'checking whether a message is an action message', ->
     message = null
 
@@ -257,60 +461,6 @@ describe 'event controller', ->
 
       it 'should return false', ->
         expect(ctrl.isActionMessage message).toBe false
-
-
-  describe 'handling when messages change', ->
-    earlierMessage = null
-    laterMessage = null
-
-    beforeEach ->
-      # Mock the current date.
-      jasmine.clock().install()
-      currentDate = new Date 1438195002656
-      jasmine.clock().mockDate currentDate
-
-      earlier = new Date()
-      later = new Date earlier.getTime()+1000
-      creator =
-        id: 2
-        name: 'Guido van Rossum'
-        imageUrl: 'http://facebook.com/profile-pics/vrawesome'
-      earlierMessage =
-        _id: 1
-        creator: creator
-        createdAt:
-          $date: earlier
-        text: 'I\'m in love with a robot.'
-        eventId: event.id
-        type: 'text'
-      laterMessage =
-        _id: 1
-        creator: creator
-        createdAt:
-          $date: later
-        text: 'Michael Jordan is down'
-        eventId: event.id
-        type: 'action'
-      messages = [laterMessage, earlierMessage]
-
-      messagesRQ =
-        result: messages
-      ctrl.messagesRQ = messagesRQ
-
-      spyOn Asteroid, 'call'
-
-      ctrl.showMessages()
-
-    afterEach ->
-      jasmine.clock().uninstall()
-
-    it 'should set the messages on the event from oldest to newest', ->
-      laterMessage.creator = new User laterMessage.creator
-      earlierMessage.creator = new User earlierMessage.creator
-      expect(ctrl.messages).toEqual [earlierMessage, laterMessage]
-
-    it 'should mark the newest message as read', ->
-      expect(Asteroid.call).toHaveBeenCalledWith 'readMessage', laterMessage._id
 
 
   describe 'checking whether a message is the current user\'s message', ->
@@ -369,6 +519,7 @@ describe 'event controller', ->
 
     it 'should clear the message', ->
       expect(ctrl.message).toBeNull()
+
 
   # Copied from invitation-controller.spec.coffee
   describe 'checking whether the user accepted their invitation', ->

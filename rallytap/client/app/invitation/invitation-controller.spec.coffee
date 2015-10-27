@@ -1,6 +1,7 @@
 require 'angular'
 require 'angular-mocks'
 require 'angular-ui-router'
+require 'down-ionic/app/common/meteor/meteor-mocks'
 require 'down-ionic/app/common/auth/auth-module'
 require 'down-ionic/app/common/resources/resources-module'
 InvitationCtrl = require './invitation-controller'
@@ -20,6 +21,8 @@ describe 'invitation controller', ->
 
   beforeEach angular.mock.module('ui.router')
 
+  beforeEach angular.mock.module('angular-meteor')
+
   beforeEach angular.mock.module('rallytap.auth')
 
   beforeEach angular.mock.module('rallytap.resources')
@@ -29,7 +32,7 @@ describe 'invitation controller', ->
     $q = $injector.get '$q'
     $state = $injector.get '$state'
     $stateParams = $injector.get '$stateParams'
-    Auth = angular.copy $injector.get('Auth')
+    Auth = $injector.get 'Auth'
     Invitation = $injector.get 'Invitation'
     scope = $injector.get '$rootScope'
 

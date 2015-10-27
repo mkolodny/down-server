@@ -1,8 +1,8 @@
 class EventCtrl
-  @$inject: ['$scope', '$state', '$stateParams', '$window', 'Asteroid', 'Auth',
-             'Event', 'Invitation', 'User', 'data']
-  constructor: (@$scope, @$state, @$stateParams, @$window, @Asteroid, @Auth, @Event,
-                @Invitation, @User, @data) ->
+  @$inject: ['$meteor', '$rootScope', '$scope', '$state', '$stateParams',
+             '$window', 'Auth', 'data', 'Event', 'Invitation', 'User']
+  constructor: (@$meteor, @$rootScope, @$scope, @$state, @$stateParams, @$window,
+                @Auth, @data, @Event, @Invitation, @User) ->
     if @data.redirectView
       @$state.go @data.redirectView,
         event: @data.event
@@ -20,18 +20,88 @@ class EventCtrl
     @invitation = @data.invitation
     @linkId = @data.linkId
 
-    # Get/subscribe to the messages posted in this event.
-    @Asteroid.subscribe 'event', @event.id
-    @Messages = @Asteroid.getCollection 'messages'
-    @messagesRQ = @Messages.reactiveQuery {eventId: "#{@event.id}"}
-    @showMessages()
+    # Set Meteor collections on controller
+    @Messages = @$meteor.getCollectionByName 'messages'
+    @Chats = @$meteor.getCollectionByName 'chats'
 
-    # Watch for new messages.
-    @messagesRQ.on 'change', @showMessages
+    # Subscribe to the event's chat.
+    @$scope.$meteorSubscribe 'chat', "#{@event.id}"
 
+    @$rootScope.$on '$viewContentLoaded', =>
+      # Get the members invitations.
+      @updateMembers()
+
+      # Bind reactive variables
+      @messages = @$meteor.collection @getMessages, false
+      @newestMessage = @getNewestMessage()
+      @chat = @getChat()
+
+      # Watch for changes in newest message
+      @watchNewestMessage()
+
+      # Watch for changes in chat members
+      @$scope.$watch =>
+        @chat.members
+      , @handleChatMembersChange
+
+  watchNewestMessage: =>
+    # Mark messages as read as they come in
+    #   and scroll to bottom
+    @$scope.$watch =>
+      newestMessage = @messages[@messages.length-1]
+      if angular.isDefined newestMessage
+        newestMessage._id
+    , @handleNewMessage
+
+  handleNewMessage: (newMessageId) =>
+    if newMessageId is undefined
+      return
+
+    @$meteor.call 'readMessage', newMessageId
+
+  getMessages: =>
+    @Messages.find
+      chatId: "#{@event.id}"
+    ,
+      sort:
+        createdAt: 1
+      transform: @transformMessage
+
+  transformMessage: (message) =>
+    message.creator = new @User message.creator
+    message
+
+  getNewestMessage: =>
+    selector =
+      chatId: "#{@event.id}"
+    options =
+      sort:
+        createdAt: -1
+    @$meteor.object @Messages, selector, false, options
+
+  getChat: =>
+    selector =
+      chatId: "#{@event.id}"
+    @$meteor.object @Chats, selector, false
+
+  handleChatMembersChange: (chatMembers) =>
+    chatMembers = chatMembers or []
+    members = @members or []
+
+    chatMemberIds = (member.userId for member in chatMembers)
+    currentMemberIds = (member.id for member in members)
+    chatMemberIds.sort()
+    currentMemberIds.sort()
+
+    if not angular.equals chatMemberIds, currentMemberIds
+      @updateMembers()
+
+  updateMembers: =>
     @Invitation.getMemberInvitations {id: @event.id}
       .$promise.then (invitations) =>
         @members = (invitation.toUser for invitation in invitations)
+        if not @$scope.$$phase
+          @$scope.$digest()
       , =>
         @membersError = true
 
