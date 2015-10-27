@@ -5,7 +5,8 @@ $brand-primary: #6a38ab;
 $link-color: darken(#428bca, 6.5%);
 
 // Font
-$font-family-sans-serif:  Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
+$font-family-sans-serif: Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
+$headings-font-weight: 700;
 
 // Scaffolding
 $body-bg: #fafafa;
@@ -93,7 +94,7 @@ body,
   #event-details {
     width: 256px;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 700;
     text-align: left;
     margin: auto;
     margin-top: 20px;

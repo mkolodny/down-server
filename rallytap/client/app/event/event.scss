@@ -25,7 +25,6 @@
   #suggested-by {
     font-size: 14px;
     margin-top: 5px;
-    font-weight: 400;
   }
   #event-title,
   #suggested-by {
@@ -33,7 +32,6 @@
   }
   .event-detail {
     font-size: 14px;
-    font-weight: 500;
     margin-bottom: 5px;
     padding-left: 35px;
   }
@@ -144,11 +142,9 @@
       padding-left: 12px;
       padding-right: 12px;
       border-radius: 13px;
-      font-weight: lighter;
       max-width: 70%;
       color: #222;
       font-size: 16px;
-      font-weight: 400;
       white-space: pre-wrap;
       font-size: 14px;
 
@@ -206,7 +202,7 @@
     position: absolute;
     bottom: 10px;
     right: 15px;
-    font-weight: 900;
+    font-weight: 700;
 
     &:disabled {
       color: $btn-link-disabled-color;
