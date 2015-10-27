@@ -29,7 +29,7 @@
               {{event.event.title}}
             </h1>
             <h2 id="suggested-by">
-              Suggested by {{event.fromUser.name}}
+              from {{event.fromUser.name}}
             </h2>
             <div class="event-detail" ng-if="event.event.datetime">
               <i class="fa fa-calendar-o"></i>
@@ -57,7 +57,7 @@
             <button class="btn btn-default respond"
                     ng-disabled="event.wasMaybed()"
                     ng-click="event.maybeInvitation()">
-              Maybe
+              Chat
             </button>
             <button class="btn btn-default respond"
                     ng-disabled="event.wasDeclined()"

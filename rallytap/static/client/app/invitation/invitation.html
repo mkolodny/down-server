@@ -28,7 +28,7 @@
             {{invitation.event.title}}
           </h1>
           <h2 id="suggested-by">
-            Suggested by {{invitation.fromUser.name}}
+            from {{invitation.fromUser.name}}
           </h2>
           <div id="event-details"
                ng-if="invitation.event.datetime || invitation.event.place || invitation.event.comment">
@@ -58,7 +58,7 @@
             <button class="btn btn-default respond"
                     ng-disabled="invitation.wasMaybed()"
                     ng-click="invitation.maybeInvitation()">
-              Maybe
+              Chat
             </button>
             <button class="btn btn-default respond"
                     ng-disabled="invitation.wasDeclined()"
@@ -66,7 +66,7 @@
               Can't
             </button>
           </div>
-          <p>Respond "Down" or "Maybe" to see who's down and join the group chat.</p>
+          <p>Respond "Down" or "Chat" to see who's down and join the group chat.</p>
         </div>
       </div>    
     </div>
