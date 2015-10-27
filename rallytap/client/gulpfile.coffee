@@ -7,7 +7,7 @@ glob = require 'glob'
 gulp = require 'gulp'
 imagemin = require 'gulp-imagemin'
 livereload = require 'gulp-livereload'
-karma = require('karma').Server
+karma = require('karma').server
 karmaConfig = require './config/karma.conf'
 minifyCss = require 'gulp-minify-css'
 ngAnnotate = require 'gulp-ng-annotate'
@@ -144,8 +144,7 @@ gulp.task 'unit', ->
     bundle()
 
     # run the unit tests using karma
-    server = new karma karmaConfig
-    server.start()
+    karma.start karmaConfig
 
 
 gulp.task 'webdriver-update', (done) ->
