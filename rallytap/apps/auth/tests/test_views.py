@@ -1055,7 +1055,12 @@ class UserPhoneTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should create a userphone with the given number.
-        UserPhone.objects.get(**data)
+        userphone = UserPhone.objects.get(**data)
+
+        # It should return the userphone.
+        serializer = UserPhoneSerializer(userphone)
+        json_user_phone = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user_phone)
 
 
 class LinfootFunnelTests(APITestCase):
