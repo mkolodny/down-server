@@ -39,6 +39,8 @@ class WebAppView(TemplateView):
         context = super(WebAppView, self).get_context_data(**kwargs)
         context['BRANCH_API_KEY'] = settings.BRANCH_API_KEY
         context['FACEBOOK_APP_ID'] = settings.FACEBOOK_APP_ID
+        context['API_ROOT'] = settings.API_ROOT
+        context['MIXPANEL_TOKEN'] = settings.MIXPANEL_TOKEN
         return context
 
 

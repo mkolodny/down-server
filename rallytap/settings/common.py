@@ -113,6 +113,7 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning',
 }
+API_ROOT = os.environ['API_ROOT']
 
 # CORS
 CORS_ORIGIN_ALLOW_ALL = True
@@ -140,3 +141,6 @@ PUSH_NOTIFICATIONS_SETTINGS = {
 
 # Branch
 BRANCH_API_KEY = os.environ['BRANCH_API_KEY']
+
+# Mixpanel
+MIXPANEL_TOKEN = os.environ['MIXPANEL_TOKEN']

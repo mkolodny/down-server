@@ -61,6 +61,10 @@ class WebAppTests(APITestCase):
                          settings.BRANCH_API_KEY)
         self.assertEqual(response.context['FACEBOOK_APP_ID'],
                          settings.FACEBOOK_APP_ID)
+        self.assertEqual(response.context['API_ROOT'],
+                         settings.API_ROOT)
+        self.assertEqual(response.context['MIXPANEL_TOKEN'],
+                         settings.MIXPANEL_TOKEN)
         self.assertTemplateUsed(response, 'web-app.html')
 
     def test_get_event(self):
