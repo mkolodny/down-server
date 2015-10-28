@@ -96,13 +96,18 @@ class UserPhoneSerializer(serializers.ModelSerializer):
         model = UserPhone
 
     def create(self, validated_data):
-        # Create a new empty user.
-        user = User()
-        user.save()
+        try:
+            phone = validated_data['phone']
+            userphone = UserPhone.objects.get(phone=phone)
+            # TODO: Return a 201 status code.
+        except UserPhone.DoesNotExist:
+            # Create a new empty user.
+            user = User()
+            user.save()
 
-        # Create a user phone with the new user.
-        userphone = UserPhone(user=user, phone=validated_data['phone'])
-        userphone.save()
+            # Create a user phone with the new user.
+            userphone = UserPhone(user=user, phone=validated_data['phone'])
+            userphone.save()
 
         return userphone
 

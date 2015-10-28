@@ -1062,6 +1062,16 @@ class UserPhoneTests(APITestCase):
         json_user_phone = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phone)
 
+    def test_create_already_exists(self):
+        data = {'phone': unicode(self.userphone.phone)}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should return the userphone.
+        serializer = UserPhoneSerializer(self.userphone)
+        json_user_phone = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_user_phone)
+
 
 class LinfootFunnelTests(APITestCase):
 
