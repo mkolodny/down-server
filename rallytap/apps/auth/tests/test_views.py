@@ -1057,6 +1057,10 @@ class UserPhoneTests(APITestCase):
         # It should create a userphone with the given number.
         userphone = UserPhone.objects.get(**data)
 
+        # It should set the user's name to their phone number.
+        user = userphone.user
+        self.assertEqual(user.name, data['phone'])
+
         # It should return the userphone.
         serializer = UserPhoneSerializer(userphone)
         json_user_phone = JSONRenderer().render(serializer.data)

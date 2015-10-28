@@ -102,7 +102,7 @@ class UserPhoneSerializer(serializers.ModelSerializer):
             # TODO: Return a 201 status code.
         except UserPhone.DoesNotExist:
             # Create a new empty user.
-            user = User()
+            user = User(name=phone)
             user.save()
 
             # Create a user phone with the new user.
