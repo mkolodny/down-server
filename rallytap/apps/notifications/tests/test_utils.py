@@ -122,8 +122,8 @@ class SendMessageTests(TestCase):
         link = 'https://rallytap.com/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
-        message = '{name} shared their plans with you - {link}'.format(name=name,
-                                                                       link=link)
+        message = '{name} invited you to "{title}" - {link}'.format(
+                name=name, title=event.title, link=link)
         phone = unicode(self.contact_phone.phone)
         mock_client.messages.create.assert_called_with(to=phone, 
                                                        from_=settings.TWILIO_PHONE,
@@ -163,8 +163,8 @@ class SendMessageTests(TestCase):
         link = 'https://rallytap.com/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
-        message = '{name} shared their plans with you - {link}'.format(name=name,
-                                                                       link=link)
+        message = '{name} invited you to "{title}" - {link}'.format(
+                name=name, title=event.title, link=link)
         phone = unicode(self.contact_phone.phone)
         mock_client.messages.create.assert_called_with(to=phone, 
                                                        from_=settings.TWILIO_PHONE,

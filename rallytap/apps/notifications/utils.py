@@ -31,11 +31,12 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
         # invitation.
         link_invitation, created = LinkInvitation.objects.get_or_create(
                 event_id=event_id, from_user=from_user)
+        event = link_invitation.event
         link = 'https://rallytap.com/e/{link_id}'.format(
                 link_id=link_invitation.link_id)
         name = link_invitation.from_user.name
-        message = '{name} shared their plans with you - {link}'.format(name=name,
-                                                                       link=link)
+        message = '{name} invited you to "{title}" - {link}'.format(
+                name=name, title=event.title, link=link)
     if added_friend:
         # The message is a notification that the user added a contact as a friend
         # on rallytap. Include a link to the app.
