@@ -10,7 +10,7 @@
     "angular-ui-router": "0.2.13",
     "angularjs-scroll-glue": "2.0.4",
     "bootstrap-sass": "3.3.5",
-    "down-ionic": "git@github.com:mkolodny/down-ionic.git#a69a5358b59b88c360a669d9e78b69c610c7c97c",
+    "down-ionic": "git@github.com:mkolodny/down-ionic.git#06d3edf518be779c1f0c681e35d7f9bc9c446088",
     "jquery": "1.11.3",
     "vinyl-paths": "2.0.0"
   },

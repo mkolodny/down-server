@@ -41,6 +41,7 @@ class WebAppView(TemplateView):
         context['FACEBOOK_APP_ID'] = settings.FACEBOOK_APP_ID
         context['API_ROOT'] = settings.API_ROOT
         context['MIXPANEL_TOKEN'] = settings.MIXPANEL_TOKEN
+        context['METEOR_URL'] = settings.METEOR_URL
         return context
 
 
