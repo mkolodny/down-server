@@ -12,6 +12,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.generic.base import RedirectView, TemplateView
 from hashids import Hashids
+import phonenumbers
 import pytz
 import requests
 from rest_framework import mixins, status, viewsets
@@ -403,9 +404,23 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer.is_valid()
 
         # Filter user phone numbers using the phone number data.
-        phones = [contact['phone'] for contact in serializer.data]
+        phone_names = {contact['phone']: contact['name']
+                       for contact in serializer.data}
+        phones = phone_names.keys()
         userphones = UserPhone.objects.filter(phone__in=phones)
         userphones.prefetch_related('user')
+
+        # Find any users who were added by phone number (their name is a phone
+        # number), and set their name to the contact name.
+        for userphone in userphones:
+            user = userphone.user
+            if (not user.name.startswith('+')
+                    or not phonenumbers.is_valid_number(userphone.phone)):
+                continue
+
+            phone = unicode(userphone.phone)
+            user.name = phone_names[phone]
+            user.save()
 
         # Create userphones for any contacts who don't have userphones yet. First,
         # we create users with the contacts' names. Then we create userphones for

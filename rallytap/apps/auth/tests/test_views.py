@@ -1017,10 +1017,22 @@ class UserPhoneTests(APITestCase):
         contact_phone = '+19176227310'
         contact_name = 'Ada Lovelace'
 
+        # Mock a user who was added by phone number.
+        phone = '+12038333650'
+        user = User(name=phone)
+        user.save()
+        user_name = 'Leslie Knope'
+        userphone = UserPhone(user=user, phone=phone)
+        userphone.save()
+
         data = {'contacts': [
             {
                 'name': self.user.name,
                 'phone': unicode(self.userphone.phone),
+            },
+            {
+                'name': user_name,
+                'phone': phone,
             },
             {
                 'name': contact_name,
@@ -1036,8 +1048,13 @@ class UserPhoneTests(APITestCase):
         # It should name the contact.
         self.assertEqual(contact_userphone.user.name, contact_name)
 
+        # It should update the user who was added by phone number's name.
+        user = User.objects.get(id=user.id)
+        self.assertEqual(user.name, user_name)
+
         # It should return a list with the userphones.
-        userphones = [self.userphone, contact_userphone]
+        userphone = UserPhone.objects.get(id=userphone.id)
+        userphones = [self.userphone, userphone, contact_userphone]
         serializer = UserPhoneSerializer(userphones, many=True)
         json_user_phones = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phones)
