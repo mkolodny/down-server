@@ -20,5 +20,5 @@ class Command(BaseCommand):
                           datetime__lte=twenty_four_hrs_ago)) \
                 .values_list('id', flat=True)
         url = '{meteor_url}/chats'.format(meteor_url=settings.METEOR_URL)
-        data = {'chat_ids': event_ids}
+        data = {'ids': event_ids}
         requests.delete(url, data=data)

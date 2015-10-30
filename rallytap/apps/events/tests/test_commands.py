@@ -29,15 +29,15 @@ class ExpireEventsTests(TestCase):
 
         # It should mark the event as expired.
         url = '{meteor_url}/chats'.format(meteor_url=settings.METEOR_URL)
-        data = {'chat_ids': [self.event.id]}
+        data = {'ids': [self.event.id]}
         # Workaround for comparing a dict with a list as a value.
         self.assertEqual(mock_requests.delete.call_count, 1)
         self.assertEqual(mock_requests.delete.call_args[0][0], url)
         self.assertItemsEqual(mock_requests.delete.call_args[1], {'data': None})
         self.assertItemsEqual(mock_requests.delete.call_args[1]['data'],
-                              {'chat_ids': None})
+                              {'ids': None})
         self.assertSequenceEqual(
-                mock_requests.delete.call_args[1]['data']['chat_ids'],
+                mock_requests.delete.call_args[1]['data']['ids'],
                 [self.event.id])
 
     @mock.patch('rallytap.apps.events.management.commands.expireevents.requests')
@@ -50,13 +50,13 @@ class ExpireEventsTests(TestCase):
 
         # It should mark the event as expired.
         url = '{meteor_url}/chats'.format(meteor_url=settings.METEOR_URL)
-        data = {'chat_ids': [self.event.id]}
+        data = {'ids': [self.event.id]}
         # Workaround for comparing a dict with a list as a value.
         self.assertEqual(mock_requests.delete.call_count, 1)
         self.assertEqual(mock_requests.delete.call_args[0][0], url)
         self.assertItemsEqual(mock_requests.delete.call_args[1], {'data': None})
         self.assertItemsEqual(mock_requests.delete.call_args[1]['data'],
-                              {'chat_ids': None})
+                              {'ids': None})
         self.assertSequenceEqual(
-                mock_requests.delete.call_args[1]['data']['chat_ids'],
+                mock_requests.delete.call_args[1]['data']['ids'],
                 [self.event.id])
