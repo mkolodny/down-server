@@ -63,3 +63,8 @@
     padding-bottom: 100px;
   }
 }
+@media(max-width: $screen-sm-min) {
+  button {
+    width: 100%;
+  }
+}
