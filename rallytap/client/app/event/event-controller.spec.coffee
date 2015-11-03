@@ -5,7 +5,7 @@ require 'down-ionic/app/common/meteor/meteor-mocks'
 require 'down-ionic/app/common/auth/auth-module'
 EventCtrl = require './event-controller'
 
-fdescribe 'event controller', ->
+describe 'event controller', ->
   $controller = null
   $meteor = null
   $state = null
