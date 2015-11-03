@@ -449,6 +449,14 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             User.objects.bulk_create(contacts_users)
             contacts_users = User.objects.filter(bulk_ref=bulk_ref)
 
+            # Make the users friends with Team Rallytap.
+            teamrallytap = User.objects.get(username='teamrallytap')
+            friendships = []
+            for user in contacts_users:
+                friendships.append(Friendship(user=user, friend=teamrallytap))
+                friendships.append(Friendship(user=teamrallytap, friend=user))
+            Friendship.objects.bulk_create(friendships)
+
             # Create userphones for the users we created.
             # contacts_dict == {'Andrew': ['+19251234567', '+19252234456'], ...}
             contacts_dict = {}

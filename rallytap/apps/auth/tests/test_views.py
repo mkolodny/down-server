@@ -1010,6 +1010,10 @@ class UserPhoneTests(APITestCase):
         self.token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
+        # Mock the teamrallytap user.
+        self.teamrallytap_user = User(username='teamrallytap')
+        self.teamrallytap_user.save()
+
         # Save URLs.
         self.list_url = reverse('userphone-list')
         self.phones_url = reverse('userphone-contacts')
@@ -1047,7 +1051,12 @@ class UserPhoneTests(APITestCase):
         contact_userphone = UserPhone.objects.get(phone=contact_phone)
 
         # It should name the contact.
-        self.assertEqual(contact_userphone.user.name, contact_name)
+        contact_user = contact_userphone.user
+        self.assertEqual(contact_user.name, contact_name)
+
+        # It should make the contact friends with Team Rallytap.
+        Friendship.objects.get(user=contact_user, friend=self.teamrallytap_user)
+        Friendship.objects.get(user=self.teamrallytap_user, friend=contact_user)
 
         # It should update the user who was added by phone number's name.
         user = User.objects.get(id=user.id)
@@ -1121,7 +1130,6 @@ class FellowshipApplicationTests(APITestCase):
 
     def setUp(self):
         self.list_url = reverse('fellowship-application-list')
-        print self.list_url
         self.post_data = {
             'username': 'r',
             'school': 'Stuyvesant High School',
