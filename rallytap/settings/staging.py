@@ -9,14 +9,14 @@ TEMPLATE_DEBUG = False
 POSTGIS_VERSION = (2, 1, 5)
 
 # GeoDjango
-print '/app'
-print os.listdir('/app')
-print '/app/.cache'
-print os.listdir('/app/.cache')
-print '/app/.cache/vendor'
-print os.listdir('/app/.cache/vendor')
-print '/app/.cache/vendor/lib'
-print os.listdir('/app/.cache/vendor/lib')
+for dirname, dirnames, filenames in os.walk('.'):
+    # print path to all subdirectories first.
+    for subdirname in dirnames:
+        print(os.path.join(dirname, subdirname))
+
+    # print path to all filenames.
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
 APP_VENDOR = '/app/.cache/vendor'
 GEOS_LIBRARY_PATH = '{app_vendor}/lib/libgeos_c.so'.format(app_vendor=APP_VENDOR)
 GDAL_LIBRARY_PATH = '{app_vendor}/lib/libgdal.so'.format(app_vendor=APP_VENDOR)
