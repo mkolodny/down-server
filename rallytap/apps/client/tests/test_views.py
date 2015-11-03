@@ -117,6 +117,22 @@ class WebAppTests(APITestCase):
                          settings.METEOR_URL)
         self.assertTemplateUsed(response, 'web-app.html')
 
+    def test_get_fellowship(self):
+        url = reverse('web-app-fellowship')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.context['BRANCH_API_KEY'],
+                         settings.BRANCH_API_KEY)
+        self.assertEqual(response.context['FACEBOOK_APP_ID'],
+                         settings.FACEBOOK_APP_ID)
+        self.assertEqual(response.context['API_ROOT'],
+                         settings.API_ROOT)
+        self.assertEqual(response.context['MIXPANEL_TOKEN'],
+                         settings.MIXPANEL_TOKEN)
+        self.assertEqual(response.context['METEOR_URL'],
+                         settings.METEOR_URL)
+        self.assertTemplateUsed(response, 'web-app.html')
+
 
 class PartialTestCase(APITestCase):
 
