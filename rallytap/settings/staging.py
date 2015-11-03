@@ -9,10 +9,11 @@ TEMPLATE_DEBUG = False
 POSTGIS_VERSION = (2, 1, 5)
 
 # GeoDjango
-GEOS_LIBRARY_PATH = '{}/libgeos_c.so'.format(os.environ.get('GEOS_LIBRARY_PATH'))
-GDAL_LIBRARY_PATH = '{}/libgdal.so'.format(os.environ.get('GDAL_LIBRARY_PATH'))
-GDAL_DATA = os.environ.get('GDAL_LIBRARY_PATH')
-PROJ4_LIBRARY_PATH = '{}/libproj.so'.format(os.environ.get('PROJ4_LIBRARY_PATH'))
+APP_VENDOR = '/app/.heroku/vendor'
+GEOS_LIBRARY_PATH = '{app_vendor}/lib/libgeos_c.so'.format(app_vendor=APP_VENDOR)
+GDAL_LIBRARY_PATH = '{app_vendor}/lib/libgdal.so'.format(app_vendor=APP_VENDOR)
+PROJ4_LIBRARY_PATH = '{app_vendor}/lib/libproj.so'.format(app_vendor=APP_VENDOR)
+GDAL_DATA = '{app_vendor}/share/gdal'.format(app_vendor=APP_VENDOR)
 
 # Push notifications
 PUSH_NOTIFICATIONS_SETTINGS.update({
