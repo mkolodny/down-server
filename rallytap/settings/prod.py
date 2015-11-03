@@ -12,7 +12,7 @@ POSTGIS_VERSION = (2, 1, 5)
 GEOS_LIBRARY_PATH = '{}/libgeos_c.so'.format(os.environ.get('GEOS_LIBRARY_PATH'))
 GDAL_LIBRARY_PATH = '{}/libgdal.so'.format(os.environ.get('GDAL_LIBRARY_PATH'))
 GDAL_DATA = os.environ.get('GDAL_LIBRARY_PATH')
-PROJ4_LIBRARY_PATH = '{}/libproj.so'.format(environ.get('PROJ4_LIBRARY_PATH'))
+PROJ4_LIBRARY_PATH = '{}/libproj.so'.format(os.environ.get('PROJ4_LIBRARY_PATH'))
 
 # Push notifications
 PUSH_NOTIFICATIONS_SETTINGS.update({
