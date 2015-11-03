@@ -66,4 +66,8 @@
     text-align: center;
   }
 }
-
+@media(max-width: $screen-sm-min) {
+  button {
+    width: 100%;
+  }
+}
