@@ -9,7 +9,7 @@ TEMPLATE_DEBUG = False
 POSTGIS_VERSION = (2, 1, 5)
 
 # GeoDjango
-APP_VENDOR = '/app/tmp/cache/.heroku/vendor'
+APP_VENDOR = '/app/.heroku/vendor'
 GEOS_LIBRARY_PATH = '{app_vendor}/lib/libgeos_c.so'.format(app_vendor=APP_VENDOR)
 GDAL_LIBRARY_PATH = '{app_vendor}/lib/libgdal.so'.format(app_vendor=APP_VENDOR)
 PROJ4_LIBRARY_PATH = '{app_vendor}/lib/libproj.so'.format(app_vendor=APP_VENDOR)
