@@ -3,13 +3,26 @@ from phonenumber_field import phonenumber
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework_gis.serializers import GeoModelSerializer
-from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
+from .models import (
+    AuthCode,
+    FellowshipApplication,
+    LinfootFunnel,
+    SocialAccount,
+    User,
+    UserPhone,
+)
 
 
 class AuthCodeSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = AuthCode
+
+
+class FellowshipApplicationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = FellowshipApplication
 
 
 class LinfootFunnelSerializer(serializers.ModelSerializer):

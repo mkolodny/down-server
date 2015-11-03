@@ -17,6 +17,7 @@ import time
 from twilio import TwilioRestException
 from rallytap.apps.auth.models import (
     AuthCode,
+    FellowshipApplication,
     LinfootFunnel,
     SocialAccount,
     User,
@@ -1114,3 +1115,22 @@ class LinfootFunnelTests(APITestCase):
         data = {'phone': phone}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class FellowshipApplicationTests(APITestCase):
+
+    def setUp(self):
+        self.list_url = reverse('fellowship-list')
+        self.post_data = {
+            'username': 'r',
+            'school': 'Stuyvesant High School',
+        }
+
+    def test_create(self):
+        data = self.post_data
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create a fellowship application.
+        FellowshipApplication.objects.get(username=data['username'],
+                                          school=data['school'])

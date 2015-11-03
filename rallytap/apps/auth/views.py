@@ -37,12 +37,20 @@ from rallytap.apps.utils.exceptions import ServiceUnavailable
 from rallytap.apps.utils.utils import add_members
 from .authentication import MeteorAuthentication
 from .filters import UserFilter
-from .models import AuthCode, LinfootFunnel, SocialAccount, User, UserPhone
+from .models import (
+    AuthCode,
+    FellowshipApplication,
+    LinfootFunnel,
+    SocialAccount,
+    User,
+    UserPhone,
+)
 from .permissions import IsCurrentUserOrReadOnly, IsStaff
 from .serializers import (
     AuthCodeSerializer,
     ContactSerializer,
     FacebookSessionSerializer,
+    FellowshipApplicationSerializer,
     FriendSerializer,
     FriendSelectSerializer,
     LinfootFunnelSerializer,
@@ -468,3 +476,9 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 class LinfootFunnelViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = LinfootFunnel.objects.all()
     serializer_class = LinfootFunnelSerializer
+
+
+class FellowshipApplicationViewSet(mixins.CreateModelMixin,
+                                   viewsets.GenericViewSet):
+    queryset = FellowshipApplication.objects.all()
+    serializer_class = FellowshipApplicationSerializer

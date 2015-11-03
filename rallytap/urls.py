@@ -3,6 +3,7 @@ from django.contrib import admin
 from rest_framework import routers
 from rallytap.apps.auth.views import (
     AuthCodeViewSet,
+    FellowshipApplicationViewSet,
     LinfootFunnelViewSet,
     SessionViewSet,
     SocialAccountSync,
@@ -38,6 +39,8 @@ router.register(r'devices/apns', APNSDeviceViewSet, base_name='apns')
 router.register(r'devices/gcm', GCMDeviceViewSet, base_name='gcm')
 router.register(r'authcodes', AuthCodeViewSet)
 router.register(r'events', EventViewSet)
+router.register(r'fellowships', FellowshipApplicationViewSet,
+                base_name='fellowship')
 router.register(r'friendships', FriendshipViewSet)
 router.register(r'invitations', InvitationViewSet)
 router.register(r'link-invitations', LinkInvitationViewSet,

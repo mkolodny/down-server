@@ -68,3 +68,8 @@ class SocialAccount(models.Model):
 class LinfootFunnel(models.Model):
     phone = PhoneNumberField(unique=True)
     date_created = models.DateTimeField(auto_now_add=True)
+
+
+class FellowshipApplication(models.Model):
+    username = models.TextField()
+    school = models.TextField()
