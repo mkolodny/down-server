@@ -1120,7 +1120,8 @@ class LinfootFunnelTests(APITestCase):
 class FellowshipApplicationTests(APITestCase):
 
     def setUp(self):
-        self.list_url = reverse('fellowship-list')
+        self.list_url = reverse('fellowship-application-list')
+        print self.list_url
         self.post_data = {
             'username': 'r',
             'school': 'Stuyvesant High School',

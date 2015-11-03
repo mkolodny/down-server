@@ -39,8 +39,8 @@ router.register(r'devices/apns', APNSDeviceViewSet, base_name='apns')
 router.register(r'devices/gcm', GCMDeviceViewSet, base_name='gcm')
 router.register(r'authcodes', AuthCodeViewSet)
 router.register(r'events', EventViewSet)
-router.register(r'fellowships', FellowshipApplicationViewSet,
-                base_name='fellowship')
+router.register(r'fellowship-applications', FellowshipApplicationViewSet,
+                base_name='fellowship-application')
 router.register(r'friendships', FriendshipViewSet)
 router.register(r'invitations', InvitationViewSet)
 router.register(r'link-invitations', LinkInvitationViewSet,
