@@ -26,7 +26,6 @@
   }
   #form-1 {
     padding-top: 50px;
-    padding-bottom: 40px;
   }
   button {
     background-color: #ed6700;
@@ -38,10 +37,6 @@
       background-color: darken(#ed6700, 10%);
       border-color: darken(#ed6700, 10%);
     }
-  }
-  section {
-    padding-top: 10px;
-    padding-bottom: 10px;
   }
   li {
     font-size: 18px;
@@ -64,6 +59,17 @@
   }
   .alert {
     text-align: center;
+  }
+  .top-alert {
+    margin-top: 50px;
+  }
+  .bottom-alert {
+    margin-top: 30px;
+    margin-bottom: 100px;
+  }
+  hr {
+    margin-top: 30px;
+    margin-bottom: 30px;
   }
 }
 @media(max-width: $screen-sm-min) {
