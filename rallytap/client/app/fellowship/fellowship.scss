@@ -1,0 +1,65 @@
+#fellowship {
+  background-color: $brand-primary;
+  color: #fff;
+  font-size: 16px;
+
+  #intro {
+    text-align: center;
+  }
+  h1 {
+    font-family: 'Carter One', 'Helvetica Neue', sans-serif;
+    color: #fff;
+    font-size: 50px;
+    margin-top: 0;
+    padding-top: 50px;
+  }
+  h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+  #tagline {
+    font-weight: 700;
+    font-size: 26px;
+  }
+  #all-the-things {
+    padding-top: 30px;
+  }
+  #form-1 {
+    padding-top: 50px;
+    padding-bottom: 40px;
+  }
+  button {
+    background-color: #ed6700;
+    border-color: #ed6700;
+    color: #fff;
+
+    &:hover,
+    &:active {
+      background-color: darken(#ed6700, 10%);
+      border-color: darken(#ed6700, 10%);
+    }
+  }
+  section {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  li {
+    font-size: 18px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+  a {
+    text-decoration: underline;
+    font-weight: 700;
+    color: #fff;
+
+    &:hover {
+      color: #ddd;
+    }
+  }
+  #form-2 {
+    text-align: center;
+    padding-top: 20px;
+    padding-bottom: 100px;
+  }
+}
