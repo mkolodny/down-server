@@ -12,16 +12,25 @@ def befriend_teamrallytap(apps, schema_editor):
     User = apps.get_model('down_auth', 'User')
     Friendship = apps.get_model('friends', 'Friendship')
     teamrallytap = User.objects.get(username='teamrallytap')
+    user_ids = User.objects.exclude(id=teamrallytap.id).values_list('id', flat=True)
     friendships = []
-    for user in User.objects.exclude(id=teamrallytap.id):
-        try:
-            Friendship.objects.get(user=teamrallytap, friend=user)
-        except Friendship.DoesNotExist:
-            friendships.append(Friendship(user=teamrallytap, friend=user))
-        try:
-            Friendship.objects.get(user=user, friend=teamrallytap)
-        except Friendship.DoesNotExist:
-            friendships.append(Friendship(user=user, friend=teamrallytap))
+
+    # Create friendships from teamrallytap for users who haven't been added by
+    # teamrallytap yet.
+    tr_friendships = Friendship.objects.filter(user=teamrallytap, friend=user)
+    tr_users = {friendship.friend_id for friendship in friendships}
+    no_tr_users = [user_id for user_id in user_ids if user_id not in tr_users]
+    for user_id in no_tr_users:
+        friendships.append(Friendship(user=teamrallytap, friend_id=user_id))
+
+    # Create friendships from teamrallytap for users who haven't added
+    # teamrallytap yet.
+    user_friendships = Friendship.objects.filter(user=user, friend=teamrallytap)
+    users = {friendship.user_id for friendship in friendships}
+    no_users = [user_id for user_id in user_ids if user_id not in users]
+    for user_id in no_users:
+        friendships.append(Friendship(user=user_id, friend_id=teamrallytap))
+
     Friendship.objects.bulk_create(friendships)
 
 class Migration(migrations.Migration):
