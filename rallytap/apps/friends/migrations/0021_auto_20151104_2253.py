@@ -18,6 +18,9 @@ def befriend_teamrallytap(apps, schema_editor):
             Friendship.objects.get(user=teamrallytap, friend=user)
         except Friendship.DoesNotExist:
             friendships.append(Friendship(user=teamrallytap, friend=user))
+        try:
+            Friendship.objects.get(user=user, friend=teamrallytap)
+        except Friendship.DoesNotExist:
             friendships.append(Friendship(user=user, friend=teamrallytap))
     Friendship.objects.bulk_create(friendships)
 
