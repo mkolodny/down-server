@@ -3,6 +3,7 @@ from phonenumber_field import phonenumber
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework_gis.serializers import GeoModelSerializer
+from rallytap.apps.friends.models import Friendship
 from .models import (
     AuthCode,
     FellowshipApplication,
@@ -121,6 +122,13 @@ class UserPhoneSerializer(serializers.ModelSerializer):
             # Create a user phone with the new user.
             userphone = UserPhone(user=user, phone=validated_data['phone'])
             userphone.save()
+
+            # Make the user friends with Team Rallytap.
+            teamrallytap = User.objects.get(username='teamrallytap')
+            friendships = []
+            friendships.append(Friendship(user=user, friend=teamrallytap))
+            friendships.append(Friendship(user=teamrallytap, friend=user))
+            Friendship.objects.bulk_create(friendships)
 
         return userphone
 

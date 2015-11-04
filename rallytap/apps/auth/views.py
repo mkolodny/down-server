@@ -333,8 +333,10 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
             # Make the user friends with Team Rallytap.
             teamrallytap = User.objects.get(username='teamrallytap')
-            Friendship.objects.create(user=user, friend=teamrallytap)
-            Friendship.objects.create(user=teamrallytap, friend=user)
+            friendships = []
+            friendships.append(Friendship(user=user, friend=teamrallytap))
+            friendships.append(Friendship(user=teamrallytap, friend=user))
+            Friendship.objects.bulk_create(friendships)
 
         # Authenticate the user on the meteor server.
         utils.meteor_login(user.id, token)

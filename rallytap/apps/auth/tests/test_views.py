@@ -1088,6 +1088,10 @@ class UserPhoneTests(APITestCase):
         user = userphone.user
         self.assertEqual(user.name, data['phone'])
 
+        # The user should be friends with Team Rallytap.
+        Friendship.objects.get(user=user, friend=self.teamrallytap_user)
+        Friendship.objects.get(user=self.teamrallytap_user, friend=user)
+
         # It should return the userphone.
         serializer = UserPhoneSerializer(userphone)
         json_user_phone = JSONRenderer().render(serializer.data)
