@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.conf import settings
 from django.db import models, migrations
+from django.conf import settings
 
 
 def befriend_teamrallytap(apps, schema_editor):
@@ -36,8 +36,9 @@ def befriend_teamrallytap(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('friends', '0020_auto_20151022_1928'),
+        ('friends', '0021_auto_20151104_2253'),
     ]
 
     operations = [
+        migrations.RunPython(befriend_teamrallytap),
     ]
