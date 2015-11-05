@@ -7,6 +7,7 @@ from django.db.models import Q
 import pytz
 import requests
 from rallytap.apps.events.models import Event
+from rallytap.apps.utils.exceptions import ServiceUnavailable
 
 
 class Command(BaseCommand):
@@ -30,7 +31,9 @@ class Command(BaseCommand):
             'Content-Type': 'application/json',
             'Authorization': auth_header,
         }
-        requests.post(url, data=json.dumps(data), headers=headers)
+        response = requests.post(url, data=json.dumps(data), headers=headers)
+        if response.status_code != 200:
+            raise ServiceUnavailable()
 
         # Set the events to expired in the DB.
         Event.objects.filter(id__in=event_ids).update(expired=True)

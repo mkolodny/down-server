@@ -9,6 +9,7 @@ import httpretty
 import pytz
 from rallytap.apps.auth.models import User
 from rallytap.apps.events.models import Event
+from rallytap.apps.utils.exceptions import ServiceUnavailable
 
 
 class ExpireEventsTests(TestCase):
@@ -69,3 +70,11 @@ class ExpireEventsTests(TestCase):
         self.assertEqual(last_request.headers['Content-Type'], 'application/json')
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
         self.assertEqual(last_request.headers['Authorization'], auth_header)
+
+    @httpretty.activate
+    def test_expired_bad_response(self):
+        # Mock the response from the meteor server.
+        httpretty.register_uri(httpretty.POST, self.url, status=500)
+
+        with self.assertRaises(ServiceUnavailable):
+            call_command('expireevents')
