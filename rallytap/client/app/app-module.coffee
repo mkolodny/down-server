@@ -1,5 +1,6 @@
 require 'angular'
 require 'angular-ui-router'
+require 'angularytics'
 require 'down-ionic/app/common/env/env-module'
 require 'down-ionic/app/common/meteor/meteor'
 require 'down-ionic/app/common/auth/auth-module'
@@ -11,6 +12,7 @@ require './invitation/invitation-module'
 require './landing/landing-module'
 
 angular.module 'rallytapWeb', [
+    'angularytics'
     'ui.router'
     'rallytapWeb.event'
     'rallytapWeb.fellowship'
@@ -21,7 +23,7 @@ angular.module 'rallytapWeb', [
     'rallytap.resources'
   ]
   .config ($httpProvider, $locationProvider, $urlRouterProvider,
-           $stateProvider) ->
+           $stateProvider, AngularyticsProvider) ->
     # Use html5 push state.
     $locationProvider.html5Mode
       enabled: true
@@ -45,9 +47,15 @@ angular.module 'rallytapWeb', [
           authHeader = "Token #{Auth.user.authtoken}"
           config.headers.Authorization = authHeader
         config
-  .run ($meteor, Auth, localStorageService, User) ->
+
+    # Configure GA
+    AngularyticsProvider.setEventHandlers ['Console', 'GoogleUniversal']
+  .run ($meteor, Angularytics, Auth, localStorageService, User) ->
     # Check local storage for currentUser and currentPhone
     currentUser = localStorageService.get 'currentUser'
     if currentUser isnt null
       Auth.user = new User currentUser
       $meteor.loginWithPassword "#{Auth.user.id}", Auth.user.authtoken
+
+    # Init GA
+    Angularytics.init()

@@ -9,6 +9,7 @@
     "angular-local-storage": "0.2.2",
     "angular-ui-router": "0.2.13",
     "angularjs-scroll-glue": "2.0.4",
+    "angularytics": "0.4.0",
     "bootstrap-sass": "3.3.5",
     "down-ionic": "git@github.com:mkolodny/down-ionic.git#c3c1fc0b8d2331954d440495959ef2feef127f92",
     "jquery": "1.11.3",
