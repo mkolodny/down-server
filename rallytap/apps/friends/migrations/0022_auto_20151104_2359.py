@@ -29,7 +29,7 @@ def befriend_teamrallytap(apps, schema_editor):
     users = {friendship.user_id for friendship in friendships}
     no_users = [user_id for user_id in user_ids if user_id not in users]
     for user_id in no_users:
-        friendships.append(Friendship(user_id=user_id, friend_id=teamrallytap))
+        friendships.append(Friendship(user_id=user_id, friend=teamrallytap))
 
     Friendship.objects.bulk_create(friendships)
 
