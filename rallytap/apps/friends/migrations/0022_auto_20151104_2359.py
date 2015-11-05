@@ -18,7 +18,7 @@ def befriend_teamrallytap(apps, schema_editor):
     # Create friendships from teamrallytap for users who haven't been added by
     # teamrallytap yet.
     tr_friendships = Friendship.objects.filter(user=teamrallytap)
-    tr_users = {friendship.friend_id for friendship in friendships}
+    tr_users = {friendship.friend_id for friendship in tr_friendships}
     no_tr_users = [user_id for user_id in user_ids if user_id not in tr_users]
     for user_id in no_tr_users:
         friendships.append(Friendship(user=teamrallytap, friend_id=user_id))
@@ -26,7 +26,7 @@ def befriend_teamrallytap(apps, schema_editor):
     # Create friendships from teamrallytap for users who haven't added
     # teamrallytap yet.
     user_friendships = Friendship.objects.filter(friend=teamrallytap)
-    users = {friendship.user_id for friendship in friendships}
+    users = {friendship.user_id for friendship in user_friendships}
     no_users = [user_id for user_id in user_ids if user_id not in users]
     for user_id in no_users:
         friendships.append(Friendship(user_id=user_id, friend=teamrallytap))
