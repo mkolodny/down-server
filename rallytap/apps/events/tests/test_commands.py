@@ -35,8 +35,11 @@ class ExpireEventsTests(TestCase):
 
         call_command('expireevents')
 
-        # It should mark the event as expired.
-        # Workaround for comparing a dict with a list as a value.
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        self.assertEqual(event.expired, True)
+
+        # It should mark the event as expired on the meteor server.
         last_request = httpretty.last_request()
         data = {'ids': [self.event.id]}
         self.assertEqual(last_request.body, json.dumps(data))
@@ -55,8 +58,11 @@ class ExpireEventsTests(TestCase):
 
         call_command('expireevents')
 
-        # It should mark the event as expired.
-        # Workaround for comparing a dict with a list as a value.
+        # It should update the event.
+        event = Event.objects.get(id=self.event.id)
+        self.assertEqual(event.expired, True)
+
+        # It should mark the event as expired on the meteor server.
         last_request = httpretty.last_request()
         data = {'ids': [self.event.id]}
         self.assertEqual(last_request.body, json.dumps(data))

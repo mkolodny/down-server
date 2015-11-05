@@ -18,8 +18,11 @@ class Command(BaseCommand):
                         Q(datetime__isnull=True,
                           created_at__lte=twenty_four_hrs_ago) |
                         Q(datetime__isnull=False,
-                          datetime__lte=twenty_four_hrs_ago)) \
+                          datetime__lte=twenty_four_hrs_ago),
+                        expired=False) \
                 .values_list('id', flat=True)
+
+        # Expire the events on the meteor server.
         url = '{meteor_url}/chats/expire'.format(meteor_url=settings.METEOR_URL)
         data = {'ids': list(event_ids)}
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
@@ -28,3 +31,6 @@ class Command(BaseCommand):
             'Authorization': auth_header,
         }
         requests.post(url, data=json.dumps(data), headers=headers)
+
+        # Set the events to expired in the DB.
+        Event.objects.filter(id__in=event_ids).update(expired=True)
