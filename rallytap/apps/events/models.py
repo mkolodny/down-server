@@ -13,8 +13,6 @@ from twilio.rest import TwilioRestClient
 from rallytap.apps.auth.models import User, UserPhone
 from rallytap.apps.friends.models import Friendship
 
-GEONAMES_RE = re.compile(r'<timezoneId>(.+?)</timezoneId>')
-
 
 class Place(models.Model):
     name = models.TextField()
