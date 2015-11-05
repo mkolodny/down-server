@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from datetime import datetime, timedelta
+import json
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Q
@@ -19,6 +20,11 @@ class Command(BaseCommand):
                         Q(datetime__isnull=False,
                           datetime__lte=twenty_four_hrs_ago)) \
                 .values_list('id', flat=True)
-        url = '{meteor_url}/chats'.format(meteor_url=settings.METEOR_URL)
-        data = {'ids': event_ids}
-        requests.delete(url, data=data)
+        url = '{meteor_url}/chats/expire'.format(meteor_url=settings.METEOR_URL)
+        data = {'ids': list(event_ids)}
+        auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': auth_header,
+        }
+        requests.post(url, data=json.dumps(data), headers=headers)
