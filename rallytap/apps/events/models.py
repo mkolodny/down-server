@@ -28,6 +28,7 @@ class Event(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
+    min_accepted = models.PositiveIntegerField(null=True, blank=True)
     members = models.ManyToManyField(User, through='Invitation',
                                      through_fields=('event', 'to_user'))
 

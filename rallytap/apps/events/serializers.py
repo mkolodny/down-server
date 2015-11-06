@@ -149,9 +149,9 @@ class InvitationSerializer(serializers.ModelSerializer):
             raise ServiceUnavailable()
 
         if invitation.response != new_response:
-            # Notify people who want to know.
             event = Event.objects.get(id=invitation.event_id)
 
+            # Notify people who want to know.
             if new_response == Invitation.ACCEPTED:
                 message = '{name} is down for {event}'.format(name=user.name,
                                                               event=event.title)
@@ -186,6 +186,19 @@ class InvitationSerializer(serializers.ModelSerializer):
                 to_user_ids = [invitation.from_user_id]
 
             send_message(to_user_ids, message, sms=False)
+
+            if (event.min_accepted is not None
+                    and invitation.response == Invitation.NO_RESPONSE
+                    and new_response == Invitation.ACCEPTED):
+                # If we've hit the min # of people needed for the event to happen,
+                # clear the min accepted field.
+                num_accepted = Invitation.objects.filter(
+                        event=event,
+                        response=Invitation.ACCEPTED) \
+                        .count()
+                if num_accepted == event.min_accepted:
+                    event.min_accepted = None
+                    event.save()
 
         for attr, value in validated_data.items():
             setattr(invitation, attr, value)

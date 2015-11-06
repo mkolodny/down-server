@@ -91,7 +91,7 @@ class EventTests(APITestCase):
         self.post_data = {
             'title': 'rat fishing with the boys!',
             'datetime': timezone.now().strftime(settings.DATETIME_FORMAT),
-            'comment': 'they\'re everywhere!!!',
+            'min_accepted': 7,
             'place': {
                 'name': 'Atlantic-Barclays Station',
                 'geo': 'POINT(40.685339 -73.979361)',
@@ -405,7 +405,7 @@ class InvitationTests(APITestCase):
                                  event=self.event, response=Invitation.MAYBE)
         invitation1.save()
         invitation2 = Invitation(from_user=self.user2, to_user=self.user2,
-                                 event=self.event, response=Invitation.MAYBE)
+                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation2.save()
         invitation3 = Invitation(from_user=self.user2, to_user=self.user3,
                                  event=self.event, response=Invitation.NO_RESPONSE)
@@ -419,6 +419,15 @@ class InvitationTests(APITestCase):
         friendship.save()
         friendship = Friendship(user=self.user4, friend=self.user2)
         friendship.save()
+
+        # Set the min number of people who have to accept the invitation to one
+        # less than the number of people who have accepted their invitation so
+        # far.
+        num_accepted = Invitation.objects.filter(event=self.event,
+                                                 response=Invitation.ACCEPTED) \
+                .count()
+        self.event.min_accepted = num_accepted
+        self.event.save()
 
         url = reverse('invitation-detail', kwargs={'pk': invitation2.id})
         data = {
@@ -444,6 +453,11 @@ class InvitationTests(APITestCase):
                 name=self.user2.name,
                 event=self.event.title)
         mock_send_message.assert_called_with(user_ids, message, sms=False)
+
+        # Since we've hit the minimum number of people needed for the event
+        # to happen, we should clear that number.
+        event = Event.objects.get(id=self.event.id)
+        self.assertIsNone(event.min_accepted)
 
     @mock.patch('rallytap.apps.events.serializers.add_members')
     @mock.patch('rallytap.apps.events.serializers.send_message')
