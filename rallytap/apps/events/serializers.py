@@ -132,6 +132,7 @@ class InvitationSerializer(serializers.ModelSerializer):
         than no response.
         """
         invitation = instance
+        original_response = invitation.response
         new_response = validated_data['response']
         user = self.context['request'].user
 
@@ -140,7 +141,7 @@ class InvitationSerializer(serializers.ModelSerializer):
             if new_response in [Invitation.ACCEPTED, Invitation.MAYBE]:
                 # Add the user to the meteor server members list.
                 add_members(invitation.event_id, [user.id])
-            elif invitation.response != Invitation.NO_RESPONSE:
+            elif original_response != Invitation.NO_RESPONSE:
                 # The user changed their response from accepted or maybe to
                 # declined.
                 # Remove the user from the meteor server members list.
@@ -148,7 +149,7 @@ class InvitationSerializer(serializers.ModelSerializer):
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
-        if invitation.response != new_response:
+        if original_response != new_response:
             event = Event.objects.get(id=invitation.event_id)
 
             # Notify people who want to know.
@@ -164,7 +165,7 @@ class InvitationSerializer(serializers.ModelSerializer):
 
             member_responses = [Invitation.ACCEPTED, Invitation.MAYBE]
             joining_event = (new_response in member_responses)
-            bailing = (invitation.response in member_responses
+            bailing = (original_response in member_responses
                        and new_response == Invitation.DECLINED)
             if joining_event or bailing:
                 # Notify other members who've added the user as a friend.
@@ -187,22 +188,22 @@ class InvitationSerializer(serializers.ModelSerializer):
 
             send_message(to_user_ids, message, sms=False)
 
-            if (event.min_accepted is not None
-                    and invitation.response == Invitation.NO_RESPONSE
-                    and new_response == Invitation.ACCEPTED):
-                # If we've hit the min # of people needed for the event to happen,
-                # clear the min accepted field.
-                num_accepted = Invitation.objects.filter(
-                        event=event,
-                        response=Invitation.ACCEPTED) \
-                        .count()
-                if num_accepted == event.min_accepted:
-                    event.min_accepted = None
-                    event.save()
-
         for attr, value in validated_data.items():
             setattr(invitation, attr, value)
         invitation.save()
+
+        if (event.min_accepted is not None
+                and original_response == Invitation.NO_RESPONSE
+                and new_response == Invitation.ACCEPTED):
+            # If we've hit the min # of people needed for the event to happen,
+            # clear the min accepted field.
+            num_accepted = Invitation.objects.filter(
+                    event=event,
+                    response=Invitation.ACCEPTED) \
+                    .count()
+            if num_accepted == event.min_accepted:
+                event.min_accepted = None
+                event.save()
 
         return invitation
 

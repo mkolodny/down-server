@@ -426,7 +426,7 @@ class InvitationTests(APITestCase):
         num_accepted = Invitation.objects.filter(event=self.event,
                                                  response=Invitation.ACCEPTED) \
                 .count()
-        self.event.min_accepted = num_accepted
+        self.event.min_accepted = num_accepted + 1
         self.event.save()
 
         url = reverse('invitation-detail', kwargs={'pk': invitation2.id})
