@@ -146,7 +146,8 @@ class EventTests(APITestCase):
         # It should send notifications to the users who were invited aside from
         # the creator.
         user_ids = [self.friend1.id]
-        message = 'from {name}'.format(name=self.user.name)
+        message = '{name}: Are you down to {activity}?'.format(name=self.user.name,
+                                                               activity=event.title)
         mock_send_message.assert_called_once_with(user_ids, message,
                                                   event_id=event.id,
                                                   from_user=self.user)
@@ -325,7 +326,8 @@ class InvitationTests(APITestCase):
         # It should send notifications to the users who were invited.
         # TODO: Include a link invitation.
         user_ids = [invitation['to_user'] for invitation in invitations]
-        message = 'from {name}'.format(name=self.user1.name)
+        message = '{name}: Are you down to {activity}?'.format(
+                name=self.user1.name, activity=self.event.title)
         mock_send_message.assert_called_once_with(user_ids, message,
                                                   event_id=self.event.id,
                                                   from_user=self.user1)
@@ -353,7 +355,8 @@ class InvitationTests(APITestCase):
         # It should send notifications to the users who were invited.
         # TODO: Include a link invitation.
         user_ids = [invitation['to_user'] for invitation in invitations]
-        message = 'from {name}'.format(name=self.user1.name)
+        message = '{name}: Are you down to {activity}?'.format(
+                name=self.user1.name, activity=self.event.title)
         mock_send_message.assert_called_once_with(user_ids, message,
                                                   event_id=self.event.id,
                                                   from_user=self.user1)
