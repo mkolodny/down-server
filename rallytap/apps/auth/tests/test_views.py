@@ -358,7 +358,7 @@ class UserTests(APITestCase):
         # It should send a push notification to the second user who tapped on their
         # Friend.
         user_ids = [self.friend1.id]
-        message = 'You and {name} are both down to do something!'.format(
+        message = 'You and {name} are both down to hang out!'.format(
                 name=self.user.first_name)
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 

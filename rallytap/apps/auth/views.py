@@ -144,7 +144,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         friend_id = serializer.data['first_user']
         user_id = serializer.data['second_user']
         user = User.objects.get(id=user_id)
-        message = 'You and {name} are both down to do something!'.format(
+        message = 'You and {name} are both down to hang out!'.format(
                 name=user.first_name)
         send_message([friend_id], message, sms=False)
 
