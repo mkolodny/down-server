@@ -35,9 +35,9 @@ def set_points(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('down_auth', '0042_user_points'),
-        ('events', '0044_event_min_accepted'),
+        ('down_auth', '0043_auto_20151109_1533'),
     ]
 
     operations = [
+        migrations.RunPython(set_points),
     ]
