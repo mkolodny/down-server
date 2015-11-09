@@ -168,7 +168,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             Friendship.objects.get(user_id=friend_id, friend_id=user_id)
 
             # Send a stealthy notification.
-            message = 'One of your friends is down to hang out with you.'
+            message = 'One of your friends tapped on you.'
             send_message([friend_id], message, sms=False)
 
             return Response()

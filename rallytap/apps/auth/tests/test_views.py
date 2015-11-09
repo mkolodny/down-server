@@ -392,7 +392,7 @@ class UserTests(APITestCase):
         # It should send a push notification to the second user who tapped on their
         # Friend.
         user_ids = [self.user.id]
-        message = 'One of your friends is down to hang out with you.'
+        message = 'One of your friends tapped on you.'
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
     @mock.patch('rallytap.apps.auth.views.send_message')
@@ -442,7 +442,7 @@ class UserTests(APITestCase):
         # It should send a push notification to the second user who tapped on their
         # Friend.
         user_ids = [self.user.id]
-        message = 'One of your friends is down to hang out with you.'
+        message = 'One of your friends tapped on you.'
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
 
