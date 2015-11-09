@@ -149,9 +149,10 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                 name=user.first_name)
         send_message([friend_id], message, sms=False)
 
-        # Give the user who tapped points.
-        user.points += Points.SELECTED_FRIEND
-        user.save()
+        if user.username != 'teamrallytap':
+            # Give the user who tapped points.
+            user.points += Points.SELECTED_FRIEND
+            user.save()
 
         return Response()
 

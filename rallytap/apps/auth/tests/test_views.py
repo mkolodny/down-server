@@ -357,7 +357,7 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should send a push notification to the second user who tapped on their
-        # Friend.
+        # friend.
         user_ids = [self.friend1.id]
         message = 'You and {name} are both down to hang out!'.format(
                 name=self.user.first_name)
@@ -367,6 +367,29 @@ class UserTests(APITestCase):
         original_points = self.user.points
         user = User.objects.get(id=self.user.id)
         self.assertEqual(user.points, original_points+Points.SELECTED_FRIEND)
+
+    @mock.patch('rallytap.apps.auth.views.send_message')
+    def test_match_teamrallytap(self, mock_send_message):
+        # This request is coming from the Meteor server, so accept the server's
+        # authentication token instead of the user's auth token.
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + settings.METEOR_KEY)
+
+        teamrallytap_user = User(username='teamrallytap', name='Team Rallytap')
+        teamrallytap_user.save()
+
+        data = {
+            'first_user': self.friend1.id,
+            'second_user': teamrallytap_user.id,
+        }
+        response = self.client.post(self.match_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should send a push notification to the second user who tapped on their
+        # friend.
+        user_ids = [self.friend1.id]
+        message = 'You and {name} are both down to hang out!'.format(
+                name=teamrallytap_user.first_name)
+        mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
     @mock.patch('rallytap.apps.auth.views.send_message')
     def test_match_not_authorized(self, mock_send_message):
