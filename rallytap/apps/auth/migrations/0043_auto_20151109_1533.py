@@ -11,10 +11,7 @@ def set_points(apps, schema_editor):
     invitations = Invitation.objects.all()
     expired_events = Event.objects.filter(expired=True)
     expired_events_set = {event.id for event in expired_events}
-    for user in User.objects.all():
-        if user.username is None:
-            continue
-
+    for user in User.objects.filter(username__isnull=False):
         # Everyone starts out with 100 points.
         points = 100
 
