@@ -25,6 +25,7 @@ class User(AbstractBaseUser):
                                      related_name='related_friends+')
     bulk_ref = models.TextField(null=True, blank=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
+    points = models.IntegerField(default=100)
     is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'username'
@@ -63,6 +64,13 @@ class SocialAccount(models.Model):
 
     class Meta:
         unique_together = ('provider', 'uid')
+
+
+class Points(object):
+    ACCEPTED_INVITATION = 5
+    IGNORED_INVITATION = -5
+    SENT_INVITATION = 1
+    SELECTED_FRIEND = 1
 
 
 class LinfootFunnel(models.Model):

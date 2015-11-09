@@ -19,6 +19,7 @@ from rallytap.apps.auth.models import (
     AuthCode,
     FellowshipApplication,
     LinfootFunnel,
+    Points,
     SocialAccount,
     User,
     UserPhone,
@@ -362,6 +363,11 @@ class UserTests(APITestCase):
                 name=self.user.first_name)
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
 
+        # It should give the user points.
+        original_points = self.user.points
+        user = User.objects.get(id=self.user.id)
+        self.assertEqual(user.points, original_points+Points.SELECTED_FRIEND)
+
     @mock.patch('rallytap.apps.auth.views.send_message')
     def test_match_not_authorized(self, mock_send_message):
         # This request is coming from the Meteor server, so accept the server's
@@ -394,6 +400,11 @@ class UserTests(APITestCase):
         user_ids = [self.user.id]
         message = 'One of your friends tapped on you.'
         mock_send_message.assert_called_once_with(user_ids, message, sms=False)
+
+        # It should give the user points.
+        original_points = self.friend1.points
+        user = User.objects.get(id=self.friend1.id)
+        self.assertEqual(user.points, original_points+Points.SELECTED_FRIEND)
 
     @mock.patch('rallytap.apps.auth.views.send_message')
     def test_friend_select_not_added_back(self, mock_send_message):

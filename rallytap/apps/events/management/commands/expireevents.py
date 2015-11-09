@@ -3,10 +3,11 @@ from datetime import datetime, timedelta
 import json
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.db.models import Q
+from django.db.models import F, Q
 import pytz
 import requests
-from rallytap.apps.events.models import Event
+from rallytap.apps.auth.models import Points, User
+from rallytap.apps.events.models import Event, Invitation
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 
 
@@ -37,3 +38,11 @@ class Command(BaseCommand):
 
         # Set the events to expired in the DB.
         Event.objects.filter(id__in=event_ids).update(expired=True)
+
+        # Take points away from users who didn't respond to their invitation to the
+        # events.
+        ignored_invitations = Invitation.objects.filter(
+                event_id__in=list(event_ids), response=Invitation.NO_RESPONSE)
+        for invitation in ignored_invitations:
+            User.objects.filter(id=invitation.to_user_id).update(
+                    points=F('points')+Points.IGNORED_INVITATION)

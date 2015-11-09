@@ -7,8 +7,8 @@ from django.test import TestCase
 from django.utils import timezone
 import httpretty
 import pytz
-from rallytap.apps.auth.models import User
-from rallytap.apps.events.models import Event
+from rallytap.apps.auth.models import Points, User
+from rallytap.apps.events.models import Event, Invitation
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 
 
@@ -34,6 +34,13 @@ class ExpireEventsTests(TestCase):
         self.event.created_at = datetime.now(pytz.utc) - timedelta(hours=24)
         self.event.save()
 
+        # Mock an invitation without a response.
+        friend = User()
+        friend.save()
+        invitation = Invitation(event=self.event, from_user=self.user,
+                                to_user=friend, response=Invitation.NO_RESPONSE)
+        invitation.save()
+
         call_command('expireevents')
 
         # It should update the event.
@@ -47,6 +54,11 @@ class ExpireEventsTests(TestCase):
         self.assertEqual(last_request.headers['Content-Type'], 'application/json')
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
         self.assertEqual(last_request.headers['Authorization'], auth_header)
+
+        # It should take points away from the user who didn't respond.
+        original_points = friend.points
+        friend = User.objects.get(id=friend.id)
+        self.assertEqual(friend.points, original_points+Points.IGNORED_INVITATION)
 
     @httpretty.activate
     def test_expired_has_datetime(self):
