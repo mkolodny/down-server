@@ -57,7 +57,8 @@
             </button>
             <button class="btn btn-default respond"
                     ng-disabled="invitation.wasMaybed()"
-                    ng-click="invitation.maybeInvitation()">
+                    ng-click="invitation.maybeInvitation()"
+                    ng-if="!invitation.event.minAccepted">
               Chat
             </button>
             <button class="btn btn-default respond"
@@ -66,7 +67,12 @@
               Can't
             </button>
           </div>
-          <p>Respond "Down" or "Chat" to see who's down and join the group chat.</p>
+          <p ng-if="invitation.event.minAccepted">
+            This event is locked. {{invitation.event.minAccepted}} people need to be down to make it happen.
+          </p>
+          <p ng-if="!invitation.event.minAccepted">
+            Respond "Down" or "Chat" to see who's down and join the group chat.
+          </p>
         </div>
       </div>    
     </div>

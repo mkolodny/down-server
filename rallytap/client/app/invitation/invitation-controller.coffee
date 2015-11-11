@@ -25,13 +25,17 @@ class InvitationCtrl
     @respondToInvitation @Invitation.declined
 
   respondToInvitation: (response) ->
+    if @event.minAccepted is undefined
+      goToChat = true
+
     @Invitation.updateResponse @invitation, response
       .$promise.then =>
-        @$state.go 'event',
-          event: @event
-          fromUser: @fromUser
-          invitation: @invitation
-          linkId: @$stateParams.linkId
+        if goToChat
+          @$state.go 'event',
+            event: @event
+            fromUser: @fromUser
+            invitation: @invitation
+            linkId: @$stateParams.linkId
       , =>
         @error = 'For some reason, that didn\'t work.'
 
