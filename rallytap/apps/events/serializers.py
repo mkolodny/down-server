@@ -7,8 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import JSONRenderer
 from rest_framework_gis.serializers import GeoModelSerializer
 from twilio.rest import TwilioRestClient
-from .models import Event, Invitation, LinkInvitation, Place
-from rallytap.apps.auth.models import User, UserPhone
+from rallytap.apps.auth.models import Points, User, UserPhone
 from rallytap.apps.auth.serializers import FriendSerializer
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.notifications.utils import send_message
@@ -17,6 +16,7 @@ from rallytap.apps.utils.serializers import (
     PkOnlyPrimaryKeyRelatedField,
 )
 from rallytap.apps.utils.utils import add_members, remove_member
+from .models import Event, Invitation, LinkInvitation, Place
 
 
 class PlaceSerializer(GeoModelSerializer):
@@ -88,6 +88,11 @@ class EventSerializer(serializers.ModelSerializer):
                                                                activity=event.title)
         send_message(user_ids, message, event_id=event.id, from_user=from_user)
 
+        # Give the user some points!
+        from_user.points += (len(invitations) * Points.SENT_INVITATION
+                             + Points.ACCEPTED_INVITATION)
+        from_user.save()
+
         return event
 
 
@@ -112,6 +117,11 @@ class InvitationListSerializer(serializers.ListSerializer):
                         name=from_user.name, activity=event.title)
                 send_message(user_ids, message, event_id=event.id,
                              from_user=from_user)
+
+                # Give the user some points!
+                # 1 point for each sent invitation.
+                from_user.points += len(invitations) * Points.SENT_INVITATION
+                from_user.save()
         except Event.DoesNotExist:
             raise ValidationError('Event doesn\'t exist')
 
@@ -140,7 +150,8 @@ class InvitationSerializer(serializers.ModelSerializer):
 
         # Update the meteor server's event member list.
         try:
-            if new_response in [Invitation.ACCEPTED, Invitation.MAYBE]:
+            if (original_response in [Invitation.NO_RESPONSE, Invitation.DECLINED]
+                    and new_response in [Invitation.ACCEPTED, Invitation.MAYBE]):
                 # Add the user to the meteor server members list.
                 add_members(invitation.event_id, [user.id])
             elif original_response != Invitation.NO_RESPONSE:
@@ -151,10 +162,11 @@ class InvitationSerializer(serializers.ModelSerializer):
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
+        # If we're updating the invitation response, notify people who want to
+        # know.
         if original_response != new_response:
             event = Event.objects.get(id=invitation.event_id)
 
-            # Notify people who want to know.
             if new_response == Invitation.ACCEPTED:
                 message = '{name} is down for {event}'.format(name=user.name,
                                                               event=event.title)
@@ -190,15 +202,18 @@ class InvitationSerializer(serializers.ModelSerializer):
 
             send_message(to_user_ids, message, sms=False)
 
+        # Update the invitation.
         for attr, value in validated_data.items():
             setattr(invitation, attr, value)
         invitation.save()
 
+        # If we've hit the min # of people needed for the event to happen,
+        # clear the min accepted field. We have the event from checking whether
+        # the invitation was updated. We're doing this check after updating the
+        # invitation so that the invitations query is up to date.
         if (event.min_accepted is not None
                 and original_response == Invitation.NO_RESPONSE
                 and new_response == Invitation.ACCEPTED):
-            # If we've hit the min # of people needed for the event to happen,
-            # clear the min accepted field.
             num_accepted = Invitation.objects.filter(
                     event=event,
                     response=Invitation.ACCEPTED) \
@@ -206,6 +221,19 @@ class InvitationSerializer(serializers.ModelSerializer):
             if num_accepted == event.min_accepted:
                 event.min_accepted = None
                 event.save()
+
+        # If the invitation was just accepted, give the user points.
+        if (original_response != new_response
+                and invitation.response == Invitation.ACCEPTED):
+            user.points += Points.ACCEPTED_INVITATION
+            user.save()
+
+        # If the invitation was just declined/maybed after being accepted, take
+        # away the points the user got for accepting the invitation.
+        if (original_response == Invitation.ACCEPTED
+                and new_response in [Invitation.MAYBE, Invitation.DECLINED]):
+            user.points -= Points.ACCEPTED_INVITATION
+            user.save()
 
         return invitation
 
@@ -267,9 +295,16 @@ class LinkInvitationFkObjectsSerializer(GeoModelSerializer):
             invitation = Invitation.objects.get(to_user=to_user,
                                                 event=obj.event)
         except Invitation.DoesNotExist:
-            invitation = Invitation(from_user=obj.from_user, to_user=to_user,
+            # Give the user who sent the invitation points.
+            from_user = obj.from_user
+            from_user.points += Points.SENT_INVITATION
+            from_user.save()
+
+            # Create the invitation.
+            invitation = Invitation(from_user=from_user, to_user=to_user,
                                     event=obj.event)
             invitation.save()
+
         serializer = InvitationSerializer(invitation)
         return serializer.data
 

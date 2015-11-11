@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.gis.measure import D
 from django.db import IntegrityError
-from django.db.models import Q
+from django.db.models import F, Q
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.generic.base import RedirectView, TemplateView
@@ -41,6 +41,7 @@ from .models import (
     AuthCode,
     FellowshipApplication,
     LinfootFunnel,
+    Points,
     SocialAccount,
     User,
     UserPhone,
@@ -144,9 +145,14 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         friend_id = serializer.data['first_user']
         user_id = serializer.data['second_user']
         user = User.objects.get(id=user_id)
-        message = 'You and {name} are both down to do something!'.format(
+        message = 'You and {name} are both down to hang out!'.format(
                 name=user.first_name)
         send_message([friend_id], message, sms=False)
+
+        if user.username != 'teamrallytap':
+            # Give the user who tapped points.
+            user.points += Points.SELECTED_FRIEND
+            user.save()
 
         return Response()
 
@@ -170,6 +176,10 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             # Send a stealthy notification.
             message = 'One of your friends tapped on you.'
             send_message([friend_id], message, sms=False)
+
+            # Give the user who tapped points.
+            User.objects.filter(id=user_id).update(
+                    points=F('points')+Points.SELECTED_FRIEND)
 
             return Response()
         except Friendship.DoesNotExist:

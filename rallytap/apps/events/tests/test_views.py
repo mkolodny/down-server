@@ -15,7 +15,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from twilio import TwilioRestException
-from rallytap.apps.auth.models import User, UserPhone
+from rallytap.apps.auth.models import Points, User, UserPhone
 from rallytap.apps.events.models import (
     Event,
     Invitation,
@@ -151,6 +151,12 @@ class EventTests(APITestCase):
         mock_send_message.assert_called_once_with(user_ids, message,
                                                   event_id=event.id,
                                                   from_user=self.user)
+
+        # It should give the user points.
+        original_points = self.user.points
+        user = User.objects.get(id=self.user.id)
+        points = Points.ACCEPTED_INVITATION + (2 * Points.SENT_INVITATION)
+        self.assertEqual(user.points, original_points+points)
 
         # It should return the event.
         serializer = EventSerializer(event)
@@ -332,6 +338,12 @@ class InvitationTests(APITestCase):
                                                   event_id=self.event.id,
                                                   from_user=self.user1)
 
+        # It should give the user points.
+        original_points = self.user1.points
+        user = User.objects.get(id=self.user1.id)
+        points = len(invitations) * Points.SENT_INVITATION
+        self.assertEqual(user.points, original_points+points)
+
     def test_bulk_create_not_logged_in(self):
         # Don't include the user's credentials in the request.
         self.client.credentials()
@@ -462,6 +474,11 @@ class InvitationTests(APITestCase):
         event = Event.objects.get(id=self.event.id)
         self.assertIsNone(event.min_accepted)
 
+        # It should give the user points.
+        original_points = self.user2.points
+        user = User.objects.get(id=self.user2.id)
+        self.assertEqual(user.points, original_points+Points.ACCEPTED_INVITATION)
+
     @mock.patch('rallytap.apps.events.serializers.add_members')
     @mock.patch('rallytap.apps.events.serializers.send_message')
     def test_maybe(self, mock_send_message, mock_add_members):
@@ -475,7 +492,7 @@ class InvitationTests(APITestCase):
                                  event=self.event, response=Invitation.MAYBE)
         invitation1.save()
         invitation2 = Invitation(from_user=self.user1, to_user=self.user2,
-                                 event=self.event, response=Invitation.ACCEPTED)
+                                 event=self.event, response=Invitation.NO_RESPONSE)
         invitation2.save()
         invitation3 = Invitation(from_user=self.user1, to_user=self.user3,
                                  event=self.event, response=Invitation.NO_RESPONSE)
@@ -558,7 +575,7 @@ class InvitationTests(APITestCase):
                                  event=self.event, response=Invitation.NO_RESPONSE)
         invitation2.save()
         invitation3 = Invitation(from_user=self.user2, to_user=self.user3,
-                                 event=self.event, response=Invitation.MAYBE)
+                                 event=self.event, response=Invitation.ACCEPTED)
         invitation3.save()
         invitation4 = Invitation(from_user=self.user2, to_user=self.user4,
                                  event=self.event, response=Invitation.ACCEPTED)
@@ -594,6 +611,69 @@ class InvitationTests(APITestCase):
                 name=self.user3.name,
                 event=self.event.title)
         mock_send_message.assert_called_with(user_ids, message, sms=False)
+
+        # It should remove the points the user got for accepting the invitation.
+        original_points = self.user3.points
+        user = User.objects.get(id=self.user3.id)
+        self.assertEqual(original_points-Points.ACCEPTED_INVITATION, user.points)
+
+    @mock.patch('rallytap.apps.events.serializers.remove_member')
+    @mock.patch('rallytap.apps.events.serializers.send_message')
+    def test_accept_then_maybe(self, mock_send_message, mock_remove_member):
+        # Log in as user3.
+        token = Token(user=self.user3)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        # Mock an invitations.
+        invitation1 = Invitation(from_user=self.user2, to_user=self.user1,
+                                 event=self.event, response=Invitation.MAYBE)
+        invitation1.save()
+        invitation2 = Invitation(from_user=self.user2, to_user=self.user2,
+                                 event=self.event, response=Invitation.NO_RESPONSE)
+        invitation2.save()
+        invitation3 = Invitation(from_user=self.user2, to_user=self.user3,
+                                 event=self.event, response=Invitation.ACCEPTED)
+        invitation3.save()
+        invitation4 = Invitation(from_user=self.user2, to_user=self.user4,
+                                 event=self.event, response=Invitation.ACCEPTED)
+        invitation4.save()
+
+        # Add user2 as a friend.
+        friendship = Friendship(user=self.user1, friend=self.user3)
+        friendship.save()
+        friendship = Friendship(user=self.user4, friend=self.user3)
+        friendship.save()
+
+        url = reverse('invitation-detail', kwargs={'pk': invitation3.id})
+        data = {
+            'from_user': invitation3.from_user_id,
+            'to_user': invitation3.to_user_id,
+            'event': invitation3.event_id,
+            'response': Invitation.MAYBE,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should update the invitation.
+        invitation = Invitation.objects.get(**data)
+
+        # It should add the user to the meteor server members list.
+        mock_remove_member.assert_called_once_with(self.event.id,
+                                                   invitation.to_user)
+
+        # It should notify users who are either down or might be down, and
+        # haven't muted their notifications.
+        user_ids = [self.user1.id, self.user4.id, self.user2.id]
+        message = '{name} joined the chat: {event}'.format(
+                name=self.user3.name,
+                event=self.event.title)
+        mock_send_message.assert_called_with(user_ids, message, sms=False)
+
+        # It should remove the points the user got for accepting the invitation.
+        original_points = self.user3.points
+        user = User.objects.get(id=self.user3.id)
+        self.assertEqual(original_points-Points.ACCEPTED_INVITATION, user.points)
 
     @mock.patch('rallytap.apps.events.serializers.add_members')
     def test_accept_bad_meteor_response(self, mock_add_members):
@@ -815,6 +895,11 @@ class LinkInvitationTests(APITestCase):
         # It should create an invitation.
         Invitation.objects.get(from_user=link_invitation.from_user,
                                to_user=self.user1, event=link_invitation.event)
+
+        # It should give the user who sent the invitation points.
+        original_points = self.user1.points
+        user = User.objects.get(id=self.user1.id)
+        self.assertEqual(user.points, original_points+Points.SENT_INVITATION)
 
         # It should return the link invitation.
         link_invitation = LinkInvitation.objects.get(id=link_invitation.id)
