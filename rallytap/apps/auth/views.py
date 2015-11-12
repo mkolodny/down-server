@@ -434,7 +434,7 @@ class UserPhoneViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         # number), and set their name to the contact name.
         for userphone in userphones:
             user = userphone.user
-            if (not user.name.startswith('+')
+            if ((user.name is not None and not user.name.startswith('+'))
                     or not phonenumbers.is_valid_number(userphone.phone)):
                 continue
 

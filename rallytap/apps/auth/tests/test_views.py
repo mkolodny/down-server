@@ -1058,11 +1058,20 @@ class UserPhoneTests(APITestCase):
 
         # Mock a user who was added by phone number.
         phone = '+12038333650'
-        user = User(name=phone)
-        user.save()
-        user_name = 'Leslie Knope'
-        userphone = UserPhone(user=user, phone=phone)
-        userphone.save()
+        added_by_phone_user = User(name=phone)
+        added_by_phone_user.save()
+        added_by_phone_name = 'Leslie Knope'
+        added_by_phone_userphone = UserPhone(user=added_by_phone_user, phone=phone)
+        added_by_phone_userphone.save()
+
+        # Mock a user who logged in with their phone number, but hasn't synced
+        # with Facebook yet.
+        no_name_user = User()
+        no_name_user.save()
+        no_name_phone = '+15148333650'
+        no_name_name = 'Angela Lansbury'
+        no_name_userphone = UserPhone(user=no_name_user, phone=no_name_phone)
+        no_name_userphone.save()
 
         data = {'contacts': [
             {
@@ -1070,12 +1079,16 @@ class UserPhoneTests(APITestCase):
                 'phone': unicode(self.userphone.phone),
             },
             {
-                'name': user_name,
+                'name': added_by_phone_name,
                 'phone': phone,
             },
             {
                 'name': contact_name,
                 'phone': contact_phone,
+            },
+            {
+                'name': no_name_name,
+                'phone': no_name_phone,
             },
         ]}
         response = self.client.post(self.phones_url, data)
@@ -1093,12 +1106,24 @@ class UserPhoneTests(APITestCase):
         Friendship.objects.get(user=self.teamrallytap_user, friend=contact_user)
 
         # It should update the user who was added by phone number's name.
-        user = User.objects.get(id=user.id)
-        self.assertEqual(user.name, user_name)
+        user = User.objects.get(id=added_by_phone_user.id)
+        self.assertEqual(user.name, added_by_phone_name)
+
+        # It should update the user who didn't have a name's name.
+        user = User.objects.get(id=no_name_user.id)
+        self.assertEqual(user.name, no_name_name)
 
         # It should return a list with the userphones.
-        userphone = UserPhone.objects.get(id=userphone.id)
-        userphones = [self.userphone, userphone, contact_userphone]
+        added_by_phone_userphone = UserPhone.objects.get(
+                id=added_by_phone_userphone.id)
+        no_name_userphone = UserPhone.objects.get(
+                id=no_name_userphone.id)
+        userphones = [
+            self.userphone,
+            added_by_phone_userphone,
+            no_name_userphone,
+            contact_userphone,
+        ]
         serializer = UserPhoneSerializer(userphones, many=True)
         json_user_phones = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_user_phones)
