@@ -211,9 +211,9 @@ class InvitationSerializer(serializers.ModelSerializer):
         # clear the min accepted field. We have the event from checking whether
         # the invitation was updated. We're doing this check after updating the
         # invitation so that the invitations query is up to date.
-        if (event.min_accepted is not None
-                and original_response == Invitation.NO_RESPONSE
-                and new_response == Invitation.ACCEPTED):
+        if (original_response == Invitation.NO_RESPONSE
+                and new_response == Invitation.ACCEPTED
+                and event.min_accepted is not None):
             num_accepted = Invitation.objects.filter(
                     event=event,
                     response=Invitation.ACCEPTED) \
