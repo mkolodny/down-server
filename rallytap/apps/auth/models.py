@@ -66,7 +66,7 @@ class SocialAccount(models.Model):
         unique_together = ('provider', 'uid')
 
 
-class Groups(models.Model):
+class Group(models.Model):
     name = models.TextField()
     domain = models.TextField(unique=True)
 
