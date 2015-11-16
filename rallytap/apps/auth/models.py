@@ -68,7 +68,7 @@ class SocialAccount(models.Model):
 
 class Groups(models.Model):
     name = models.TextField()
-    domain = models.TextField()
+    domain = models.TextField(unique=True)
 
 
 class Points(object):
