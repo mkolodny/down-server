@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import render
 from django.template.base import TemplateDoesNotExist
 from django.views.generic.base import RedirectView, TemplateView
@@ -52,3 +52,17 @@ class PartialView(APIView):
             return render(request, kwargs['template_path'])
         except TemplateDoesNotExist:
             raise Http404
+
+
+class PrivacyPolicyView(APIView):
+
+    def get(self, request, format=None, **kwargs):
+        file_path = ('{base_dir}/rallytap/static/'
+                     'privacy/rallytap-privacy-policy.pdf').format(
+                base_dir=settings.BASE_DIR)
+        with open(file_path, 'r') as pdf:
+            response = HttpResponse(pdf.read(), content_type='application/pdf')
+            response['Content-Disposition'] = (
+                    'inline;filename=rallytap-privacy-policy.pdf')
+            return response
+        raise Http404

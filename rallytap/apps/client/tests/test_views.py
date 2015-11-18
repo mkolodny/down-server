@@ -144,3 +144,15 @@ class PartialTestCase(APITestCase):
     def test_get_404(self):
         response = self.client.get('/partials/blah')
         self.assertEqual(response.status_code, 404)
+
+
+class PrivacyPolicyTests(APITestCase):
+
+    def test_get(self):
+        url = reverse('privacy')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the privacy policy as an inline pdf.
+        self.assertEqual(response['Content-Disposition'],
+                         'inline;filename=rallytap-privacy-policy.pdf')
