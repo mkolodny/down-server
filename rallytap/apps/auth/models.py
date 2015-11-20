@@ -66,19 +66,6 @@ class SocialAccount(models.Model):
         unique_together = ('provider', 'uid')
 
 
-class Group(models.Model):
-    name = models.TextField()
-    domain = models.TextField(unique=True)
-
-
-class UserGroup(models.Model):
-    user = models.ForeignKey(User)
-    group = models.ForeignKey(Group)
-
-    class Meta:
-        unique_together = ('user', 'group')
-
-
 class Points(object):
     ACCEPTED_INVITATION = 5
     IGNORED_INVITATION = -5
