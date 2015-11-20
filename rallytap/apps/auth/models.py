@@ -83,7 +83,6 @@ class Points(object):
     ACCEPTED_INVITATION = 5
     IGNORED_INVITATION = -5
     SENT_INVITATION = 1
-    SELECTED_FRIEND = 1
 
 
 class LinfootFunnel(models.Model):

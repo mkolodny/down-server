@@ -53,9 +53,7 @@ from .serializers import (
     FacebookSessionSerializer,
     FellowshipApplicationSerializer,
     FriendSerializer,
-    FriendSelectSerializer,
     LinfootFunnelSerializer,
-    MatchSerializer,
     SessionSerializer,
     SocialAccountSyncSerializer,
     UserSerializer,
@@ -131,59 +129,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
 
         serializer = FriendSerializer(new_added_me, many=True)
         return Response(serializer.data)
-
-    @list_route(methods=['post'], authentication_classes=(MeteorAuthentication,),
-                permission_classes=())
-    def match(self, request):
-        """
-        Send the first user who selected their friend a push notification about a
-        match.
-        """
-        serializer = MatchSerializer(data=request.data)
-        serializer.is_valid()
-
-        friend_id = serializer.data['first_user']
-        user_id = serializer.data['second_user']
-        user = User.objects.get(id=user_id)
-        message = 'You and {name} are both down to hang out!'.format(
-                name=user.first_name)
-        send_message([friend_id], message, sms=False)
-
-        if user.username != 'teamrallytap':
-            # Give the user who tapped points.
-            user.points += Points.SELECTED_FRIEND
-            user.save()
-
-        return Response()
-
-    @list_route(methods=['post'], url_path='friend-select',
-                authentication_classes=(MeteorAuthentication,),
-                permission_classes=())
-    def friend_select(self, request):
-        """
-        Send a user a push notification letting them know that one of their friends
-        are rallytap to hang out.
-        """
-        serializer = FriendSelectSerializer(data=request.data)
-        serializer.is_valid()
-
-        user_id = serializer.data['user']
-        friend_id = serializer.data['friend']
-        try:
-            # Make sure the friend has added the user back.
-            Friendship.objects.get(user_id=friend_id, friend_id=user_id)
-
-            # Send a stealthy notification.
-            message = 'One of your friends tapped on you.'
-            send_message([friend_id], message, sms=False)
-
-            # Give the user who tapped points.
-            User.objects.filter(id=user_id).update(
-                    points=F('points')+Points.SELECTED_FRIEND)
-
-            return Response()
-        except Friendship.DoesNotExist:
-            return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 class UserUsernameDetail(APIView):

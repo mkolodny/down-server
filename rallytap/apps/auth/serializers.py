@@ -140,13 +140,3 @@ class ContactSerializer(serializers.Serializer):
 
 class FacebookSessionSerializer(serializers.Serializer):
     access_token = serializers.CharField()
-
-
-class MatchSerializer(serializers.Serializer):
-    first_user = serializers.IntegerField()
-    second_user = serializers.IntegerField()
-
-
-class FriendSelectSerializer(serializers.Serializer):
-    user = serializers.IntegerField()
-    friend = serializers.IntegerField()
