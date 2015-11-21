@@ -69,38 +69,6 @@ class WebAppTests(APITestCase):
                          settings.METEOR_URL)
         self.assertTemplateUsed(response, 'web-app.html')
 
-    def test_get_event(self):
-        url = reverse('web-app-event')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.context['BRANCH_API_KEY'],
-                         settings.BRANCH_API_KEY)
-        self.assertEqual(response.context['FACEBOOK_APP_ID'],
-                         settings.FACEBOOK_APP_ID)
-        self.assertEqual(response.context['API_ROOT'],
-                         settings.API_ROOT)
-        self.assertEqual(response.context['MIXPANEL_TOKEN'],
-                         settings.MIXPANEL_TOKEN)
-        self.assertEqual(response.context['METEOR_URL'],
-                         settings.METEOR_URL)
-        self.assertTemplateUsed(response, 'web-app.html')
-
-    def test_get_login(self):
-        url = reverse('web-app-login')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.context['BRANCH_API_KEY'],
-                         settings.BRANCH_API_KEY)
-        self.assertEqual(response.context['FACEBOOK_APP_ID'],
-                         settings.FACEBOOK_APP_ID)
-        self.assertEqual(response.context['API_ROOT'],
-                         settings.API_ROOT)
-        self.assertEqual(response.context['MIXPANEL_TOKEN'],
-                         settings.MIXPANEL_TOKEN)
-        self.assertEqual(response.context['METEOR_URL'],
-                         settings.METEOR_URL)
-        self.assertTemplateUsed(response, 'web-app.html')
-
     def test_get_fellowship(self):
         url = reverse('web-app-fellowship')
         response = self.client.get(url)
@@ -121,9 +89,9 @@ class WebAppTests(APITestCase):
 class PartialTestCase(APITestCase):
 
     def test_get(self):
-        response = self.client.get('/partials/event/event.html')
+        response = self.client.get('/partials/landing/landing.html')
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'event/event.html')
+        self.assertTemplateUsed(response, 'landing/landing.html')
 
     def test_get_404(self):
         response = self.client.get('/partials/blah')
