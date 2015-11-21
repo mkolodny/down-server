@@ -4,7 +4,6 @@ from push_notifications.gcm import GCMError
 from push_notifications.models import APNSDevice, GCMDevice
 from twilio.rest import TwilioRestClient
 from rallytap.apps.auth.models import UserPhone
-from rallytap.apps.events.models import LinkInvitation
 
 def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
                  added_friend=False):
@@ -26,17 +25,6 @@ def send_message(user_ids, message, sms=True, from_user=None, event_id=None,
         return
 
     # Notify users who were added from contacts.
-    if from_user is not None and event_id is not None:
-        # The message is an invitation to an event. Send each contact a link
-        # invitation.
-        link_invitation, created = LinkInvitation.objects.get_or_create(
-                event_id=event_id, from_user=from_user)
-        event = link_invitation.event
-        link = 'https://rallytap.com/e/{link_id}'.format(
-                link_id=link_invitation.link_id)
-        name = link_invitation.from_user.name
-        message = '{name} invited you to "{title}" - {link}'.format(
-                name=name, title=event.title, link=link)
     if added_friend:
         # The message is a notification that the user added a contact as a friend
         # on rallytap. Include a link to the app.

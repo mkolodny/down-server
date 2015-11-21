@@ -29,12 +29,6 @@ from rallytap.apps.auth.serializers import (
     UserSerializer,
     UserPhoneSerializer,
 )
-from rallytap.apps.events.models import Event, Invitation
-from rallytap.apps.events.serializers import (
-    EventSerializer,
-    InvitationSerializer,
-    MyInvitationSerializer,
-)
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 
@@ -76,19 +70,6 @@ class UserTests(APITestCase):
                                             profile={'access_token': '2234asdf'})
         self.friend1_social.save()
 
-        # Mock an event that the user's invited to.
-        self.event = Event(title='bars?!?!?!', creator=self.friend1)
-        self.event.save()
-        self.user_invitation = Invitation(from_user=self.friend1,
-                                          to_user=self.user,
-                                          event=self.event,
-                                          response=Invitation.ACCEPTED)
-        self.user_invitation.save()
-        self.friend1_invitation = Invitation(from_user=self.friend1,
-                                             to_user=self.friend1,
-                                             event=self.event)
-        self.friend1_invitation.save()
-
         # Mock the users' phone numbers.
         self.friend1_phone = UserPhone(user=self.friend1, phone='+12036227310')
         self.friend1_phone.save()
@@ -100,7 +81,6 @@ class UserTests(APITestCase):
         self.list_url = reverse('user-list')
         self.me_url = '{list_url}me'.format(list_url=self.list_url)
         self.friends_url = 'https://graph.facebook.com/v2.2/me/friends'
-        self.invitations_url = reverse('user-invitations')
 
     def tearDown(self):
         self.patcher.stop()
@@ -235,68 +215,6 @@ class UserTests(APITestCase):
         serializer = FriendSerializer([self.friend1], many=True)
         json_friends = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_friends)
-
-    def test_get_invitations(self):
-        # Mock an invitation the user responded maybe to.
-        event = Event(title='do something', creator=self.user)
-        event.save()
-        invitation2 = Invitation(event=event, to_user=self.user,
-                                 from_user=self.user, response=Invitation.MAYBE)
-        invitation2.save()
-
-        response = self.client.get(self.invitations_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should return the active invitations you either accepted or maybed.
-        invitations = [self.user_invitation, invitation2]
-        serializer = MyInvitationSerializer(invitations, many=True)
-        json_invitations = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitations)
-
-    def test_get_invitations_created_expired(self):
-        # Mock an expired event without a datetime (by default, events expire after
-        # 24 hours).
-        self.event.created_at = timezone.now() - timedelta(hours=24)
-        self.event.save()
-
-        # Mock not-expired event without a datetime.
-        event = Event(title='Beach Day', creator=self.user)
-        event.save()
-        invitation = Invitation(event=event, from_user=self.user,
-                                to_user=self.user,
-                                response=Invitation.MAYBE)
-        invitation.save()
-
-        response = self.client.get(self.invitations_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should only return the active invitations.
-        serializer = MyInvitationSerializer([invitation], many=True)
-        json_invitations = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitations)
-
-    def test_get_invitations_datetime_expired(self):
-        # Mock an expired event with a datetime (by default, events expire 24 hours
-        # after the end of the event).
-        self.event.datetime = timezone.now() - timedelta(hours=24)
-        self.event.save()
-
-        # Mock not-expired event with a datetime.
-        tomorrow = timezone.now() + timedelta(hours=24)
-        event = Event(title='Beach Day', creator=self.user, datetime=tomorrow)
-        event.save()
-        invitation = Invitation(event=event, from_user=self.user,
-                                to_user=self.user,
-                                response=Invitation.MAYBE)
-        invitation.save()
-
-        response = self.client.get(self.invitations_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # It should only return the active invitations.
-        serializer = MyInvitationSerializer([invitation], many=True)
-        json_invitations = JSONRenderer().render(serializer.data)
-        self.assertEqual(response.content, json_invitations)
 
     @mock.patch('rallytap.apps.auth.views.utils.get_facebook_friends')
     def test_facebook_friends(self, mock_get_facebook_friends):

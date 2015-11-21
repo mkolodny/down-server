@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from rallytap.apps.auth.models import User
-from rallytap.apps.events.models import Event, Invitation
+from rallytap.apps.events.models import Event
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.friends.serializers import FriendshipSerializer
 

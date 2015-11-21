@@ -5,7 +5,7 @@ import mock
 from push_notifications.gcm import GCMError
 from push_notifications.models import APNSDevice, GCMDevice
 from rallytap.apps.auth.models import User, UserPhone
-from rallytap.apps.events.models import Event, LinkInvitation
+from rallytap.apps.events.models import Event
 from rallytap.apps.notifications import utils
 
 
@@ -86,89 +86,6 @@ class SendMessageTests(TestCase):
         token = self.android_device.registration_id
         data = {'title': 'Rallytap', 'message': message}
         mock_gcm.assert_any_call(registration_id=token, data=data)
-
-    @mock.patch('push_notifications.apns.apns_send_message')
-    @mock.patch('push_notifications.gcm.gcm_send_message')
-    @mock.patch('rallytap.apps.notifications.utils.TwilioRestClient')
-    def test_send_message_invitation(self, mock_twilio, mock_gcm, mock_apns):
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
-        # Mock an event.
-        event = Event(title='Ball?', creator=self.user)
-        event.save()
-
-        user_ids = [self.user.id, self.contact.id]
-        message = 'from Barack Obama'
-        from_user = self.user
-        utils.send_message(user_ids, message, from_user=from_user,
-                           event_id=event.id)
-
-        # It should send push notifications to users with ios devices.
-        token = self.ios_device.registration_id
-        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
-
-        # It should send push notifications to users with android devices.
-        token = self.android_device.registration_id
-        data = {'title': 'Rallytap', 'message': message}
-        mock_gcm.assert_any_call(registration_id=token, data=data)
-
-        # It should create a link invitation.
-        link_invitation = LinkInvitation.objects.get(event=event,
-                                                     from_user=from_user)
-
-        # It should send SMS to users without devices.
-        link = 'https://rallytap.com/e/{link_id}'.format(
-                link_id=link_invitation.link_id)
-        name = link_invitation.from_user.name
-        message = '{name} invited you to "{title}" - {link}'.format(
-                name=name, title=event.title, link=link)
-        phone = unicode(self.contact_phone.phone)
-        mock_client.messages.create.assert_called_with(to=phone, 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=message)
-
-    @mock.patch('push_notifications.apns.apns_send_message')
-    @mock.patch('push_notifications.gcm.gcm_send_message')
-    @mock.patch('rallytap.apps.notifications.utils.TwilioRestClient')
-    def test_send_message_invitation_link_exists(self, mock_twilio, mock_gcm,
-                                                 mock_apns):
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
-        # Mock an event with a link invitation.
-        event = Event(title='Ball?', creator=self.user)
-        event.save()
-        from_user = self.user
-        link_invitation = LinkInvitation(event=event, from_user=from_user)
-        link_invitation.save()
-
-        user_ids = [self.user.id, self.contact.id]
-        message = 'from Barack Obama'
-        utils.send_message(user_ids, message, from_user=from_user,
-                           event_id=event.id)
-
-        # It should send push notifications to users with ios devices.
-        token = self.ios_device.registration_id
-        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
-
-        # It should send push notifications to users with android devices.
-        token = self.android_device.registration_id
-        data = {'title': 'Rallytap', 'message': message}
-        mock_gcm.assert_any_call(registration_id=token, data=data)
-
-        # It should send SMS to users without devices.
-        link = 'https://rallytap.com/e/{link_id}'.format(
-                link_id=link_invitation.link_id)
-        name = link_invitation.from_user.name
-        message = '{name} invited you to "{title}" - {link}'.format(
-                name=name, title=event.title, link=link)
-        phone = unicode(self.contact_phone.phone)
-        mock_client.messages.create.assert_called_with(to=phone, 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=message)
 
     @mock.patch('push_notifications.apns.apns_send_message')
     @mock.patch('push_notifications.gcm.gcm_send_message')

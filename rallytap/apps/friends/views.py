@@ -1,14 +1,11 @@
 from __future__ import unicode_literals
-from django.shortcuts import render
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rallytap.apps.notifications.utils import send_message
-from rallytap.apps.events.models import Invitation, Invitation
 from .models import Friendship
 from .serializers import (
     FriendshipSerializer,

@@ -24,8 +24,6 @@ from rallytap.apps.client.views import (
 )
 from rallytap.apps.events.views import (
     EventViewSet,
-    InvitationViewSet,
-    LinkInvitationViewSet,
     SuggestedEventsView,
 )
 from rallytap.apps.friends.views import FriendshipViewSet
@@ -43,9 +41,6 @@ router.register(r'events', EventViewSet)
 router.register(r'fellowship-applications', FellowshipApplicationViewSet,
                 base_name='fellowship-application')
 router.register(r'friendships', FriendshipViewSet)
-router.register(r'invitations', InvitationViewSet)
-router.register(r'link-invitations', LinkInvitationViewSet,
-                base_name='link-invitation')
 router.register(r'phonenumbers', LinfootFunnelViewSet, base_name='phonenumbers')
 router.register(r'sessions', SessionViewSet, base_name='session')
 router.register(r'userphones', UserPhoneViewSet, base_name='userphone')
@@ -70,7 +65,6 @@ urlpatterns = patterns('',
     url(r'^$', WebAppView.as_view(), name='web-app-landing'),
     url(r'^e/\w+/?$', WebAppView.as_view(), name='web-app-event'),
     url(r'^login/?$', WebAppView.as_view(), name='web-app-login'),
-    url(r'^i/\w+/?$', WebAppView.as_view(), name='web-app-invitation'),
     url(r'^partials/(?P<template_path>.+)', PartialView.as_view()),
     url(r'^terms/?$', TermsView.as_view(), name='terms'),
     url(r'^7-Epic-Music-Festivals$', ArticleView.as_view(), name='article'),

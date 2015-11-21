@@ -25,12 +25,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
-from rallytap.apps.events.models import Event, Invitation
-from rallytap.apps.events.serializers import (
-    EventSerializer,
-    InvitationSerializer,
-    MyInvitationSerializer,
-)
+from rallytap.apps.events.models import Event
+from rallytap.apps.events.serializers import EventSerializer
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.notifications.utils import send_message
 from rallytap.apps.utils.exceptions import ServiceUnavailable
@@ -90,22 +86,6 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         except SocialAccount.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(friends)
-
-    @list_route(methods=['get'], url_path='invitations')
-    def joined_invitations(self, request):
-        twenty_four_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=24)
-        joined_responses = [Invitation.ACCEPTED, Invitation.MAYBE]
-        invitations = Invitation.objects.filter(to_user=request.user,
-                                                response__in=joined_responses) \
-                .select_related('event') \
-                .filter(Q(event__datetime__isnull=True,
-                          event__created_at__gt=twenty_four_hrs_ago) |
-                        Q(event__datetime__isnull=False,
-                          event__datetime__gt=twenty_four_hrs_ago)) \
-                .select_related('from_user')
-
-        serializer = MyInvitationSerializer(invitations, many=True)
-        return Response(serializer.data)
 
     @list_route(methods=['get'])
     def me(self, request):
