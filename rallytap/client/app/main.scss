@@ -65,88 +65,6 @@ body,
   cursor: default;
 }
 
-// Non-member views
-.non-member-view {
-  #content {
-    text-align: center;
-    background-color: #fff;
-    border: 1px solid #edeeee;
-    border-radius: $border-radius-large;
-    padding: 20px;
-    padding-bottom: 40px;
-  }
-  #from-image {
-    width: 75px;
-    height: 75px;
-    border-radius: 50%;
-  }
-  #event-title {
-    font-size: 26px;
-    color: $brand-primary;
-    margin-top: 13px;
-    margin-bottom: 0;
-  }
-  #suggested-by {
-    font-size: 14px;
-    font-weight: $headings-font-weight;
-    margin-top: 5px;
-  }
-  #event-details {
-    width: 256px;
-    font-size: 16px;
-    font-weight: 700;
-    text-align: left;
-    margin: auto;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    padding-top: 20px;
-    padding-bottom: 20px;
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-
-    i {
-      margin-right: 16px;
-    }
-    #event-comment {
-      max-height: 100px;
-      overflow: auto;
-    }
-  }
-  p {
-    color: $brand-primary;
-    max-width: 256px;
-    text-align: center;
-    margin: auto;
-    margin-top: 30px;
-  }
-}
-
-// Event details
-.event-detail {
-  display: flex;
-  margin-bottom: 7px;
-
-  i {
-    width: 15px;
-    margin-right: 10px;
-    font-size: 1.2em;
-  }
-  .fa-calendar-o {
-    margin-top: 10px;
-  }
-  .fa-map-marker {
-    width: 12px;
-    margin-left: 3px;
-    margin-top: 2px;
-  }
-  .fa-comment-o {
-    margin-top: 1px;
-  }
-  a {
-    text-decoration: none;
-  }
-}
-
 // Download buttons
 .download-images {
   padding-top: 25px;
@@ -166,8 +84,5 @@ body,
 @import "../node_modules/down-ionic/app/common/intl-phone/intlTelInput";
 
 /* View styles */
-@import "login/login";
-@import "invitation/invitation";
-@import "event/event";
 @import "landing/landing";
 @import "fellowship/fellowship";
