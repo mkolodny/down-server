@@ -12,7 +12,7 @@ from rallytap.apps.utils.exceptions import ServiceUnavailable
 
 
 class Command(BaseCommand):
-    help = 'Marks expired events as expired on the Meteor server.'
+    help = 'Marks expired events as expired.'
 
     def handle(self, *args, **options):
         twenty_four_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=24)
@@ -23,18 +23,6 @@ class Command(BaseCommand):
                           datetime__lte=twenty_four_hrs_ago),
                         expired=False) \
                 .values_list('id', flat=True)
-
-        # Expire the events on the meteor server.
-        url = '{meteor_url}/chats/expire'.format(meteor_url=settings.METEOR_URL)
-        data = {'ids': list(event_ids)}
-        auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': auth_header,
-        }
-        response = requests.post(url, data=json.dumps(data), headers=headers)
-        if response.status_code != 200:
-            raise ServiceUnavailable()
 
         # Set the events to expired in the DB.
         Event.objects.filter(id__in=event_ids).update(expired=True)
