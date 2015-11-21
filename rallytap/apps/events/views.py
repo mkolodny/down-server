@@ -4,12 +4,8 @@ from django.views.generic.base import TemplateView
 from rest_framework import authentication, mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import Event
-from .permissions import (
-    IsCreator,
-)
-from .serializers import (
-    EventSerializer,
-)
+from .permissions import IsCreator
+from .serializers import EventSerializer
 
 
 class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
@@ -24,7 +20,3 @@ class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
         request.data['creator'] = request.user.id
 
         return super(EventViewSet, self).create(request, *args, **kwargs)
-
-
-class SuggestedEventsView(TemplateView):
-    template_name = 'suggested-events.html'

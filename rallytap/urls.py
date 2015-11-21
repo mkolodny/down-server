@@ -22,10 +22,7 @@ from rallytap.apps.client.views import (
     WebAppView,
     PrivacyPolicyView,
 )
-from rallytap.apps.events.views import (
-    EventViewSet,
-    SuggestedEventsView,
-)
+from rallytap.apps.events.views import EventViewSet
 from rallytap.apps.friends.views import FriendshipViewSet
 from rallytap.apps.notifications.views import APNSDeviceViewSet, GCMDeviceViewSet
 
@@ -66,8 +63,6 @@ urlpatterns = patterns('',
     url(r'^$', WebAppView.as_view(), name='web-app-landing'),
     url(r'^terms/?$', TermsView.as_view(), name='terms'),
     url(r'^7-Epic-Music-Festivals$', ArticleView.as_view(), name='article'),
-    url(r'^suggested-events$', SuggestedEventsView.as_view(),
-        name='suggested-events'),
     url(r'^privacy/?$', PrivacyPolicyView.as_view(), name='privacy'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^yc-fellowship/founders$', FellowshipFoundersView.as_view(),

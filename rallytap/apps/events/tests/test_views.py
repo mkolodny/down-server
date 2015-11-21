@@ -16,10 +16,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from twilio import TwilioRestException
 from rallytap.apps.auth.models import Points, User, UserPhone
-from rallytap.apps.events.models import (
-    Event,
-    Place,
-)
+from rallytap.apps.events.models import Event, Place
 from rallytap.apps.events.serializers import EventSerializer
 from rallytap.apps.friends.models import Friendship
 
@@ -120,12 +117,3 @@ class EventTests(APITestCase):
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
-
-
-class SuggestedEventsTests(APITestCase):
-
-    def test_get(self):
-        url = reverse('suggested-events')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTemplateUsed(response, 'suggested-events.html')
