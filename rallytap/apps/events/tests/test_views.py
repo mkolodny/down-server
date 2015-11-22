@@ -4,6 +4,7 @@ import json
 import time
 from django.utils import timezone
 from django.conf import settings
+from django.contrib.gis.geos import Point
 from django.core.urlresolvers import reverse
 from hashids import Hashids
 import httpretty
@@ -16,8 +17,11 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from twilio import TwilioRestException
 from rallytap.apps.auth.models import Points, User, UserPhone
-from rallytap.apps.events.models import Event, Place
-from rallytap.apps.events.serializers import EventSerializer
+from rallytap.apps.events.models import Event, Place, RecommendedEvent
+from rallytap.apps.events.serializers import (
+    EventSerializer,
+    RecommendedEventSerializer,
+)
 from rallytap.apps.friends.models import Friendship
 
 
@@ -25,13 +29,11 @@ class EventTests(APITestCase):
 
     def setUp(self):
         # Mock a user.
-        self.user = User(email='aturing@gmail.com', name='Alan Tdog Turing',
-                         username='tdog')
+        self.user = User()
         self.user.save()
 
-        # Mock two of the user's friend1s
-        self.friend1 = User(email='jclarke@gmail.com', name='Joan Clarke',
-                           username='jcke')
+        # Mock the user's friend.
+        self.friend1 = User()
         self.friend1.save()
 
         # Authorize the requests with the user's token.
@@ -117,3 +119,51 @@ class EventTests(APITestCase):
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
+
+
+class RecommendedEventTests(APITestCase):
+
+    def setUp(self):
+        # Mock a user.
+        self.user = User(location=Point(40.6898319, -73.9904645))
+        self.user.save()
+
+        # Authorize the requests with the user's token.
+        self.token = Token(user=self.user)
+        self.token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        # Save urls.
+        self.list_url = reverse('recommended-event-list')
+
+    def test_list(self):
+        # Mock a recommended event without a location.
+        no_location_event = RecommendedEvent(title='drop it like it\'s hot')
+        no_location_event.save()
+
+        # Mock a recommended event close by the user.
+        place = Place(name='Coopers Craft & Kitchen',
+                      geo=Point(40.7270113, -73.9912938))
+        place.save()
+
+        place.save()
+        nearby_event = RecommendedEvent(title='$1 fish tacos', place=place)
+        nearby_event.save()
+
+        # Mock a recommended event far from the user.
+        place = Place(name='Bronx Zoo',
+                      geo=Point(40.8560079, -73.970945))
+        place.save()
+        far_event = RecommendedEvent(title='see some giraffes', place=place)
+        far_event.save()
+
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return all non-expired recommended events where the event
+        # either doesn't have a location, or the event is within 10 miles of
+        # the user.
+        recommended_events = [no_location_event, nearby_event]
+        serializer = RecommendedEventSerializer(recommended_events, many=True)
+        json_recommended_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_recommended_events)

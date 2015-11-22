@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework_gis.serializers import GeoModelSerializer
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 from rallytap.apps.utils.utils import add_members
-from .models import Event, Place
+from .models import Event, Place, RecommendedEvent
 
 
 class PlaceSerializer(GeoModelSerializer):
@@ -48,3 +48,9 @@ class EventSerializer(serializers.ModelSerializer):
         """
 
         return event
+
+
+class RecommendedEventSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = RecommendedEvent

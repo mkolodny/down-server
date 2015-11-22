@@ -17,3 +17,9 @@ class Event(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
+
+
+class RecommendedEvent(models.Model):
+    title = models.TextField()
+    datetime = models.DateTimeField(null=True, blank=True)
+    place = models.ForeignKey(Place, null=True, blank=True)

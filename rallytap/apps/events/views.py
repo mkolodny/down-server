@@ -3,9 +3,10 @@ from django.conf import settings
 from django.views.generic.base import TemplateView
 from rest_framework import authentication, mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
-from .models import Event
+from .filters import NearbyPlaceFilter
+from .models import Event, RecommendedEvent
 from .permissions import IsCreator
-from .serializers import EventSerializer
+from .serializers import EventSerializer, RecommendedEventSerializer
 
 
 class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
@@ -20,3 +21,11 @@ class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
         request.data['creator'] = request.user.id
 
         return super(EventViewSet, self).create(request, *args, **kwargs)
+
+
+class RecommendedEventViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (authentication.TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    queryset = RecommendedEvent.objects.all()
+    serializer_class = RecommendedEventSerializer
+    filter_backends = (NearbyPlaceFilter,)
