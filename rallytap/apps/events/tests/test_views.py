@@ -17,10 +17,11 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from twilio import TwilioRestException
 from rallytap.apps.auth.models import Points, User, UserPhone
-from rallytap.apps.events.models import Event, Place, RecommendedEvent
+from rallytap.apps.events.models import Event, Place, RecommendedEvent, SavedEvent
 from rallytap.apps.events.serializers import (
     EventSerializer,
     RecommendedEventSerializer,
+    SavedEventSerializer,
 )
 from rallytap.apps.friends.models import Friendship
 
@@ -136,7 +137,7 @@ class RecommendedEventTests(APITestCase):
         # Save urls.
         self.list_url = reverse('recommended-event-list')
 
-    def test_list(self):
+    def test_query(self):
         # Mock a recommended event without a location.
         no_location_event = RecommendedEvent(title='drop it like it\'s hot')
         no_location_event.save()
@@ -144,8 +145,6 @@ class RecommendedEventTests(APITestCase):
         # Mock a recommended event close by the user.
         place = Place(name='Coopers Craft & Kitchen',
                       geo=Point(40.7270113, -73.9912938))
-        place.save()
-
         place.save()
         nearby_event = RecommendedEvent(title='$1 fish tacos', place=place)
         nearby_event.save()
@@ -167,3 +166,62 @@ class RecommendedEventTests(APITestCase):
         serializer = RecommendedEventSerializer(recommended_events, many=True)
         json_recommended_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_recommended_events)
+
+    def test_query_not_logged_in(self):
+        # Don't include the user's credentials in the request.
+        self.client.credentials()
+
+        response = self.client.post(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class SavedEventTestCase(APITestCase):
+
+    def setUp(self):
+        # Mock a user.
+        self.user = User(location=Point(40.6898319, -73.9904645))
+        self.user.save()
+
+        # Authorize the requests with the user's token.
+        self.token = Token(user=self.user)
+        self.token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        # Save urls.
+        self.list_url = reverse('saved-event-list')
+
+    def test_save_event(self):
+        # Mock an event.
+        event = Event(title='get jiggy with it', creator=self.user)
+        event.save()
+
+        # Mock the user's friend being interested already.
+        friend = User(name='Michael Bolton')
+        friend.save()
+        friend_saved_event = SavedEvent(event=event, user=friend,
+                                        location=self.user.location)
+        friend_saved_event.save()
+        friendship = Friendship(user=self.user, friend=friend)
+        friendship.save()
+
+        data = {'event': event.id}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the saved event.
+        saved_event = SavedEvent.objects.get(user=self.user, event=event,
+                                             location=self.user.location)
+
+        # It should return the saved event with your friends who have already saved
+        # the event nested inside the event.
+        context = {'interested': [friend_saved_event]}
+        serializer = SavedEventSerializer(saved_event, context=context)
+        json_saved_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_saved_events)
+
+    def test_save_event_not_logged_in(self):
+        # Don't include the user's credentials in the request.
+        self.client.credentials()
+
+        response = self.client.post(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

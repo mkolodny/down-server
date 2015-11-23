@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework_gis.serializers import GeoModelSerializer
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 from rallytap.apps.utils.utils import add_members
-from .models import Event, Place, RecommendedEvent
+from .models import Event, Place, RecommendedEvent, SavedEvent
 
 
 class PlaceSerializer(GeoModelSerializer):
@@ -54,3 +54,18 @@ class RecommendedEventSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecommendedEvent
+
+
+class SavedEventSerializer(GeoModelSerializer):
+    interested = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SavedEvent
+        write_only_fields = ('location',)
+
+    def get_interested(self, obj):
+        interested = self.context.get('interested')
+        if interested is None:
+            return None
+        serializer = SavedEventSerializer(interested, many=True)
+        return serializer.data

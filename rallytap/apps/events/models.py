@@ -23,3 +23,12 @@ class RecommendedEvent(models.Model):
     title = models.TextField()
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
+
+
+class SavedEvent(models.Model):
+    user = models.ForeignKey(User, related_name='users')
+    event = models.ForeignKey(Event)
+    # where the user was when they saved the event
+    location = models.PointField()
+    # when the event was saved
+    created_at = models.DateTimeField(auto_now_add=True)

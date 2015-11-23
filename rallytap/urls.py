@@ -22,7 +22,11 @@ from rallytap.apps.client.views import (
     WebAppView,
     PrivacyPolicyView,
 )
-from rallytap.apps.events.views import EventViewSet, RecommendedEventViewSet
+from rallytap.apps.events.views import (
+    EventViewSet,
+    RecommendedEventViewSet,
+    SavedEventViewSet,
+)
 from rallytap.apps.friends.views import FriendshipViewSet
 from rallytap.apps.notifications.views import APNSDeviceViewSet, GCMDeviceViewSet
 
@@ -41,6 +45,7 @@ router.register(r'friendships', FriendshipViewSet)
 router.register(r'phonenumbers', LinfootFunnelViewSet, base_name='phonenumbers')
 router.register(r'recommended-events', RecommendedEventViewSet,
                 base_name='recommended-event')
+router.register(r'saved-events', SavedEventViewSet, base_name='saved-event')
 router.register(r'sessions', SessionViewSet, base_name='session')
 router.register(r'userphones', UserPhoneViewSet, base_name='userphone')
 router.register(r'users', UserViewSet)
