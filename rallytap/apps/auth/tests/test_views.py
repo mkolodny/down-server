@@ -29,6 +29,8 @@ from rallytap.apps.auth.serializers import (
     UserSerializer,
     UserPhoneSerializer,
 )
+from rallytap.apps.events.models import Event, SavedEvent
+from rallytap.apps.events.serializers import SavedEventSerializer
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 
@@ -258,6 +260,23 @@ class UserTests(APITestCase):
         serializer = FriendSerializer([self.friend1], many=True)
         json_added_me = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_added_me)
+
+    def test_saved_events(self):
+        # Mock the user being interested in an event.
+        event = Event(title='bbq in the park', creator=self.user)
+        event.save()
+        saved_event = SavedEvent(user=self.user, event=event,
+                                 location=self.user.location)
+        saved_event.save()
+
+        url = reverse('user-saved-events')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return a list of the user's saved events.
+        serializer = SavedEventSerializer([saved_event], many=True)
+        json_saved_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_saved_events)
 
 
 class SocialAccountTests(APITestCase):

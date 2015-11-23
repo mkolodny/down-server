@@ -25,8 +25,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
-from rallytap.apps.events.models import Event
-from rallytap.apps.events.serializers import EventSerializer
+from rallytap.apps.events.models import Event, SavedEvent
+from rallytap.apps.events.serializers import EventSerializer, SavedEventSerializer
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.notifications.utils import send_message
 from rallytap.apps.utils.exceptions import ServiceUnavailable
@@ -108,6 +108,15 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                         if friendship.user_id not in added_ids]
 
         serializer = FriendSerializer(new_added_me, many=True)
+        return Response(serializer.data)
+
+    @list_route(methods=['get'], url_path='saved_events')
+    def saved_events(self, request):
+        """
+        Return a list of the user's saved events.
+        """
+        saved_events = SavedEvent.objects.filter(user=request.user)
+        serializer = SavedEventSerializer(saved_events, many=True)
         return Response(serializer.data)
 
 
