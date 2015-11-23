@@ -116,7 +116,23 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         Return a list of the user's saved events.
         """
         saved_events = SavedEvent.objects.filter(user=request.user)
-        serializer = SavedEventSerializer(saved_events, many=True)
+
+        # Get the number of users who are interested in each event the user has
+        # saved.
+        event_ids = set()
+        for saved_event in saved_events:
+            event_ids.add(saved_event.event_id)
+        # Convert the queryset to a list to evaluate it.
+        all_saved_events = list(SavedEvent.objects.filter(event_id__in=event_ids))
+        interested_counts = {
+            event_id: len([
+                saved_event for saved_event in all_saved_events
+                if saved_event.event_id == event_id
+            ])
+            for event_id in event_ids
+        }
+        context = {'interested_counts': interested_counts}
+        serializer = SavedEventSerializer(saved_events, many=True, context=context)
         return Response(serializer.data)
 
 

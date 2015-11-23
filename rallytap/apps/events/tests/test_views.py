@@ -214,7 +214,10 @@ class SavedEventTestCase(APITestCase):
 
         # It should return the saved event with your friends who have already saved
         # the event nested inside the event.
-        context = {'interested': [friend_saved_event]}
+        context = {
+            'interested_friends': [friend],
+            'interested_counts': {event.id: 2},
+        }
         serializer = SavedEventSerializer(saved_event, context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)

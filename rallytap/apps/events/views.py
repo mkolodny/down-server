@@ -53,17 +53,28 @@ class SavedEventViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
 
+        # See how many users are interested in this event. Convert the queryset
+        # to a list so that it's only evaluated once.
+        event_id = serializer.data['event']
+        saved_events = list(SavedEvent.objects.filter(event_id=event_id))
+        total_num_interested = len(saved_events)
+        interested_counts = {event_id: total_num_interested}
 
         # See which of the user's friends are interested in this event.
-        friends_ids = Friendship.objects.filter(user=request.user) \
-                .values_list('friend_id', flat=True)
-        event_id = serializer.data['event']
-        interested = SavedEvent.objects.filter(event_id=event_id,
-                                               user_id__in=friends_ids)
+        friends_dict = {
+            friendship.friend.id: friendship.friend
+            for friendship in Friendship.objects.filter(user=request.user)
+        }
+        interested_friends = [friends_dict[saved_event.user_id]
+                for saved_event in saved_events
+                if friends_dict.has_key(saved_event.user_id)]
         # Since creating the saved event removes any context from the serializer,
         # we have to serialize the saved event again with the user's connections
         # who are also interested.
-        context = {'interested': interested}
+        context = {
+            'interested_friends': interested_friends,
+            'interested_counts': interested_counts,
+        }
         serializer = SavedEventSerializer(serializer.instance, context=context)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED,

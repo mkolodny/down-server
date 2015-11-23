@@ -274,7 +274,10 @@ class UserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the user's saved events.
-        serializer = SavedEventSerializer([saved_event], many=True)
+        interested_counts = {saved_event.event_id: 1}
+        context = {'interested_counts': interested_counts}
+        serializer = SavedEventSerializer([saved_event], many=True,
+                                          context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)
 

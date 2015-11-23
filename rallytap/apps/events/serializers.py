@@ -3,6 +3,7 @@ from django.conf import settings
 import requests
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoModelSerializer
+from rallytap.apps.auth.serializers import FriendSerializer
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 from rallytap.apps.utils.utils import add_members
 from .models import Event, Place, RecommendedEvent, SavedEvent
@@ -57,15 +58,20 @@ class RecommendedEventSerializer(serializers.ModelSerializer):
 
 
 class SavedEventSerializer(GeoModelSerializer):
-    interested = serializers.SerializerMethodField()
+    interested_friends = serializers.SerializerMethodField()
+    total_num_interested = serializers.SerializerMethodField()
 
     class Meta:
         model = SavedEvent
         write_only_fields = ('location',)
 
-    def get_interested(self, obj):
-        interested = self.context.get('interested')
-        if interested is None:
+    def get_interested_friends(self, obj):
+        interested_friends = self.context.get('interested_friends')
+        if interested_friends is None:
             return None
-        serializer = SavedEventSerializer(interested, many=True)
+        serializer = FriendSerializer(interested_friends, many=True)
         return serializer.data
+
+    def get_total_num_interested(self, obj):
+        interested_counts = self.context.get('interested_counts', {})
+        return interested_counts.get(obj.event_id)
