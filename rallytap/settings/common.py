@@ -1,3 +1,4 @@
+from __future__ import division, unicode_literals
 import os
 import dj_database_url
 
@@ -146,4 +147,7 @@ BRANCH_API_KEY = os.environ['BRANCH_API_KEY']
 MIXPANEL_TOKEN = os.environ['MIXPANEL_TOKEN']
 
 # Querying
-NEARBY_DISTANCE = 3 # TODO: make this 10
+# 10: miles away that is still considered nearby
+# 24,901: circumference of the earth in miles
+# 360: degrees in a circle
+NEARBY_RADIUS = (10 / 24901) * 360

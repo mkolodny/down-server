@@ -108,17 +108,18 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 for friendship in Friendship.objects.filter(user=request.user)]
         user_ids.append(request.user.id)
         user_location = request.user.location
+        center = request.user.location
+        radius = settings.NEARBY_RADIUS
+        circle = center.buffer(radius)
         saved_events_qs = SavedEvent.objects.filter(user_id__in=user_ids) \
                 .select_related('event') \
                 .filter(event__expired=False) \
                 .select_related('event__place') \
                 .filter(
                     Q(user=request.user) |
-                    Q(location__distance_lte=(user_location,
-                                              D(mi=settings.NEARBY_DISTANCE))) |
+                    Q(location__contained=circle) |
                     (Q(event__place__isnull=False) &
-                     Q(event__place__geo__distance_lte=(
-                         user_location, D(mi=settings.NEARBY_DISTANCE))))) \
+                     Q(event__place__geo__contained=circle))) \
                 .exclude(
                     Q(event__friends_only=True) &
                     ~Q(event__creator_id=request.user.id) &
