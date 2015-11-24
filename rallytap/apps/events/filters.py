@@ -24,7 +24,7 @@ class NearbyPlaceFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         center = request.user.location
         radius = settings.NEARBY_RADIUS
-        circle = center.buffer(radius)
+        nearby_circle = center.buffer(radius)
         return queryset.select_related('place').filter(
                 Q(place__isnull=True) |
-                Q(place__geo__contained=circle))
+                Q(place__geo__contained=nearby_circle))
