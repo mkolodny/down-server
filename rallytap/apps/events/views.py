@@ -65,7 +65,7 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         # See which of the user's friends are interested in this event.
         friends_dict = {
-            friendship.friend.id: friendship.friend
+            friendship.friend_id: friendship.friend
             for friendship in Friendship.objects.filter(user=request.user)
         }
         interested_friends = {
@@ -105,15 +105,15 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         saved event that was created first.
         """
         user_ids = [friendship.friend
-                for friendship in Friendship.objects.filter(user=self.request.user)]
-        user_ids.append(self.request.user.id)
-        user_location = self.request.user.location
+                for friendship in Friendship.objects.filter(user=request.user)]
+        user_ids.append(request.user.id)
+        user_location = request.user.location
         saved_events_qs = SavedEvent.objects.filter(user_id__in=user_ids) \
                 .select_related('event') \
                 .filter(event__expired=False) \
                 .select_related('event__place') \
                 .filter(
-                    Q(user=self.request.user) |
+                    Q(user=request.user) |
                     Q(location__distance_lte=(user_location,
                                               D(mi=settings.NEARBY_DISTANCE))) |
                     (Q(event__place__isnull=False) &
@@ -121,6 +121,7 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                          user_location, D(mi=settings.NEARBY_DISTANCE))))) \
                 .exclude(
                     Q(event__friends_only=True) &
+                    ~Q(event__creator_id=request.user.id) &
                     ~Q(event__creator_id=F('user_id')))
 
         # Filter out duplicates.
@@ -140,17 +141,19 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         # Get the users who are interested in each event.
         interested_friends = {}
         friend_ids = set()
-        for saved_event in saved_events:
+        for saved_event in saved_events_qs:
             friend_ids.add(saved_event.user_id)
         # Convert the queryset into a list to evaluate the queryset.
         # TODO: Double check that this is necessary.
-        friends = list(User.objects.filter(id__in=friend_ids))
+        friends = list(User.objects.filter(id__in=friend_ids) \
+                .exclude(id=request.user.id))
         friends_dict = {friend.id: friend for friend in friends}
         for saved_event in saved_events:
-            this_event_saved_events = saved_events_qs.filter(id=saved_event.id)
-            this_event_interested_friends = [friends_dict[saved_event.user_id]
-                    for saved_event in this_event_saved_events
-                    if saved_event.user_id != self.request.user.id]
+            this_event_saved_events = saved_events_qs.filter(
+                    event_id=saved_event.event_id)
+            this_event_interested_friends = [friends_dict[_saved_event.user_id]
+                    for _saved_event in this_event_saved_events
+                    if _saved_event.user_id != request.user.id]
             interested_friends[saved_event.event_id] = this_event_interested_friends
 
         # Get the total number of people who are interested in each event.
@@ -170,7 +173,7 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         num_interested_friends = {
             saved_event.event_id: saved_events_qs.filter(
                     event_id=saved_event.event_id) \
-                    .exclude(user_id=self.request.user.id) \
+                    .exclude(user_id=request.user.id) \
                     .count()
             for saved_event in saved_events
         }

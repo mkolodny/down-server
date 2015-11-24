@@ -276,7 +276,7 @@ class SavedEventTests(APITestCase):
                                            location=far_location)
         user_also_saved_event.save()
 
-        # Save another of the user's friends save the nearby event, too, so that
+        # Have another of the user's friends save the nearby event, too, so that
         # we can make sure we're only returning the first of the user's friends'
         # saved events.
         other_friend = User(name='Jimmy Page')
@@ -359,7 +359,7 @@ class SavedEventTests(APITestCase):
         ]
         context = {
             'interested_friends': {
-                nearby_event.id: [friend],
+                nearby_event.id: [friend, other_friend],
                 nearby_user_event.id: [friend],
             },
             'total_num_interested': {
@@ -376,6 +376,3 @@ class SavedEventTests(APITestCase):
         serializer = SavedEventSerializer(saved_events, many=True, context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)
-
-        # TODO: sorting
-        # TODO: interested friends count
