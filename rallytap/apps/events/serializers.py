@@ -4,6 +4,8 @@ import requests
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoModelSerializer
 from rallytap.apps.auth.serializers import FriendSerializer
+from rallytap.apps.friends.models import Friendship
+from rallytap.apps.notifications.utils import send_message
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 from rallytap.apps.utils.utils import add_members
 from .models import Event, Place, RecommendedEvent, SavedEvent
@@ -39,6 +41,22 @@ class EventSerializer(serializers.ModelSerializer):
         if has_place:
             event.place = place
         event.save()
+
+        user = self.context['request'].user
+        saved_event = SavedEvent(event=event, user=user, location=user.location)
+        saved_event.save()
+
+        # Notify users who have added the user as a friend.
+        friend_ids = Friendship.objects.filter(friend=user) \
+                .values_list('user_id', flat=True)
+        if event.friends_only:
+            added_ids = set(Friendship.objects.filter(user=user) \
+                    .values_list('friend_id', flat=True))
+            friend_ids = [friend_id for friend_id in friend_ids
+                    if friend_id in added_ids]
+        message = 'Your friend is interested in "{title}".'.format(
+                name=user.name, title=event.title)
+        send_message(friend_ids, message)
 
         # Add the creator to the meteor server members list.
         """

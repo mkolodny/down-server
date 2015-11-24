@@ -30,12 +30,8 @@ class EventTests(APITestCase):
 
     def setUp(self):
         # Mock a user.
-        self.user = User()
+        self.user = User(location='POINT(40.6898319 -73.9904645)')
         self.user.save()
-
-        # Mock the user's friend.
-        self.friend1 = User()
-        self.friend1.save()
 
         # Authorize the requests with the user's token.
         self.token = Token(user=self.user)
@@ -66,7 +62,14 @@ class EventTests(APITestCase):
         self.list_url = reverse('event-list')
         self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
 
-    def test_create(self):
+    @mock.patch('rallytap.apps.events.serializers.send_message')
+    def test_create(self, mock_send_message):
+        # Mock the user's friend.
+        friend = User()
+        friend.save()
+        friendship = Friendship(user=friend, friend=self.user)
+        friendship.save()
+
         data = self.post_data
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -76,19 +79,71 @@ class EventTests(APITestCase):
         Place.objects.get(**place)
 
         # It should create the event.
-        data.pop('datetime') # TODO: Figure out why the saved ms are off.
         event = Event.objects.get(**data)
 
-        # It should send notifications to the users who were invited aside from
-        # the creator.
-        """
-        user_ids = [self.friend1.id]
-        message = '{name}: Are you down to {activity}?'.format(name=self.user.name,
-                                                               activity=event.title)
-        mock_send_message.assert_called_once_with(user_ids, message,
-                                                  event_id=event.id,
-                                                  from_user=self.user)
-        """
+        # It should send notifications to the users who have added the creator as
+        # a friend.
+        user_ids = [friend.id]
+        message = 'Your friend is interested in "{title}".'.format(
+                name=self.user.name, title=event.title)
+        self.assertEqual(mock_send_message.call_count, 1)
+        args = mock_send_message.call_args[0]
+        self.assertEqual(len(args), 2)
+        self.assertListEqual(list(args[0]), user_ids)
+        self.assertEqual(args[1], message)
+
+        # It should save the event for the user.
+        SavedEvent.objects.get(event=event, user=self.user,
+                               location=self.user.location)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    @mock.patch('rallytap.apps.events.serializers.send_message')
+    def test_create_friends_only(self, mock_send_message):
+        # Mock the user's friend.
+        friend = User()
+        friend.save()
+        friendship = Friendship(user=friend, friend=self.user)
+        friendship.save()
+        friendship = Friendship(user=self.user, friend=friend)
+        friendship.save()
+
+        # Mock the user's friend who added the the user, but the user hasn't added
+        # back.
+        added_me = User()
+        added_me.save()
+        friendship = Friendship(user=added_me, friend=self.user)
+        friendship.save()
+
+        data = self.post_data
+        data['friends_only'] = True
+        response = self.client.post(self.list_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the place.
+        place = data.pop('place')
+        Place.objects.get(**place)
+
+        # It should create the event.
+        event = Event.objects.get(**data)
+
+        # It should send notifications to the users who have added the creator as
+        # a friend, and the creator has added back.
+        user_ids = [friend.id]
+        message = 'Your friend is interested in "{title}".'.format(
+                name=self.user.name, title=event.title)
+        self.assertEqual(mock_send_message.call_count, 1)
+        args = mock_send_message.call_args[0]
+        self.assertEqual(len(args), 2)
+        self.assertListEqual(list(args[0]), user_ids)
+        self.assertEqual(args[1], message)
+
+        # It should save the event for the user.
+        SavedEvent.objects.get(event=event, user=self.user,
+                               location=self.user.location)
 
         # It should return the event.
         serializer = EventSerializer(event)

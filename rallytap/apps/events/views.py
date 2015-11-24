@@ -136,6 +136,8 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                     Q(event__friends_only=True) &
                     ~Q(event__creator_id=request.user.id) &
                     ~Q(event__creator_id=F('user_id')))
+                # TODO: don't return friends only events created by the user's
+                # friend who hasn't added them back.
 
         # Filter out duplicates.
         unique_saved_events = {}

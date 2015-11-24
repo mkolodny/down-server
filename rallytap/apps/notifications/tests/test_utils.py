@@ -42,12 +42,7 @@ class SendMessageTests(TestCase):
 
     @mock.patch('push_notifications.apns.apns_send_message')
     @mock.patch('push_notifications.gcm.gcm_send_message')
-    @mock.patch('rallytap.apps.notifications.utils.TwilioRestClient')
-    def test_send_message(self, mock_twilio, mock_gcm, mock_apns):
-        # Mock the Twilio SMS API.
-        mock_client = mock.MagicMock()
-        mock_twilio.return_value = mock_client
-
+    def test_send_message(self, mock_gcm, mock_apns):
         user_ids = [self.user.id, self.contact.id]
         message = 'Bars?!?!?!'
         utils.send_message(user_ids, message)
@@ -61,22 +56,12 @@ class SendMessageTests(TestCase):
         data = {'title': 'Rallytap', 'message': message}
         mock_gcm.assert_any_call(registration_id=token, data=data)
 
-        # It should init the Twilio client with the proper params.
-        mock_twilio.assert_called_with(settings.TWILIO_ACCOUNT,
-                                       settings.TWILIO_TOKEN)
-
-        # It should send SMS to users without devices.
-        phone = unicode(self.contact_phone.phone)
-        mock_client.messages.create.assert_called_with(to=phone, 
-                                                       from_=settings.TWILIO_PHONE,
-                                                       body=message)
-
     @mock.patch('push_notifications.apns.apns_send_message')
     @mock.patch('push_notifications.gcm.gcm_send_message')
     def test_send_message_devices_only(self, mock_gcm, mock_apns):
         user_ids = [self.user.id, self.contact.id]
         message = 'Bars?!?!?!'
-        utils.send_message(user_ids, message, sms=False)
+        utils.send_message(user_ids, message)
 
         # It should send push notifications to users with ios devices.
         token = self.ios_device.registration_id
@@ -130,7 +115,7 @@ class SendMessageTests(TestCase):
 
         user_ids = [self.user.id, self.contact.id]
         message = 'Bars?!?!?!'
-        utils.send_message(user_ids, message, sms=False)
+        utils.send_message(user_ids, message)
 
         # It should send push notifications to users with ios devices.
         token = self.ios_device.registration_id
