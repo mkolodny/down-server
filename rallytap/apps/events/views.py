@@ -14,7 +14,8 @@ from .serializers import (
     RecommendedEventSerializer,
     SavedEventSerializer,
 )
-from rallytap.apps.auth.models import User
+from rallytap.apps.auth.models import User, Points
+from rallytap.apps.events.models import Event
 from rallytap.apps.friends.models import Friendship
 
 
@@ -57,9 +58,20 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
 
+        # Give the user points!
+        request.user.points += Points.SAVED_EVENT
+        request.user.save()
+
+        # Give the user who created the event points!
+        event_id = serializer.data['event']
+        event = Event.objects.get(id=event_id)
+        if event.creator_id != request.user.id:
+            creator = event.creator
+            creator.points += Points.SAVED_EVENT
+            creator.save()
+
         # See how many users are interested in this event. Convert the queryset
         # to a list so that it's only evaluated once.
-        event_id = serializer.data['event']
         saved_events = list(SavedEvent.objects.filter(event_id=event_id))
         total_num_interested = {event_id: len(saved_events)}
 

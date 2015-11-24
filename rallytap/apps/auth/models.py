@@ -67,9 +67,8 @@ class SocialAccount(models.Model):
 
 
 class Points(object):
-    ACCEPTED_INVITATION = 5
-    IGNORED_INVITATION = -5
-    SENT_INVITATION = 1
+    SAVED_EVENT = 1
+    SENT_INVITATION = 5
 
 
 class LinfootFunnel(models.Model):

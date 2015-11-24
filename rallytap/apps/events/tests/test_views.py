@@ -191,18 +191,18 @@ class SavedEventTests(APITestCase):
         self.list_url = reverse('saved-event-list')
 
     def test_create(self):
-        # Mock an event.
-        event = Event(title='get jiggy with it', creator=self.user)
-        event.save()
-
-        # Mock the user's friend being interested already.
+        # Mock the user's friend.
         friend = User(name='Michael Bolton')
         friend.save()
+        friendship = Friendship(user=self.user, friend=friend)
+        friendship.save()
+
+        # Mock an event.
+        event = Event(title='get jiggy with it', creator=friend)
+        event.save()
         friend_saved_event = SavedEvent(event=event, user=friend,
                                         location=self.user.location)
         friend_saved_event.save()
-        friendship = Friendship(user=self.user, friend=friend)
-        friendship.save()
 
         # Mock another user who the user isn't friends with being interested, too.
         other_dude = User(name='Jazzy Jeff')
@@ -211,6 +211,12 @@ class SavedEventTests(APITestCase):
                                             location=self.user.location)
         other_dude_saved_event.save()
 
+        # Save the user's current score to compare to after the request.
+        user_points = self.user.points
+
+        # Save the friend's current score to compare to after the request.
+        friend_points = friend.points
+
         data = {'event': event.id}
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -218,6 +224,14 @@ class SavedEventTests(APITestCase):
         # It should create the saved event.
         saved_event = SavedEvent.objects.get(user=self.user, event=event,
                                              location=self.user.location)
+
+        # It should give the user points!
+        user = User.objects.get(id=self.user.id)
+        self.assertEqual(user.points, user_points+Points.SAVED_EVENT)
+
+        # It should give the user who created the event points!
+        friend = User.objects.get(id=friend.id)
+        self.assertEqual(friend.points, friend_points+Points.SAVED_EVENT)
 
         # It should return the saved event with your friends who have already saved
         # the event nested inside the event.
