@@ -262,21 +262,56 @@ class UserTests(APITestCase):
         self.assertEqual(response.content, json_added_me)
 
     def test_saved_events(self):
-        # Mock the user being interested in an event.
-        event = Event(title='bbq in the park', creator=self.user)
-        event.save()
-        saved_event = SavedEvent(user=self.user, event=event,
-                                 location=self.user.location)
-        saved_event.save()
+        # Mock the user being interested in two events.
+        event1 = Event(title='bbq in the park', creator=self.user)
+        event1.save()
+        saved_event1 = SavedEvent(user=self.user, event=event1,
+                                  location=self.user.location)
+        saved_event1.save()
+        nineteen_eighty = datetime(year=1980, month=5, day=21,
+                                   tzinfo=pytz.utc)
+        event2 = Event(title='see the new star wars', creator=self.user,
+                       datetime=nineteen_eighty)
+        event2.save()
+        saved_event2 = SavedEvent(user=self.user, event=event2,
+                                  location=self.user.location)
+        saved_event2.save()
+
+        # Mock the user's friend being interested.
+        friend_saved_event = SavedEvent(user=self.friend1, event=event1,
+                                        location=self.user.location)
+        friend_saved_event.save()
+
+        # Mock another person being interested.
+        other_dude = User(name='Jazzy Jeff')
+        other_dude.save()
+        other_dude_saved_event = SavedEvent(event=event1, user=other_dude,
+                                            location=self.user.location)
+        other_dude_saved_event.save()
 
         url = reverse('user-saved-events')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return a list of the user's saved events.
-        interested_counts = {saved_event.event_id: 1}
-        context = {'interested_counts': interested_counts}
-        serializer = SavedEventSerializer([saved_event], many=True,
+        context = {
+            'interested_friends': {
+                event1.id: [self.friend1],
+            },
+            'total_num_interested': {
+                event1.id: 3,
+                event2.id: 1
+            },
+            'num_interested_friends': {
+                event1.id: 1,
+                event2.id: 0,
+            },
+        }
+        # The saved events should be sorted by when they're happening if
+        # the event has a date, and by when the event was created if the
+        # event doesn't have a date.
+        saved_events = [saved_event2, saved_event1]
+        serializer = SavedEventSerializer(saved_events, many=True,
                                           context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)

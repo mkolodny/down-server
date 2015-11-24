@@ -113,25 +113,76 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     @list_route(methods=['get'], url_path='saved_events')
     def saved_events(self, request):
         """
-        Return a list of the user's saved events.
+        Return a list of the user's saved events sorted by when they're happening
+        if the event has a date, and by when the event was created if the event
+        doesn't have a date.
         """
-        saved_events = SavedEvent.objects.filter(user=request.user)
+        # Convert the queryset into a list to evaluate the queryset.
+        saved_events = list(SavedEvent.objects.filter(user=request.user) \
+                .select_related('event'))
 
-        # Get the number of users who are interested in each event the user has
-        # saved.
+        # Sort the saved events from newest to oldest.
+        saved_events.sort(lambda a, b: 1
+                if ((a.event.datetime is None and b.event.datetime is None
+                     and a.event.created_at > b.event.created_at) or 
+                    (a.event.datetime is None and b.event.datetime is not None
+                     and a.event.created_at > b.event.datetime) or 
+                    (a.event.datetime is not None and b.event.datetime is None
+                     and a.event.datetime > b.event.created_at) or 
+                    (a.event.datetime is not None and b.event.datetime is not None
+                     and a.event.datetime > b.event.datetime))
+                else -1)
+
+        # Get the total number of users who are interested in each event the user
+        # has saved.
+        # Convert the queryset to a list to evaluate it.
         event_ids = set()
         for saved_event in saved_events:
             event_ids.add(saved_event.event_id)
-        # Convert the queryset to a list to evaluate it.
         all_saved_events = list(SavedEvent.objects.filter(event_id__in=event_ids))
-        interested_counts = {
+        total_num_interested = {
             event_id: len([
                 saved_event for saved_event in all_saved_events
                 if saved_event.event_id == event_id
             ])
             for event_id in event_ids
         }
-        context = {'interested_counts': interested_counts}
+
+        # Get the user's friends who are interested in each event.
+        interested_friends = {}
+        all_friends_ids = set(Friendship.objects.filter(user=request.user) \
+                .values_list('friend_id', flat=True))
+        # Create a set of friend ids of every friend who is intersted in any of
+        # the user's saved events.
+        friends_ids = set()
+        for saved_event in all_saved_events:
+            if saved_event.user_id in all_friends_ids:
+                friends_ids.add(saved_event.user_id)
+        # Convert the queryset into a list to evaluate the queryset.
+        # TODO: Double check that this is necessary.
+        friends = list(User.objects.filter(id__in=friends_ids))
+        friends_dict = {friend.id: friend for friend in friends}
+        for saved_event in saved_events:
+            this_event_saved_events = [_saved_event
+                    for _saved_event in all_saved_events
+                    if _saved_event.event_id == saved_event.event_id
+                    and _saved_event.user_id in friends_ids]
+            this_event_interested_friends = [friends_dict[_saved_event.user_id]
+                    for _saved_event in this_event_saved_events
+                    if _saved_event.user_id != request.user.id]
+            interested_friends[saved_event.event_id] = this_event_interested_friends
+
+        # Count how many of the user's friends are interested in each event.
+        num_interested_friends = {
+            saved_event.event_id: len(interested_friends[saved_event.event_id])
+            for saved_event in saved_events
+        }
+
+        context = {
+            'interested_friends': interested_friends,
+            'total_num_interested': total_num_interested,
+            'num_interested_friends': num_interested_friends,
+        }
         serializer = SavedEventSerializer(saved_events, many=True, context=context)
         return Response(serializer.data)
 
