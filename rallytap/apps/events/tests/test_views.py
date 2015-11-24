@@ -175,7 +175,7 @@ class RecommendedEventTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class SavedEventTestCase(APITestCase):
+class SavedEventTests(APITestCase):
 
     def setUp(self):
         # Mock a user.
@@ -190,7 +190,7 @@ class SavedEventTestCase(APITestCase):
         # Save urls.
         self.list_url = reverse('saved-event-list')
 
-    def test_save_event(self):
+    def test_create(self):
         # Mock an event.
         event = Event(title='get jiggy with it', creator=self.user)
         event.save()
@@ -204,6 +204,13 @@ class SavedEventTestCase(APITestCase):
         friendship = Friendship(user=self.user, friend=friend)
         friendship.save()
 
+        # Mock another user who the user isn't friends with being interested, too.
+        other_dude = User(name='Jazzy Jeff')
+        other_dude.save()
+        other_dude_saved_event = SavedEvent(event=event, user=other_dude,
+                                            location=self.user.location)
+        other_dude_saved_event.save()
+
         data = {'event': event.id}
         response = self.client.post(self.list_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -215,16 +222,160 @@ class SavedEventTestCase(APITestCase):
         # It should return the saved event with your friends who have already saved
         # the event nested inside the event.
         context = {
-            'interested_friends': [friend],
-            'interested_counts': {event.id: 2},
+            'interested_friends': {
+                event.id: [friend],
+            },
+            'total_num_interested': {
+                event.id: 3,
+            },
+            'num_interested_friends': {
+                event.id: 1,
+            },
         }
         serializer = SavedEventSerializer(saved_event, context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)
 
-    def test_save_event_not_logged_in(self):
+    def test_create_not_logged_in(self):
         # Don't include the user's credentials in the request.
         self.client.credentials()
 
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_list(self):
+        # Mock the user's friend.
+        friend = User(name='Whitney Houston')
+        friend.save()
+        friendship = Friendship(user=self.user, friend=friend)
+        friendship.save()
+
+        # Mock the user's friend's friend.
+        friend_of_friend = User(name='Jimmy Fallon')
+        friend_of_friend.save()
+        friendship = Friendship(user=friend, friend=friend_of_friend)
+        friendship.save()
+
+        # Save locations relative to the user's location.
+        nearby_location = self.user.location
+        far_location = Point(40.8560079, -73.970945)
+
+        # Mock a nearby event that the user's friend is interested in.
+        place = Place(name='the den', geo=nearby_location)
+        place.save()
+        nearby_event = Event(title='smokin dope', creator=friend_of_friend,
+                             place=place)
+        nearby_event.save()
+        nearby_event_saved_event = SavedEvent(user=friend, event=nearby_event,
+                                              location=far_location)
+        nearby_event_saved_event.save()
+
+        # Have the user be interested in the nearby event so that they get back
+        # their friends who are also interested in the event.
+        user_also_saved_event = SavedEvent(user=self.user, event=nearby_event,
+                                           location=far_location)
+        user_also_saved_event.save()
+
+        # Save another of the user's friends save the nearby event, too, so that
+        # we can make sure we're only returning the first of the user's friends'
+        # saved events.
+        other_friend = User(name='Jimmy Page')
+        other_friend.save()
+        friendship = Friendship(user=self.user, friend=other_friend)
+        friendship.save()
+        other_friend_saved_event = SavedEvent(user=other_friend,
+                                              event=nearby_event,
+                                              location=nearby_location)
+        other_friend_saved_event.save()
+
+        # Mock a far event that the user's nearby friend is interested in.
+        place = Place(name='my crib', geo=far_location)
+        place.save()
+        nearby_user_event = Event(title='netflix and chill',
+                                  creator=friend_of_friend,
+                                  place=place)
+        nearby_user_event.save()
+        nearby_user_saved_event = SavedEvent(user=friend, event=nearby_user_event,
+                                             location=nearby_location)
+        nearby_user_saved_event.save()
+
+        # Mock a far event that the user's far away friend is interested in.
+        place = Place(name='rucker park', geo=far_location)
+        place.save()
+        far_event = Event(title='ballllinnnn', creator=friend_of_friend,
+                          place=place)
+        far_event.save()
+        far_event_saved_event = SavedEvent(user=friend, event=far_event,
+                                           location=far_location)
+        far_event_saved_event.save()
+
+        # Mock an event without a place that the user's friend is interested in.
+        no_place_event = Event(title='the word game', creator=friend_of_friend)
+        no_place_event.save()
+        no_place_saved_event = SavedEvent(user=friend, event=no_place_event,
+                                          location=far_location)
+        no_place_saved_event.save()
+
+        # Mock a friends_only event that the user's friend's friend created.
+        friends_only_event = Event(title='being clicky', creator=friend_of_friend,
+                                   friends_only=True)
+        friends_only_event.save()
+        friends_only_saved_event = SavedEvent(user=friend,
+                                              event=friends_only_event,
+                                              location=nearby_location)
+        friends_only_saved_event.save()
+
+        # Mock a saved event that the user saved.
+        far_place = Place(name='the bean', geo=far_location)
+        far_place.save()
+        user_event = Event(title='coding up a storm', creator=friend,
+                           place=far_place)
+        user_event.save()
+        user_saved_event = SavedEvent(user=self.user, event=user_event,
+                                      location=far_location)
+        user_saved_event.save()
+
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Mock a saved event where the event is expired.
+        nearby_place = Place(name='mi casa', geo=nearby_location)
+        nearby_place.save()
+        sixty_nine = datetime(year=1969, month=7, day=20, hour=20, minute=18)
+        expired_event = Event(title='watch the first moon landing',
+                              creator=friend, datetime=sixty_nine, expired=True)
+        expired_event.save()
+        expired_event_saved_event = SavedEvent(event=expired_event, user=friend,
+                                               location=nearby_location)
+        expired_event_saved_event.save()
+
+        # It should return the not-friends-only saved events, where either the
+        # user is nearby, or the event is nearby. The saved events should be sorted
+        # from newest to oldest.
+        saved_events = [
+            nearby_event_saved_event,
+            nearby_user_saved_event,
+            user_saved_event,
+        ]
+        context = {
+            'interested_friends': {
+                nearby_event.id: [friend],
+                nearby_user_event.id: [friend],
+            },
+            'total_num_interested': {
+                nearby_event.id: 3,
+                nearby_user_event.id: 1,
+                user_event.id: 1,
+            },
+            'num_interested_friends': {
+                nearby_event.id: 2,
+                nearby_user_event.id: 1,
+                user_event.id: 0,
+            },
+        }
+        serializer = SavedEventSerializer(saved_events, many=True, context=context)
+        json_saved_events = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_saved_events)
+
+        # TODO: sorting
+        # TODO: interested friends count

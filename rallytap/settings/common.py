@@ -144,3 +144,6 @@ BRANCH_API_KEY = os.environ['BRANCH_API_KEY']
 
 # Mixpanel
 MIXPANEL_TOKEN = os.environ['MIXPANEL_TOKEN']
+
+# Querying
+NEARBY_DISTANCE = 3 # TODO: make this 10

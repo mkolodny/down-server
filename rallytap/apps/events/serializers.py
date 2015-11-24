@@ -60,6 +60,7 @@ class RecommendedEventSerializer(serializers.ModelSerializer):
 class SavedEventSerializer(GeoModelSerializer):
     interested_friends = serializers.SerializerMethodField()
     total_num_interested = serializers.SerializerMethodField()
+    num_interested_friends = serializers.SerializerMethodField()
 
     class Meta:
         model = SavedEvent
@@ -69,9 +70,14 @@ class SavedEventSerializer(GeoModelSerializer):
         interested_friends = self.context.get('interested_friends')
         if interested_friends is None:
             return None
-        serializer = FriendSerializer(interested_friends, many=True)
+        friends = interested_friends.get(obj.event_id)
+        serializer = FriendSerializer(friends, many=True)
         return serializer.data
 
     def get_total_num_interested(self, obj):
-        interested_counts = self.context.get('interested_counts', {})
-        return interested_counts.get(obj.event_id)
+        total_num_interested = self.context.get('total_num_interested', {})
+        return total_num_interested.get(obj.event_id)
+
+    def get_num_interested_friends(self, obj):
+        num_interested_friends = self.context.get('num_interested_friends', {})
+        return num_interested_friends.get(obj.event_id)

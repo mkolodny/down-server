@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from django.conf import settings
 from django.contrib.gis.measure import D
 from django.db.models import Q
 from django_filters import Filter, FilterSet
@@ -23,4 +24,5 @@ class NearbyPlaceFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         return queryset.select_related('place').filter(
                 Q(place__isnull=True) |
-                Q(place__geo__distance_lte=(request.user.location, D(mi=10))))
+                Q(place__geo__distance_lte=(request.user.location,
+                                            D(mi=settings.NEARBY_DISTANCE))))
