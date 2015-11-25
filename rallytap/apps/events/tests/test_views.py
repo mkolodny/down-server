@@ -63,7 +63,8 @@ class EventTests(APITestCase):
         self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
 
     @mock.patch('rallytap.apps.events.serializers.send_message')
-    def test_create(self, mock_send_message):
+    @mock.patch('rallytap.apps.events.serializers.add_members')
+    def test_create(self, mock_add_members, mock_send_message):
         # Mock the user's friend.
         friend = User()
         friend.save()
@@ -96,13 +97,17 @@ class EventTests(APITestCase):
         SavedEvent.objects.get(event=event, user=self.user,
                                location=self.user.location)
 
+        # It should add the user to the members list on meteor.
+        mock_add_members.assert_called_with(event.id, self.user.id)
+
         # It should return the event.
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
 
     @mock.patch('rallytap.apps.events.serializers.send_message')
-    def test_create_friends_only(self, mock_send_message):
+    @mock.patch('rallytap.apps.events.serializers.add_members')
+    def test_create_friends_only(self, mock_add_members, mock_send_message):
         # Mock the user's friend.
         friend = User()
         friend.save()
@@ -145,6 +150,9 @@ class EventTests(APITestCase):
         SavedEvent.objects.get(event=event, user=self.user,
                                location=self.user.location)
 
+        # It should add the user to the members list on meteor.
+        mock_add_members.assert_called_with(event.id, self.user.id)
+
         # It should return the event.
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
@@ -157,14 +165,13 @@ class EventTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    """
+    @mock.patch('rallytap.apps.events.serializers.send_message')
     @mock.patch('rallytap.apps.events.serializers.add_members')
-    def test_create_add_members_error(self, mock_add_members):
+    def test_create_add_members_error(self, mock_add_members, mock_send_message):
         mock_add_members.side_effect = requests.exceptions.HTTPError()
 
         response = self.client.post(self.list_url, self.post_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-    """
 
     def test_get(self):
         response = self.client.get(self.detail_url)
@@ -245,7 +252,8 @@ class SavedEventTests(APITestCase):
         # Save urls.
         self.list_url = reverse('saved-event-list')
 
-    def test_create(self):
+    @mock.patch('rallytap.apps.events.views.add_members')
+    def test_create(self, mock_add_members):
         # Mock the user's friend.
         friend = User(name='Michael Bolton')
         friend.save()
@@ -280,6 +288,9 @@ class SavedEventTests(APITestCase):
         saved_event = SavedEvent.objects.get(user=self.user, event=event,
                                              location=self.user.location)
 
+        # It should add the user to the members list on meteor.
+        mock_add_members.assert_called_with(event.id, self.user.id)
+
         # It should give the user points!
         user = User.objects.get(id=self.user.id)
         self.assertEqual(user.points, user_points+Points.SAVED_EVENT)
@@ -311,6 +322,18 @@ class SavedEventTests(APITestCase):
 
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    @mock.patch('rallytap.apps.events.views.add_members')
+    def test_create_add_members_error(self, mock_add_members):
+        mock_add_members.side_effect = requests.exceptions.HTTPError()
+
+        # Mock an event the user is saving.
+        event = Event(title='get jiggy with it', creator=self.user)
+        event.save()
+
+        data = {'event': event.id}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
     def test_list(self):
         # Mock the user's friend.

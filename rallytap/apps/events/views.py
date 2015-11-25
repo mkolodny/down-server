@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.gis.measure import D
 from django.db.models import F, Q
 from django.views.generic.base import TemplateView
+import requests
 from rest_framework import authentication, mixins, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -17,6 +18,8 @@ from .serializers import (
 from rallytap.apps.auth.models import User, Points
 from rallytap.apps.events.models import Event
 from rallytap.apps.friends.models import Friendship
+from rallytap.apps.utils.exceptions import ServiceUnavailable
+from rallytap.apps.utils.utils import add_members
 
 
 class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
@@ -58,12 +61,18 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
 
+        # Add the creator to the meteor server members list.
+        event_id = serializer.data['event']
+        try:
+            add_members(event_id, request.user.id)
+        except requests.exceptions.HTTPError:
+            raise ServiceUnavailable()
+
         # Give the user points!
         request.user.points += Points.SAVED_EVENT
         request.user.save()
 
         # Give the user who created the event points!
-        event_id = serializer.data['event']
         event = Event.objects.get(id=event_id)
         if event.creator_id != request.user.id:
             creator = event.creator

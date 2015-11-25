@@ -4,11 +4,11 @@ from django.conf import settings
 import requests
 
 
-def add_members(chat_id, user_ids):
-    url = '{meteor_url}/chats/{chat_id}/members'.format(
-            meteor_url=settings.METEOR_URL, chat_id=chat_id)
+def add_members(event_id, user_id):
+    url = '{meteor_url}/events/{event_id}/members'.format(
+            meteor_url=settings.METEOR_URL, event_id=event_id)
     data = json.dumps({
-        'user_ids': user_ids,
+        'user_id': user_id,
     })
     auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
     headers = {

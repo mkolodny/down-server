@@ -19,21 +19,18 @@ class MeteorTests(TestCase):
         self.user.save()
 
         # Save URLs.
-        self.add_members_url = '{meteor_url}/chats/{chat_id}/members'.format(
-                meteor_url=settings.METEOR_URL, chat_id=self.event_id)
-        self.remove_member_url = '{meteor_url}/chats/{chat_id}/members/{user_id}'\
-                .format(meteor_url=settings.METEOR_URL, chat_id=self.event_id,
-                        user_id=self.user.id)
+        self.add_members_url = '{meteor_url}/events/{event_id}/members'.format(
+                meteor_url=settings.METEOR_URL, event_id=self.event_id)
 
     @httpretty.activate
     def test_add_members(self):
         # Mock the response from the meteor server.
         httpretty.register_uri(httpretty.POST, self.add_members_url)
 
-        add_members(self.event_id, [self.user.id])
+        add_members(self.event_id, self.user.id)
 
         self.assertEqual(httpretty.last_request().body, json.dumps({
-            'user_ids': [self.user.id],
+            'user_id': self.user.id,
         }))
         auth_header = 'Token {api_key}'.format(api_key=settings.METEOR_KEY)
         self.assertEqual(httpretty.last_request().headers['Authorization'],
@@ -48,4 +45,4 @@ class MeteorTests(TestCase):
                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         with self.assertRaises(requests.exceptions.HTTPError):
-            add_members(self.event_id, [self.user.id])
+            add_members(self.event_id, self.user.id)
