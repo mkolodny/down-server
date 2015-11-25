@@ -17,21 +17,3 @@ def add_members(chat_id, user_ids):
     }
     response = requests.post(url, data=data, headers=headers)
     response.raise_for_status()
-
-def remove_member(chat_id, user):
-    url = '{meteor_url}/chats/{chat_id}/members/{user_id}'.format(
-            meteor_url=settings.METEOR_URL, chat_id=chat_id, user_id=user.id)
-    data = json.dumps({
-        'member': {
-            'name': user.name,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'image_url': user.image_url,
-        },
-    })
-    headers = {
-        'Authorization': 'Token {api_key}'.format(api_key=settings.METEOR_KEY),
-        'Content-Type': 'application/json',
-    }
-    response = requests.delete(url, data=data, headers=headers)
-    response.raise_for_status()
