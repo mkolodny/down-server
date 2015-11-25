@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from django.conf import settings
 from rest_framework import permissions
 
 
@@ -24,3 +25,12 @@ class IsStaff(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return request.user.is_staff
+
+
+class IsMeteor(permissions.BasePermission):
+    """
+    Only allow the meteor server to access an object.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        return request.user.id == settings.METEOR_USER_ID

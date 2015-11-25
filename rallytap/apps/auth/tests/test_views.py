@@ -316,6 +316,36 @@ class UserTests(APITestCase):
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)
 
+    def test_invite(self):
+        # Use the meteor server's auth token.
+        dt = timezone.now()
+        meteor_user = User(id=-1, date_joined=dt)
+        meteor_user.save()
+        token = Token(user=meteor_user)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        # Save the user's current score to compare to after the request.
+        user_points = self.user.points
+
+        url = reverse('user-invite', kwargs={
+            'pk': self.user.id,
+        })
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should give the user points!
+        user = User.objects.get(id=self.user.id)
+        self.assertEqual(user.points, user_points+Points.SENT_INVITATION)
+
+    def test_invite_not_meteor(self):
+        # Don't use the meteor server's auth token.
+        url = reverse('user-invite', kwargs={
+            'pk': self.user.id,
+        })
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class SocialAccountTests(APITestCase):
     

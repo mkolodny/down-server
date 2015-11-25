@@ -42,7 +42,7 @@ from .models import (
     User,
     UserPhone,
 )
-from .permissions import IsCurrentUserOrReadOnly, IsStaff
+from .permissions import IsCurrentUserOrReadOnly, IsMeteor, IsStaff
 from .serializers import (
     AuthCodeSerializer,
     ContactSerializer,
@@ -185,6 +185,17 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         }
         serializer = SavedEventSerializer(saved_events, many=True, context=context)
         return Response(serializer.data)
+
+    @detail_route(methods=['post'],
+                  permission_classes=(IsMeteor,))
+    def invite(self, request, pk=None):
+        user = self.get_object()
+
+        # Give the user points for inviting someone to an event.
+        user.points += Points.SENT_INVITATION
+        user.save()
+
+        return Response()
 
 
 class UserUsernameDetail(APIView):

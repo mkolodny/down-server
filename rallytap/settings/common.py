@@ -122,6 +122,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 # Meteor server
 METEOR_KEY = os.environ['METEOR_KEY']
 METEOR_URL = os.environ['METEOR_URL']
+METEOR_USER_ID = -1
 
 # Facebook
 FACEBOOK_APP_ID = os.environ['FACEBOOK_APP_ID']
