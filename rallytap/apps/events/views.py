@@ -64,8 +64,9 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         # Add the creator to the meteor server members list.
         event_id = serializer.data['event']
+        event = Event.objects.get(id=event_id)
         try:
-            add_members(event_id, request.user.id)
+            add_members(event, request.user.id)
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
@@ -74,7 +75,6 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         request.user.save()
 
         # Give the user who created the event points!
-        event = Event.objects.get(id=event_id)
         if event.creator_id != request.user.id:
             creator = event.creator
             creator.points += Points.SAVED_EVENT

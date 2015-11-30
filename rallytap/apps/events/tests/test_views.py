@@ -99,7 +99,7 @@ class EventTests(APITestCase):
                                location=self.user.location)
 
         # It should add the user to the members list on meteor.
-        mock_add_members.assert_called_with(event.id, self.user.id)
+        mock_add_members.assert_called_with(event, self.user.id)
 
         # It should return the event.
         serializer = EventSerializer(event)
@@ -152,7 +152,7 @@ class EventTests(APITestCase):
                                location=self.user.location)
 
         # It should add the user to the members list on meteor.
-        mock_add_members.assert_called_with(event.id, self.user.id)
+        mock_add_members.assert_called_with(event, self.user.id)
 
         # It should return the event.
         serializer = EventSerializer(event)
@@ -290,7 +290,7 @@ class SavedEventTests(APITestCase):
                                              location=self.user.location)
 
         # It should add the user to the members list on meteor.
-        mock_add_members.assert_called_with(event.id, self.user.id)
+        mock_add_members.assert_called_with(event, self.user.id)
 
         # It should give the user points!
         user = User.objects.get(id=self.user.id)

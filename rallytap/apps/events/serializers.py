@@ -62,7 +62,7 @@ class EventSerializer(serializers.ModelSerializer):
 
         # Add the creator to the meteor server members list.
         try:
-            add_members(event.id, event.creator_id)
+            add_members(event, event.creator_id)
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
 
