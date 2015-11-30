@@ -14,6 +14,7 @@ from .serializers import (
     EventSerializer,
     RecommendedEventSerializer,
     SavedEventSerializer,
+    SavedEventFullEventSerializer,
 )
 from rallytap.apps.auth.models import User, Points
 from rallytap.apps.events.models import Event
@@ -106,7 +107,10 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             'total_num_interested': total_num_interested,
             'num_interested_friends': num_interested_friends,
         }
-        serializer = SavedEventSerializer(serializer.instance, context=context)
+        saved_event = serializer.instance
+        # We have to get the event because right now it's a pk-only object.
+        saved_event.event = Event.objects.get(id=saved_event.event_id)
+        serializer = SavedEventFullEventSerializer(saved_event, context=context)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED,
                         headers=headers)
@@ -207,7 +211,7 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             'total_num_interested': total_num_interested,
             'num_interested_friends': num_interested_friends,
         }
-        serializer = SavedEventSerializer(data=saved_events, many=True,
-                                          context=context)
+        serializer = SavedEventFullEventSerializer(data=saved_events, many=True,
+                                                   context=context)
         serializer.is_valid()
         return Response(serializer.data)

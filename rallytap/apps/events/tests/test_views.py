@@ -22,6 +22,7 @@ from rallytap.apps.events.serializers import (
     EventSerializer,
     RecommendedEventSerializer,
     SavedEventSerializer,
+    SavedEventFullEventSerializer,
 )
 from rallytap.apps.friends.models import Friendship
 
@@ -312,7 +313,7 @@ class SavedEventTests(APITestCase):
                 event.id: 1,
             },
         }
-        serializer = SavedEventSerializer(saved_event, context=context)
+        serializer = SavedEventFullEventSerializer(saved_event, context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)
 
@@ -465,6 +466,7 @@ class SavedEventTests(APITestCase):
                 user_event.id: 0,
             },
         }
-        serializer = SavedEventSerializer(saved_events, many=True, context=context)
+        serializer = SavedEventFullEventSerializer(saved_events, many=True,
+                                                   context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)
