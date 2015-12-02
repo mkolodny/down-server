@@ -446,9 +446,9 @@ class SavedEventTests(APITestCase):
         # user is nearby, or the event is nearby. The saved events should be sorted
         # from newest to oldest.
         saved_events = [
-            nearby_event_saved_event,
-            nearby_user_saved_event,
             user_saved_event,
+            nearby_user_saved_event,
+            nearby_event_saved_event,
         ]
         context = {
             'interested_friends': {

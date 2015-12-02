@@ -164,7 +164,7 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 and unique_saved_events[saved_event.event_id].id == saved_event.id]
 
         # Sort the saved events from newest to oldest.
-        saved_events.sort(lambda a, b: 1 if a.created_at > b.created_at else -1)
+        saved_events.sort(lambda a, b: 1 if a.created_at < b.created_at else -1)
 
         # Get the users who are interested in each event.
         interested_friends = {}
