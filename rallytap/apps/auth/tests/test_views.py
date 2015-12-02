@@ -306,10 +306,6 @@ class UserTests(APITestCase):
                 event1.id: 3,
                 event2.id: 1
             },
-            'num_interested_friends': {
-                event1.id: 1,
-                event2.id: 0,
-            },
         }
         # The saved events should be sorted by when they're happening if
         # the event has a date, and by when the event was created if the

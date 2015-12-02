@@ -172,16 +172,9 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                     if _saved_event.user_id != request.user.id]
             interested_friends[saved_event.event_id] = this_event_interested_friends
 
-        # Count how many of the user's friends are interested in each event.
-        num_interested_friends = {
-            saved_event.event_id: len(interested_friends[saved_event.event_id])
-            for saved_event in saved_events
-        }
-
         context = {
             'interested_friends': interested_friends,
             'total_num_interested': total_num_interested,
-            'num_interested_friends': num_interested_friends,
         }
         serializer = SavedEventSerializer(saved_events, many=True, context=context)
         return Response(serializer.data)
