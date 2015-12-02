@@ -111,7 +111,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         serializer = FriendSerializer(new_added_me, many=True)
         return Response(serializer.data)
 
-    @list_route(methods=['get'], url_path='saved_events')
+    @list_route(methods=['get'], url_path='saved-events')
     def saved_events(self, request):
         """
         Return a list of the user's saved events sorted by when they're happening
