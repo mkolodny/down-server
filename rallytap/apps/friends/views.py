@@ -5,6 +5,8 @@ from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rallytap.apps.auth.models import User
+from rallytap.apps.auth.permissions import IsMeteor
 from rallytap.apps.notifications.utils import send_message
 from .models import Friendship
 from .serializers import (
@@ -46,14 +48,15 @@ class FriendshipViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         return Response()
 
-    @detail_route(methods=['post'])
+    @detail_route(methods=['post'], permission_classes=(IsMeteor,))
     def message(self, request, pk=None):
         serializer = MessageSerializer(data=request.data)
         serializer.is_valid() # TODO: Handle bad data
 
-        user_ids = [int(pk)]
+        from_user = User.objects.get(id=pk)
+        user_ids = [serializer.data['to_user']]
         text = serializer.data['text']
-        message = '{name}: {text}'.format(name=request.user.name, text=text)
+        message = '{name}: {text}'.format(name=from_user.name, text=text)
         send_message(user_ids, message)
 
         return Response(status=status.HTTP_201_CREATED)

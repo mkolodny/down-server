@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
+from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 import mock
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -37,7 +39,7 @@ class FriendshipTests(APITestCase):
         self.list_url = reverse('friendship-list')
         self.delete_url = reverse('friendship-friend')
         self.send_message_url = reverse('friendship-message', kwargs={
-            'pk': self.friend.id,
+            'pk': self.user.id,
         })
 
     @mock.patch('rallytap.apps.friends.serializers.send_message')
@@ -118,7 +120,20 @@ class FriendshipTests(APITestCase):
 
     @mock.patch('rallytap.apps.friends.views.send_message')
     def test_send_message(self, mock_send_message):
-        data = {'text': 'So down!'}
+        # Mock the meteor user.
+        dt = timezone.now()
+        meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
+        meteor_user.save()
+
+        # Use the meteor server's auth token.
+        token = Token(user=meteor_user)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        data = {
+            'text': 'So down!',
+            'to_user': self.friend.id,
+        }
         response = self.client.post(self.send_message_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -126,3 +141,8 @@ class FriendshipTests(APITestCase):
         user_ids = [self.friend.id]
         message = '{name}: {text}'.format(name=self.user.name, text=data['text'])
         mock_send_message.assert_any_call(user_ids, message)
+
+    def test_invite_not_meteor(self):
+        # Don't use the meteor server's auth token.
+        response = self.client.post(self.send_message_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

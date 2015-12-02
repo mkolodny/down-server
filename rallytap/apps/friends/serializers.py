@@ -48,3 +48,4 @@ class FriendSerializer(serializers.Serializer):
 
 class MessageSerializer(serializers.Serializer):
     text = serializers.CharField()
+    to_user = serializers.IntegerField()

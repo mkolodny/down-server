@@ -180,8 +180,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         serializer = SavedEventSerializer(saved_events, many=True, context=context)
         return Response(serializer.data)
 
-    @detail_route(methods=['post'],
-                  permission_classes=(IsMeteor,))
+    @detail_route(methods=['post'], permission_classes=(IsMeteor,))
     def invite(self, request, pk=None):
         user = self.get_object()
 

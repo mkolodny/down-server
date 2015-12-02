@@ -32,5 +32,5 @@ class IsMeteor(permissions.BasePermission):
     Only allow the meteor server to access an object.
     """
 
-    def has_object_permission(self, request, view, obj):
+    def has_permission(self, request, view):
         return request.user.id == settings.METEOR_USER_ID
