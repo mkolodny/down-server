@@ -309,9 +309,6 @@ class SavedEventTests(APITestCase):
             'total_num_interested': {
                 event.id: 3,
             },
-            'num_interested_friends': {
-                event.id: 1,
-            },
         }
         serializer = SavedEventFullEventSerializer(saved_event, context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
@@ -459,11 +456,6 @@ class SavedEventTests(APITestCase):
                 nearby_event.id: 3,
                 nearby_user_event.id: 1,
                 user_event.id: 1,
-            },
-            'num_interested_friends': {
-                nearby_event.id: 2,
-                nearby_user_event.id: 1,
-                user_event.id: 0,
             },
         }
         serializer = SavedEventFullEventSerializer(saved_events, many=True,

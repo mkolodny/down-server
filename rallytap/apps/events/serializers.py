@@ -88,7 +88,6 @@ class SavedEventFullEventSerializer(GeoModelSerializer):
     user = PkOnlyPrimaryKeyRelatedField(queryset=User.objects.all())
     interested_friends = serializers.SerializerMethodField()
     total_num_interested = serializers.SerializerMethodField()
-    num_interested_friends = serializers.SerializerMethodField()
 
     class Meta:
         model = SavedEvent
@@ -105,7 +104,3 @@ class SavedEventFullEventSerializer(GeoModelSerializer):
     def get_total_num_interested(self, obj):
         total_num_interested = self.context.get('total_num_interested', {})
         return total_num_interested.get(obj.event_id)
-
-    def get_num_interested_friends(self, obj):
-        num_interested_friends = self.context.get('num_interested_friends', {})
-        return num_interested_friends.get(obj.event_id)

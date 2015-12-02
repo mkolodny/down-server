@@ -96,16 +96,12 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                        if friends_dict.has_key(saved_event.user_id)]
         }
 
-        # Also save how many of the user's friends are interested in this event.
-        num_interested_friends = {event_id: len(interested_friends)}
-
         # Since creating the saved event removes any context from the serializer,
         # we have to serialize the saved event again with the user's connections
         # who are also interested.
         context = {
             'interested_friends': interested_friends,
             'total_num_interested': total_num_interested,
-            'num_interested_friends': num_interested_friends,
         }
         saved_event = serializer.instance
         # We have to get the event because right now it's a pk-only object.
@@ -204,19 +200,9 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             for saved_event in saved_events
         }
 
-        # Get the number of the user's friends who are interested in each event.
-        num_interested_friends = {
-            saved_event.event_id: saved_events_qs.filter(
-                    event_id=saved_event.event_id) \
-                    .exclude(user_id=request.user.id) \
-                    .count()
-            for saved_event in saved_events
-        }
-
         context = {
             'interested_friends': interested_friends,
             'total_num_interested': total_num_interested,
-            'num_interested_friends': num_interested_friends,
         }
         serializer = SavedEventFullEventSerializer(data=saved_events, many=True,
                                                    context=context)
