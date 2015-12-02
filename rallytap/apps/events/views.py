@@ -166,7 +166,8 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         # Sort the saved events from newest to oldest.
         saved_events.sort(lambda a, b: 1 if a.created_at < b.created_at else -1)
 
-        # Get the users who are interested in each event.
+        # Get the users who are interested in each event that the user is interested
+        # in.
         interested_friends = {}
         friend_ids = set()
         for saved_event in saved_events_qs:
@@ -177,6 +178,12 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 .exclude(id=request.user.id))
         friends_dict = {friend.id: friend for friend in friends}
         for saved_event in saved_events:
+            # Only set the interested friends if the user has saved the event.
+            if saved_events_qs.filter(user_id=request.user.id,
+                                      event_id=saved_event.event_id) \
+                    .count() == 0:
+                continue
+
             this_event_saved_events = saved_events_qs.filter(
                     event_id=saved_event.event_id)
             this_event_interested_friends = [friends_dict[_saved_event.user_id]

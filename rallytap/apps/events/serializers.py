@@ -96,9 +96,9 @@ class SavedEventFullEventSerializer(GeoModelSerializer):
 
     def get_interested_friends(self, obj):
         interested_friends = self.context.get('interested_friends')
-        if interested_friends is None:
-            return None
         friends = interested_friends.get(obj.event_id)
+        if friends is None:
+            return None
         serializer = FriendSerializer(friends, many=True)
         return serializer.data
 

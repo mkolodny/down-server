@@ -453,7 +453,7 @@ class SavedEventTests(APITestCase):
         context = {
             'interested_friends': {
                 nearby_event.id: [friend, other_friend],
-                nearby_user_event.id: [friend],
+                user_event.id: [],
             },
             'total_num_interested': {
                 nearby_event.id: 3,
