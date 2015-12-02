@@ -74,12 +74,22 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         serializer = SavedEventSerializer(data=data)
         serializer.is_valid(raise_exception=True)
+        
+        # Make sure the user has access to this event.
+        friendships = Friendship.objects.filter(user=request.user)
+        friends_ids = set(friendships.values_list('friend_id', flat=True))
+        event_id = serializer.data['event']
+        event = Event.objects.get(id=event_id)
+        if (not event.creator_id == request.user.id and
+            (SavedEvent.objects.filter(event_id=event_id, user__in=friends_ids) \
+                 .count() == 0 or
+             (event.friends_only and event.creator_id not in friends_ids))):
+            raise PermissionDenied('You don\'t have access to that event.')
+
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
 
         # Add the creator to the meteor server members list.
-        event_id = serializer.data['event']
-        event = Event.objects.get(id=event_id)
         try:
             add_members(event, request.user.id)
         except requests.exceptions.HTTPError:
@@ -103,7 +113,7 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         # See which of the user's friends are interested in this event.
         friends_dict = {
             friendship.friend_id: friendship.friend
-            for friendship in Friendship.objects.filter(user=request.user)
+            for friendship in friendships
         }
         interested_friends = {
             event_id: [friends_dict[saved_event.user_id]

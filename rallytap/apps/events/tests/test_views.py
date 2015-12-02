@@ -355,6 +355,45 @@ class SavedEventTests(APITestCase):
         response = self.client.post(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_create_friend_hasnt_saved_event(self):
+        # Mock someone who the user isn't friends with creating/saving the event.
+        non_connection = User()
+        non_connection.save()
+        event = Event(title='get jiggy with it', creator=non_connection)
+        event.save()
+        saved_event = SavedEvent(user=non_connection, event=event,
+                                 location=self.user.location)
+        saved_event.save()
+
+        data = {'event': event.id}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_non_connection(self):
+        # Mock someone who the user isn't connected to creating/saving a friends
+        # only event.
+        non_connection = User()
+        non_connection.save()
+        event = Event(title='get jiggy with it', creator=non_connection,
+                      friends_only=True)
+        event.save()
+        saved_event = SavedEvent(user=non_connection, event=event,
+                                 location=self.user.location)
+        saved_event.save()
+
+        # Mock the user's friend saving the event.
+        friend = User(name='Michael Bolton')
+        friend.save()
+        friendship = Friendship(user=self.user, friend=friend)
+        friendship.save()
+        saved_event = SavedEvent(user=friend, event=event,
+                                 location=self.user.location)
+        saved_event.save()
+
+        data = {'event': event.id}
+        response = self.client.post(self.list_url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     @mock.patch('rallytap.apps.events.views.add_members')
     def test_create_add_members_error(self, mock_add_members):
         mock_add_members.side_effect = requests.exceptions.HTTPError()
