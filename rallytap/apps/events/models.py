@@ -33,3 +33,6 @@ class SavedEvent(models.Model):
     location = models.PointField()
     # when the event was saved
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'event')
