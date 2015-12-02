@@ -36,7 +36,7 @@ class FriendshipTests(APITestCase):
         # Save URLs.
         self.list_url = reverse('friendship-list')
         self.delete_url = reverse('friendship-friend')
-        self.send_message_url = reverse('friendship-messages', kwargs={
+        self.send_message_url = reverse('friendship-message', kwargs={
             'pk': self.friend.id,
         })
 

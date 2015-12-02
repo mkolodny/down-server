@@ -47,7 +47,7 @@ class FriendshipViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         return Response()
 
     @detail_route(methods=['post'])
-    def messages(self, request, pk=None):
+    def message(self, request, pk=None):
         serializer = MessageSerializer(data=request.data)
         serializer.is_valid() # TODO: Handle bad data
 
