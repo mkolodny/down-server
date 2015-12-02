@@ -215,7 +215,7 @@ class MeteorLoginTests(TestCase):
         httpretty.register_uri(httpretty.POST, self.meteor_url,
                                content_type='application/json')
 
-        utils.meteor_login(self.user.id, self.token)
+        utils.meteor_login(self.token)
 
         # It should authenticate the user on the meteor server.
         self.assertEqual(httpretty.last_request().body, json.dumps({
@@ -236,4 +236,4 @@ class MeteorLoginTests(TestCase):
                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         with self.assertRaises(ServiceUnavailable):
-            utils.meteor_login(self.user.id, self.token)
+            utils.meteor_login(self.token)

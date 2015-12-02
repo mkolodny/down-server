@@ -511,7 +511,7 @@ class SocialAccountTests(APITestCase):
         UserPhone.objects.get(user=self.user, phone=user_phone.phone)
 
         # It should authenticate the user on the meteor server.
-        mock_meteor_login.assert_called_once_with(self.user.id, self.token)
+        mock_meteor_login.assert_called_once_with(self.token)
 
         # It should return the user.
         data = {
@@ -671,7 +671,7 @@ class SessionTests(APITestCase):
         token = Token.objects.get(user=user)
 
         # It should login to the meteor server.
-        mock_meteor_login.assert_called_once_with(user.id, token)
+        mock_meteor_login.assert_called_once_with(token)
 
         # The user should be friends with Team Rallytap.
         Friendship.objects.get(user=user, friend=self.teamrallytap_user)
@@ -714,7 +714,7 @@ class SessionTests(APITestCase):
         token = Token.objects.get(user=self.user)
 
         # It should login to the meteor server.
-        mock_meteor_login.assert_called_once_with(self.user.id, token)
+        mock_meteor_login.assert_called_once_with(token)
 
         # The response should have the same user object
         data = {'authtoken': token.key, 'friends': self.user.friends}
@@ -740,7 +740,7 @@ class SessionTests(APITestCase):
         token = Token.objects.get(user=self.user)
 
         # It should login to the meteor server.
-        mock_meteor_login.assert_called_once_with(self.user.id, token)
+        mock_meteor_login.assert_called_once_with(token)
 
         # The response should have the same user object
         data = {'authtoken': token.key, 'friends': self.user.friends}
@@ -773,7 +773,7 @@ class SessionTests(APITestCase):
         token = Token.objects.get(user=user)
 
         # It should try to login to the meteor server.
-        mock_meteor_login.assert_called_once_with(user.id, token)
+        mock_meteor_login.assert_called_once_with(token)
 
         # The auth code should still exist.
         AuthCode.objects.get(code=auth.code, phone=auth.phone)
@@ -810,7 +810,7 @@ class SessionTests(APITestCase):
         token = Token.objects.get(user=user)
 
         # It should login to the meteor server.
-        mock_meteor_login.assert_called_once_with(user.id, token)
+        mock_meteor_login.assert_called_once_with(token)
 
         # It should return the user.
         context = {'authtoken': token.key, 'friends': user.friends}
@@ -845,7 +845,7 @@ class SessionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # It should login to the meteor server.
-        mock_meteor_login.assert_called_once_with(user.id, token)
+        mock_meteor_login.assert_called_once_with(token)
 
         # It should return the user.
         context = {'authtoken': token.key, 'friends': user.friends}
@@ -876,7 +876,7 @@ class SessionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should login to the meteor server.
-        mock_meteor_login.assert_called_once_with(self.teamrallytap_user.id, token)
+        mock_meteor_login.assert_called_once_with(token)
 
         # It should return the rallytap user.
         context = {'authtoken': token.key, 'friends': [friend]}

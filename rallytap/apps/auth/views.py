@@ -250,7 +250,7 @@ class SocialAccountSync(APIView):
                 request.user.delete()
 
                 # Log in to the meteor server as the new user.
-                utils.meteor_login(user.id, token)
+                utils.meteor_login(token)
             except SocialAccount.DoesNotExist:
                 # Update the user with the new data from Facebook.
                 # Facebook users might not have emails.
@@ -361,7 +361,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             Friendship.objects.bulk_create(friendships)
 
         # Authenticate the user on the meteor server.
-        utils.meteor_login(user.id, token)
+        utils.meteor_login(token)
 
         # If the user is the Apple test user, don't delete the auth code.
         if serializer.data['phone'] != '+15555555555':
@@ -396,7 +396,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         # Log in to the meteor server.
         token, created = Token.objects.get_or_create(user=user)
-        utils.meteor_login(user.id, token)
+        utils.meteor_login(token)
 
         context = {'authtoken': token.key, 'friends': user.friends}
         serializer = UserSerializer(user, context=context)
@@ -409,7 +409,7 @@ class SessionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         token = Token.objects.get(user=user)
 
         # Log in to the meteor server.
-        utils.meteor_login(user.id, token)
+        utils.meteor_login(token)
 
         # Only return friends with usernames to make the response smaller.
         friends = user.friends.filter(username__isnull=False)
