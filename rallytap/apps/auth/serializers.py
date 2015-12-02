@@ -141,3 +141,8 @@ class ContactSerializer(serializers.Serializer):
 
 class FacebookSessionSerializer(serializers.Serializer):
     access_token = serializers.CharField()
+
+
+class InviteSerializer(serializers.Serializer):
+    event_title = serializers.CharField()
+    to_user = serializers.IntegerField()

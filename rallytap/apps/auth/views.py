@@ -49,6 +49,7 @@ from .serializers import (
     FacebookSessionSerializer,
     FellowshipApplicationSerializer,
     FriendSerializer,
+    InviteSerializer,
     LinfootFunnelSerializer,
     SessionSerializer,
     SocialAccountSyncSerializer,
@@ -183,6 +184,15 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
                   permission_classes=(IsMeteor,))
     def invite(self, request, pk=None):
         user = self.get_object()
+
+        serializer = InviteSerializer(data=request.data)
+        serializer.is_valid()
+        
+        # Notify the user's friend that they invited them.
+        user_ids = [serializer.data['to_user']]
+        message = '{name}: Are you down for "{title}"?'.format(
+                name=user.name, title=serializer.data['event_title'])
+        send_message(user_ids, message)
 
         # Give the user points for inviting someone to an event.
         user.points += Points.SENT_INVITATION

@@ -316,7 +316,8 @@ class UserTests(APITestCase):
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)
 
-    def test_invite(self):
+    @mock.patch('rallytap.apps.auth.views.send_message')
+    def test_invite(self, mock_send_message):
         # Use the meteor server's auth token.
         dt = timezone.now()
         meteor_user = User(id=-1, date_joined=dt)
@@ -331,8 +332,19 @@ class UserTests(APITestCase):
         url = reverse('user-invite', kwargs={
             'pk': self.user.id,
         })
-        response = self.client.post(url)
+        event_title = 'Gettin jiggy with it'
+        data = {
+            'event_title': event_title,
+            'to_user': self.friend1.id,
+        }
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should notify the friend that the user invited them.
+        user_ids = [self.friend1.id]
+        message = '{name}: Are you down for "{title}"?'.format(
+                name=self.user.name, title=event_title)
+        mock_send_message.assert_any_call(user_ids, message)
 
         # It should give the user points!
         user = User.objects.get(id=self.user.id)
