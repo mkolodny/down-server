@@ -17,6 +17,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase
 from twilio import TwilioRestException
 from rallytap.apps.auth.models import Points, User, UserPhone
+from rallytap.apps.auth.serializers import FriendSerializer
 from rallytap.apps.events.models import Event, Place, RecommendedEvent, SavedEvent
 from rallytap.apps.events.serializers import (
     EventSerializer,
@@ -62,6 +63,9 @@ class EventTests(APITestCase):
         # Save urls.
         self.list_url = reverse('event-list')
         self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
+        self.interested_url = reverse('event-interested', kwargs={
+            'pk': self.event.id,
+        })
 
     @mock.patch('rallytap.apps.events.serializers.send_message')
     @mock.patch('rallytap.apps.events.serializers.add_members')
@@ -183,6 +187,36 @@ class EventTests(APITestCase):
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_event)
+
+    def test_interested(self):
+        # Mock the user's friend.
+        friend = User()
+        friend.save()
+
+        # Mock the user and their friend having saved the event.
+        user_saved_event = SavedEvent(user=self.user, event=self.event,
+                                      location=self.user.location)
+        user_saved_event.save()
+        friend_saved_event = SavedEvent(user=friend, event=self.event,
+                                        location=self.user.location)
+        friend_saved_event.save()
+
+        response = self.client.get(self.interested_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should return the user's friend.
+        users = [friend]
+        serializer = FriendSerializer(users, many=True)
+        json_users = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_users)
+
+    def test_interested_not_interested(self):
+        # Make sure the user isn't interested in the event.
+        with self.assertRaises(SavedEvent.DoesNotExist):
+            SavedEvent.objects.get(event=self.event, user=self.user)
+
+        response = self.client.get(self.interested_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class RecommendedEventTests(APITestCase):

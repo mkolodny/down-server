@@ -5,6 +5,8 @@ from django.db.models import F, Q
 from django.views.generic.base import TemplateView
 import requests
 from rest_framework import authentication, mixins, status, viewsets
+from rest_framework.decorators import detail_route
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .filters import NearbyPlaceFilter
@@ -17,6 +19,7 @@ from .serializers import (
     SavedEventFullEventSerializer,
 )
 from rallytap.apps.auth.models import User, Points
+from rallytap.apps.auth.serializers import FriendSerializer
 from rallytap.apps.events.models import Event
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.utils.exceptions import ServiceUnavailable
@@ -35,6 +38,18 @@ class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
         request.data['creator'] = request.user.id
 
         return super(EventViewSet, self).create(request, *args, **kwargs)
+
+    @detail_route(methods=['get'])
+    def interested(self, request, pk=None):
+        # Make sure the user has saved the event.
+        if SavedEvent.objects.filter(user=request.user, event_id=pk).count() == 0:
+            raise PermissionDenied('You aren\'t interested in this event, yet.')
+
+        users = [saved_event.user
+                 for saved_event in SavedEvent.objects.filter(event_id=pk) \
+                         .exclude(user=request.user.id)]
+        serializer = FriendSerializer(users, many=True)
+        return Response(serializer.data)
 
 
 class RecommendedEventViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
