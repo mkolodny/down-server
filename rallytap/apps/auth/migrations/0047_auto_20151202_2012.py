@@ -24,5 +24,4 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(meteor_login),
     ]
