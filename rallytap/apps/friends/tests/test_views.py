@@ -125,4 +125,4 @@ class FriendshipTests(APITestCase):
         # It should send the friend a message.
         user_ids = [self.friend.id]
         message = '{name}: {text}'.format(name=self.user.name, text=data['text'])
-        mock_send_message.assert_any_call(user_ids, message, sms=False)
+        mock_send_message.assert_any_call(user_ids, message)

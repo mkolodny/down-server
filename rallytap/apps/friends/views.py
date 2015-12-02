@@ -54,6 +54,6 @@ class FriendshipViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         user_ids = [int(pk)]
         text = serializer.data['text']
         message = '{name}: {text}'.format(name=request.user.name, text=text)
-        send_message(user_ids, message, sms=False)
+        send_message(user_ids, message)
 
         return Response(status=status.HTTP_201_CREATED)
