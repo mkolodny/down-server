@@ -153,6 +153,10 @@ class UserTests(APITestCase):
         pass
 
     def test_query_by_ids(self):
+        # Mock another user to make sure they're not returned.
+        user = User()
+        user.save()
+
         ids = ','.join([unicode(self.user.id)])
         url = self.list_url + '?ids=' + ids
         response = self.client.get(url)

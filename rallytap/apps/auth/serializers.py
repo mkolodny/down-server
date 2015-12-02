@@ -60,7 +60,7 @@ class FriendSerializer(GeoModelSerializer):
     class Meta:
         model = User
         depth = 1
-        fields = ('id', 'email', 'name', 'first_name', 'last_name',
+        fields = ('id', 'name', 'first_name', 'last_name',
                   'image_url', 'username', 'location', 'points')
 
 
@@ -71,9 +71,10 @@ class UserSerializer(GeoModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'name', 'first_name', 'last_name',
+        fields = ('id', 'name', 'first_name', 'last_name',
                   'image_url', 'username', 'location', 'friends',
-                  'updated_at', 'authtoken', 'facebook_friends', 'points')
+                  'updated_at', 'authtoken', 'facebook_friends',
+                  'points')
         read_only_fields = ('updated_at', 'friends', 'facebook_friends', 'points')
 
     def get_authtoken(self, obj):
