@@ -128,13 +128,13 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         # Sort the saved events from newest to oldest.
         saved_events.sort(lambda a, b: 1
                 if ((a.event.datetime is None and b.event.datetime is None
-                     and a.event.created_at > b.event.created_at) or 
+                     and a.event.created_at < b.event.created_at) or 
                     (a.event.datetime is None and b.event.datetime is not None
-                     and a.event.created_at > b.event.datetime) or 
+                     and a.event.created_at < b.event.datetime) or 
                     (a.event.datetime is not None and b.event.datetime is None
-                     and a.event.datetime > b.event.created_at) or 
+                     and a.event.datetime < b.event.created_at) or 
                     (a.event.datetime is not None and b.event.datetime is not None
-                     and a.event.datetime > b.event.datetime))
+                     and a.event.datetime < b.event.datetime))
                 else -1)
 
         # Get the total number of users who are interested in each event the user

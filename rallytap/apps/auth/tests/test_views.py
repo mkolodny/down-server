@@ -314,7 +314,7 @@ class UserTests(APITestCase):
         # The saved events should be sorted by when they're happening if
         # the event has a date, and by when the event was created if the
         # event doesn't have a date.
-        saved_events = [saved_event2, saved_event1]
+        saved_events = [saved_event1, saved_event2]
         serializer = SavedEventFullEventSerializer(saved_events, many=True,
                                                    context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
