@@ -13,15 +13,18 @@ from .filters import NearbyPlaceFilter
 from .models import Event, RecommendedEvent, SavedEvent
 from .permissions import IsCreator
 from .serializers import (
+    CommentSerializer,
     EventSerializer,
     RecommendedEventSerializer,
     SavedEventSerializer,
     SavedEventFullEventSerializer,
 )
 from rallytap.apps.auth.models import User, Points
+from rallytap.apps.auth.permissions import IsMeteor
 from rallytap.apps.auth.serializers import FriendSerializer
 from rallytap.apps.events.models import Event
 from rallytap.apps.friends.models import Friendship
+from rallytap.apps.notifications.utils import send_message
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 from rallytap.apps.utils.utils import add_members
 
@@ -50,6 +53,22 @@ class EventViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin,
                          .exclude(user=request.user.id)]
         serializer = FriendSerializer(users, many=True)
         return Response(serializer.data)
+
+    @detail_route(methods=['post'], permission_classes=(IsMeteor,))
+    def comment(self, request, pk=None):
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid()
+
+        event = self.get_object()
+        from_user = User.objects.get(id=serializer.data['from_user'])
+        to_users_ids = [saved_event.user_id
+                        for saved_event in SavedEvent.objects.filter(event=event) \
+                                .exclude(user=from_user)]
+        message = '{name} to {activity}: {text}'.format(name=from_user.name,
+                activity=event.title, text=serializer.data['text'])
+        send_message(to_users_ids, message)
+
+        return Response()
 
 
 class RecommendedEventViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):

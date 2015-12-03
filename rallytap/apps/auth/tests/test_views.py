@@ -324,7 +324,7 @@ class UserTests(APITestCase):
     def test_invite(self, mock_send_message):
         # Use the meteor server's auth token.
         dt = timezone.now()
-        meteor_user = User(id=-1, date_joined=dt)
+        meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
         meteor_user.save()
         token = Token(user=meteor_user)
         token.save()

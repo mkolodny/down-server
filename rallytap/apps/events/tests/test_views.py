@@ -50,6 +50,15 @@ class EventTests(APITestCase):
                            datetime=timezone.now(), place=self.place)
         self.event.save()
 
+        # Mock the user's friend.
+        self.friend = User()
+        self.friend.save()
+        friendship = Friendship(user=self.friend, friend=self.user)
+        friendship.save()
+        friendship = Friendship(user=self.user, friend=self.friend)
+        friendship.save()
+
+
         # Save post data.
         self.post_data = {
             'title': 'rat fishing with the boys!',
@@ -66,16 +75,13 @@ class EventTests(APITestCase):
         self.interested_url = reverse('event-interested', kwargs={
             'pk': self.event.id,
         })
+        self.comment_url = reverse('event-comment', kwargs={
+            'pk': self.event.id,
+        })
 
     @mock.patch('rallytap.apps.events.serializers.send_message')
     @mock.patch('rallytap.apps.events.serializers.add_members')
     def test_create(self, mock_add_members, mock_send_message):
-        # Mock the user's friend.
-        friend = User()
-        friend.save()
-        friendship = Friendship(user=friend, friend=self.user)
-        friendship.save()
-
         data = self.post_data
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -89,7 +95,7 @@ class EventTests(APITestCase):
 
         # It should send notifications to the users who have added the creator as
         # a friend.
-        user_ids = [friend.id]
+        user_ids = [self.friend.id]
         message = 'Your friend is interested in "{title}".'.format(
                 name=self.user.name, title=event.title)
         self.assertEqual(mock_send_message.call_count, 1)
@@ -113,14 +119,6 @@ class EventTests(APITestCase):
     @mock.patch('rallytap.apps.events.serializers.send_message')
     @mock.patch('rallytap.apps.events.serializers.add_members')
     def test_create_friends_only(self, mock_add_members, mock_send_message):
-        # Mock the user's friend.
-        friend = User()
-        friend.save()
-        friendship = Friendship(user=friend, friend=self.user)
-        friendship.save()
-        friendship = Friendship(user=self.user, friend=friend)
-        friendship.save()
-
         # Mock the user's friend who added the the user, but the user hasn't added
         # back.
         added_me = User()
@@ -142,7 +140,7 @@ class EventTests(APITestCase):
 
         # It should send notifications to the users who have added the creator as
         # a friend, and the creator has added back.
-        user_ids = [friend.id]
+        user_ids = [self.friend.id]
         message = 'Your friend is interested in "{title}".'.format(
                 name=self.user.name, title=event.title)
         self.assertEqual(mock_send_message.call_count, 1)
@@ -189,15 +187,11 @@ class EventTests(APITestCase):
         self.assertEqual(response.content, json_event)
 
     def test_interested(self):
-        # Mock the user's friend.
-        friend = User()
-        friend.save()
-
         # Mock the user and their friend having saved the event.
         user_saved_event = SavedEvent(user=self.user, event=self.event,
                                       location=self.user.location)
         user_saved_event.save()
-        friend_saved_event = SavedEvent(user=friend, event=self.event,
+        friend_saved_event = SavedEvent(user=self.friend, event=self.event,
                                         location=self.user.location)
         friend_saved_event.save()
 
@@ -205,7 +199,7 @@ class EventTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # It should return the user's friend.
-        users = [friend]
+        users = [self.friend]
         serializer = FriendSerializer(users, many=True)
         json_users = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_users)
@@ -216,6 +210,42 @@ class EventTests(APITestCase):
             SavedEvent.objects.get(event=self.event, user=self.user)
 
         response = self.client.get(self.interested_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @mock.patch('rallytap.apps.events.views.send_message')
+    def test_comment(self, mock_send_message):
+        # Use the meteor server's auth token.
+        dt = timezone.now()
+        meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
+        meteor_user.save()
+        token = Token(user=meteor_user)
+        token.save()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        # Mock the user and their friend having saved the event.
+        user_saved_event = SavedEvent(user=self.user, event=self.event,
+                                      location=self.user.location)
+        user_saved_event.save()
+        friend_saved_event = SavedEvent(user=self.friend, event=self.event,
+                                        location=self.user.location)
+        friend_saved_event.save()
+
+        data = {
+            'from_user': self.user.id,
+            'text': 'Let\'s dooo it!',
+        }
+        response = self.client.post(self.comment_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # It should send the friend a push notification.
+        user_ids = [self.friend.id]
+        message = '{name} to {activity}: {text}'.format(name=self.user.name,
+                activity=self.event.title, text=data['text'])
+        mock_send_message.assert_called_once_with(user_ids, message)
+
+    def test_comment_not_meteor(self):
+        # Don't use the meteor server's auth token.
+        response = self.client.post(self.comment_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 

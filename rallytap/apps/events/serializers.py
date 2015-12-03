@@ -104,3 +104,8 @@ class SavedEventFullEventSerializer(GeoModelSerializer):
     def get_total_num_interested(self, obj):
         total_num_interested = self.context.get('total_num_interested', {})
         return total_num_interested.get(obj.event_id)
+
+
+class CommentSerializer(serializers.Serializer):
+    from_user = serializers.IntegerField()
+    text = serializers.CharField()
