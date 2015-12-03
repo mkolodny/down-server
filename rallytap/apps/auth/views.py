@@ -26,7 +26,10 @@ from rest_framework.views import APIView
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
 from rallytap.apps.events.models import Event, SavedEvent
-from rallytap.apps.events.serializers import EventSerializer, SavedEventSerializer
+from rallytap.apps.events.serializers import (
+    EventSerializer,
+    SavedEventFullEventSerializer,
+)
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.notifications.utils import send_message
 from rallytap.apps.utils.exceptions import ServiceUnavailable
@@ -177,7 +180,8 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             'interested_friends': interested_friends,
             'total_num_interested': total_num_interested,
         }
-        serializer = SavedEventSerializer(saved_events, many=True, context=context)
+        serializer = SavedEventFullEventSerializer(saved_events, many=True,
+                                                   context=context)
         return Response(serializer.data)
 
     @detail_route(methods=['post'], permission_classes=(IsMeteor,))

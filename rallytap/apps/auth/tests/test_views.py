@@ -30,7 +30,10 @@ from rallytap.apps.auth.serializers import (
     UserPhoneSerializer,
 )
 from rallytap.apps.events.models import Event, SavedEvent
-from rallytap.apps.events.serializers import SavedEventSerializer
+from rallytap.apps.events.serializers import (
+    SavedEventSerializer,
+    SavedEventFullEventSerializer,
+)
 from rallytap.apps.friends.models import Friendship
 from rallytap.apps.utils.exceptions import ServiceUnavailable
 
@@ -301,6 +304,7 @@ class UserTests(APITestCase):
         context = {
             'interested_friends': {
                 event1.id: [self.friend1],
+                event2.id: [],
             },
             'total_num_interested': {
                 event1.id: 3,
@@ -311,8 +315,8 @@ class UserTests(APITestCase):
         # the event has a date, and by when the event was created if the
         # event doesn't have a date.
         saved_events = [saved_event2, saved_event1]
-        serializer = SavedEventSerializer(saved_events, many=True,
-                                          context=context)
+        serializer = SavedEventFullEventSerializer(saved_events, many=True,
+                                                   context=context)
         json_saved_events = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_saved_events)
 
