@@ -27,6 +27,7 @@ class User(AbstractBaseUser):
     updated_at = models.DateTimeField(auto_now=True)
     points = models.IntegerField(default=100)
     is_staff = models.BooleanField(default=False)
+    last_post_notification = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = 'username'
 

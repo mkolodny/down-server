@@ -13,7 +13,6 @@ from django.utils import timezone
 from django.views.generic.base import RedirectView, TemplateView
 from hashids import Hashids
 import phonenumbers
-import pytz
 import requests
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import TokenAuthentication

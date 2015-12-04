@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
+from datetime import datetime, timedelta
 from django.conf import settings
 import requests
+import pytz
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoModelSerializer
 from rallytap.apps.auth.models import User
@@ -48,17 +50,28 @@ class EventSerializer(serializers.ModelSerializer):
         saved_event = SavedEvent(event=event, user=user, location=user.location)
         saved_event.save()
 
-        # Notify users who have added the user as a friend.
-        friend_ids = Friendship.objects.filter(friend=user) \
-                .values_list('user_id', flat=True)
-        if event.friends_only:
-            added_ids = set(Friendship.objects.filter(user=user) \
-                    .values_list('friend_id', flat=True))
-            friend_ids = [friend_id for friend_id in friend_ids
-                    if friend_id in added_ids]
-        message = 'Your friend posted "{title}". Are you interested?'.format(
-                name=user.name, title=event.title)
-        send_message(friend_ids, message)
+        # Only send push notifications if the user hasn't sent out a push
+        # notification from creating an event in the last hour.
+        now = datetime.now(pytz.utc)
+        one_hour_ago = now - timedelta(hours=1)
+        if (user.last_post_notification is None
+                or user.last_post_notification < one_hour_ago):
+            # Notify users who have added the user as a friend.
+            friend_ids = Friendship.objects.filter(friend=user) \
+                    .values_list('user_id', flat=True)
+            if event.friends_only:
+                added_ids = set(Friendship.objects.filter(user=user) \
+                        .values_list('friend_id', flat=True))
+                friend_ids = [friend_id for friend_id in friend_ids
+                        if friend_id in added_ids]
+            message = 'Your friend posted "{title}". Are you interested?'.format(
+                    name=user.name, title=event.title)
+            send_message(friend_ids, message)
+
+            # Save the current time as when the user last sent a post push
+            # notification.
+            user.last_post_notification = now
+            user.save()
 
         # Add the creator to the meteor server members list.
         try:

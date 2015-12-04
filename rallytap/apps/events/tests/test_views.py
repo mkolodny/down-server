@@ -81,6 +81,9 @@ class EventTests(APITestCase):
     @mock.patch('rallytap.apps.events.serializers.send_message')
     @mock.patch('rallytap.apps.events.serializers.add_members')
     def test_create(self, mock_add_members, mock_send_message):
+        # Make sure the user hasn't sent out a post push notification yet.
+        self.assertIsNone(self.user.last_post_notification)
+
         data = self.post_data
         response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -110,6 +113,10 @@ class EventTests(APITestCase):
         # It should add the user to the members list on meteor.
         mock_add_members.assert_called_with(event, self.user.id)
 
+        # It should update the user's most recent post push notification.
+        user = User.objects.get(id=self.user.id)
+        self.assertIsNotNone(user.last_post_notification)
+
         # It should return the event.
         serializer = EventSerializer(event)
         json_event = JSONRenderer().render(serializer.data)
@@ -124,6 +131,9 @@ class EventTests(APITestCase):
         added_me.save()
         friendship = Friendship(user=added_me, friend=self.user)
         friendship.save()
+
+        # Make sure the user hasn't sent out a post push notification yet.
+        self.assertIsNone(self.user.last_post_notification)
 
         data = self.post_data
         data['friends_only'] = True
@@ -154,6 +164,39 @@ class EventTests(APITestCase):
 
         # It should add the user to the members list on meteor.
         mock_add_members.assert_called_with(event, self.user.id)
+
+        # It should update the user's most recent post push notification.
+        user = User.objects.get(id=self.user.id)
+        self.assertIsNotNone(user.last_post_notification)
+
+        # It should return the event.
+        serializer = EventSerializer(event)
+        json_event = JSONRenderer().render(serializer.data)
+        self.assertEqual(response.content, json_event)
+
+    @mock.patch('rallytap.apps.events.serializers.send_message')
+    @mock.patch('rallytap.apps.events.serializers.add_members')
+    def test_create_posted_recently(self, mock_add_members, mock_send_message):
+        # Mock the user having created an event in the last hour.
+        self.user.last_post_notification = datetime.now(pytz.utc)
+        self.user.save()
+
+        data = self.post_data
+        response = self.client.post(self.list_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # It should create the place.
+        place = data.pop('place')
+        Place.objects.get(**place)
+
+        # It should create the event.
+        event = Event.objects.get(**data)
+
+        # It should add the user to the members list on meteor.
+        mock_add_members.assert_called_with(event, self.user.id)
+
+        # It shouldn't send push notifications.
+        self.assertEqual(mock_send_message.call_count, 0)
 
         # It should return the event.
         serializer = EventSerializer(event)
