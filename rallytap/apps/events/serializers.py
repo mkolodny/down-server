@@ -56,7 +56,7 @@ class EventSerializer(serializers.ModelSerializer):
                     .values_list('friend_id', flat=True))
             friend_ids = [friend_id for friend_id in friend_ids
                     if friend_id in added_ids]
-        message = 'Your friend is interested in "{title}".'.format(
+        message = 'Your friend posted "{title}". Are you interested?'.format(
                 name=user.name, title=event.title)
         send_message(friend_ids, message)
 

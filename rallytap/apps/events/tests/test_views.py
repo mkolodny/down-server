@@ -95,7 +95,7 @@ class EventTests(APITestCase):
         # It should send notifications to the users who have added the creator as
         # a friend.
         user_ids = [self.friend.id]
-        message = 'Your friend is interested in "{title}".'.format(
+        message = 'Your friend posted "{title}". Are you interested?'.format(
                 name=self.user.name, title=event.title)
         self.assertEqual(mock_send_message.call_count, 1)
         args = mock_send_message.call_args[0]
@@ -140,7 +140,7 @@ class EventTests(APITestCase):
         # It should send notifications to the users who have added the creator as
         # a friend, and the creator has added back.
         user_ids = [self.friend.id]
-        message = 'Your friend is interested in "{title}".'.format(
+        message = 'Your friend posted "{title}". Are you interested?'.format(
                 name=self.user.name, title=event.title)
         self.assertEqual(mock_send_message.call_count, 1)
         args = mock_send_message.call_args[0]
