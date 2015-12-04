@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.db import models, migrations
 
 
 def create_meteor_user(apps, schema_editor):
     User = apps.get_model('down_auth', 'User')
-    user = User(id=-1)
+    user = User(id=settings.METEOR_USER_ID)
     user.save()
         
 class Migration(migrations.Migration):
