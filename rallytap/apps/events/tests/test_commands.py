@@ -21,8 +21,8 @@ class ExpireEventsTests(TestCase):
 
     def test_expired_no_datetime(self):
         # Mock an expired event without a datetime (by default, events expire after
-        # 24 hours).
-        self.event.created_at = datetime.now(pytz.utc) - timedelta(hours=24)
+        # 12 hours).
+        self.event.created_at = datetime.now(pytz.utc) - timedelta(hours=12)
         self.event.save()
 
         call_command('expireevents')
@@ -33,7 +33,7 @@ class ExpireEventsTests(TestCase):
 
     def test_expired_has_datetime(self):
         # Mock an expired event with a datetime.
-        self.event.datetime = datetime.now(pytz.utc) - timedelta(hours=24)
+        self.event.datetime = datetime.now(pytz.utc) - timedelta(hours=12)
         self.event.save()
 
         call_command('expireevents')

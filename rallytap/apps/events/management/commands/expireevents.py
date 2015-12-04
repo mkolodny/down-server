@@ -15,12 +15,12 @@ class Command(BaseCommand):
     help = 'Marks expired events as expired.'
 
     def handle(self, *args, **options):
-        twenty_four_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=24)
+        twelve_hrs_ago = datetime.now(pytz.utc) - timedelta(hours=12)
         event_ids = Event.objects.filter(
                         Q(datetime__isnull=True,
-                          created_at__lte=twenty_four_hrs_ago) |
+                          created_at__lte=twelve_hrs_ago) |
                         Q(datetime__isnull=False,
-                          datetime__lte=twenty_four_hrs_ago),
+                          datetime__lte=twelve_hrs_ago),
                         expired=False) \
                 .values_list('id', flat=True)
 
