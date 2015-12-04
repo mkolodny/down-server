@@ -99,9 +99,12 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
         friends_ids = set(friendships.values_list('friend_id', flat=True))
         event_id = serializer.data['event']
         event = Event.objects.get(id=event_id)
+        friends_saved_events = SavedEvent.objects.filter(event_id=event_id,
+                                                         user__in=friends_ids)
+        saved_event_friends_ids = [saved_event.user_id
+                                   for saved_event in friends_saved_events]
         if (not event.creator_id == request.user.id and
-            (SavedEvent.objects.filter(event_id=event_id, user__in=friends_ids) \
-                 .count() == 0 or
+            (friends_saved_events.count() == 0 or
              (event.friends_only and event.creator_id not in friends_ids))):
             raise PermissionDenied('You don\'t have access to that event.')
 
@@ -113,6 +116,11 @@ class SavedEventViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             add_members(event, request.user.id)
         except requests.exceptions.HTTPError:
             raise ServiceUnavailable()
+
+        # Notify the user's friends who are also interested.
+        message = '{name} is also interested in {activity}!'.format(
+                name=request.user.name, activity=event.title)
+        send_message(saved_event_friends_ids, message)
 
         # Give the user points!
         request.user.points += Points.SAVED_EVENT

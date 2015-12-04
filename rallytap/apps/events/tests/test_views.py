@@ -317,7 +317,8 @@ class SavedEventTests(APITestCase):
         self.list_url = reverse('saved-event-list')
 
     @mock.patch('rallytap.apps.events.views.add_members')
-    def test_create(self, mock_add_members):
+    @mock.patch('rallytap.apps.events.views.send_message')
+    def test_create(self, mock_send_message, mock_add_members):
         # Mock the user's friend.
         friend = User(name='Michael Bolton')
         friend.save()
@@ -353,7 +354,13 @@ class SavedEventTests(APITestCase):
                                              location=self.user.location)
 
         # It should add the user to the members list on meteor.
-        mock_add_members.assert_called_with(event, self.user.id)
+        mock_add_members.assert_called_once_with(event, self.user.id)
+
+        # It should notify the user's friends who are already interested.
+        friends = [friend.id]
+        message = '{name} is also interested in {activity}!'.format(
+                name=self.user.name, activity=event.title)
+        mock_send_message.assert_called_once_with([friend.id], message)
 
         # It should give the user points!
         user = User.objects.get(id=self.user.id)
