@@ -58,7 +58,6 @@ class EventTests(APITestCase):
         friendship = Friendship(user=self.user, friend=self.friend)
         friendship.save()
 
-
         # Save post data.
         self.post_data = {
             'title': 'rat fishing with the boys!',

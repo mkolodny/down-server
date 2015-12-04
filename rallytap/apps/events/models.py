@@ -8,6 +8,12 @@ class Place(models.Model):
     geo = models.PointField(null=True, blank=True)
 
 
+class RecommendedEvent(models.Model):
+    title = models.TextField()
+    datetime = models.DateTimeField(null=True, blank=True)
+    place = models.ForeignKey(Place, null=True, blank=True)
+
+
 class Event(models.Model):
     title = models.TextField()
     creator = models.ForeignKey(User, related_name='creators')
@@ -18,12 +24,8 @@ class Event(models.Model):
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
     friends_only = models.BooleanField(default=False)
-
-
-class RecommendedEvent(models.Model):
-    title = models.TextField()
-    datetime = models.DateTimeField(null=True, blank=True)
-    place = models.ForeignKey(Place, null=True, blank=True)
+    recommended_event = models.ForeignKey(RecommendedEvent, null=True,
+                                          blank=True)
 
 
 class SavedEvent(models.Model):
