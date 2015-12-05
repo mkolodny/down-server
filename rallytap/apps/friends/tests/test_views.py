@@ -120,14 +120,16 @@ class FriendshipTests(APITestCase):
 
     @mock.patch('rallytap.apps.friends.views.send_message')
     def test_send_message(self, mock_send_message):
-        # Mock the meteor user.
-        dt = timezone.now()
-        meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
-        meteor_user.save()
-
         # Use the meteor server's auth token.
-        token = Token(user=meteor_user)
-        token.save()
+        try:
+            meteor_user = User.objects.get(id=settings.METEOR_USER_ID)
+            token = Token.objects.get(user=meteor_user)
+        except User.DoesNotExist:
+            dt = timezone.now()
+            meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
+            meteor_user.save()
+            token = Token(user=meteor_user)
+            token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
         data = {

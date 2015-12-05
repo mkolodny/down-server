@@ -323,11 +323,15 @@ class UserTests(APITestCase):
     @mock.patch('rallytap.apps.auth.views.send_message')
     def test_invite(self, mock_send_message):
         # Use the meteor server's auth token.
-        dt = timezone.now()
-        meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
-        meteor_user.save()
-        token = Token(user=meteor_user)
-        token.save()
+        try:
+            meteor_user = User.objects.get(id=settings.METEOR_USER_ID)
+            token = Token.objects.get(user=meteor_user)
+        except User.DoesNotExist:
+            dt = timezone.now()
+            meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
+            meteor_user.save()
+            token = Token(user=meteor_user)
+            token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
         # Save the user's current score to compare to after the request.

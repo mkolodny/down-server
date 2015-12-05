@@ -56,8 +56,12 @@ class EventSerializer(serializers.ModelSerializer):
         one_hour_ago = now - timedelta(hours=1)
         if (user.last_post_notification is None
                 or user.last_post_notification < one_hour_ago):
-            # Notify users who have added the user as a friend.
-            friend_ids = Friendship.objects.filter(friend=user) \
+            # Notify nearby users who have added the user as a friend.
+            center = user.location
+            radius = settings.NEARBY_RADIUS
+            nearby_circle = center.buffer(radius)
+            friend_ids = Friendship.objects.filter(
+                    friend=user, user__location__contained=nearby_circle) \
                     .values_list('user_id', flat=True)
             if event.friends_only:
                 added_ids = set(Friendship.objects.filter(user=user) \

@@ -51,7 +51,7 @@ class EventTests(APITestCase):
         self.event.save()
 
         # Mock the user's friend.
-        self.friend = User()
+        self.friend = User(location=self.user.location)
         self.friend.save()
         friendship = Friendship(user=self.friend, friend=self.user)
         friendship.save()
@@ -83,6 +83,12 @@ class EventTests(APITestCase):
     def test_create(self, mock_add_members, mock_send_message):
         # Make sure the user hasn't sent out a post push notification yet.
         self.assertIsNone(self.user.last_post_notification)
+
+        # Mock a friend who's not nearby.
+        friend2 = User()
+        friend2.save()
+        friendship = Friendship(user=friend2, friend=self.user)
+        friendship.save()
 
         data = self.post_data
         response = self.client.post(self.list_url, data, format='json')
@@ -257,11 +263,15 @@ class EventTests(APITestCase):
     @mock.patch('rallytap.apps.events.views.send_message')
     def test_comment(self, mock_send_message):
         # Use the meteor server's auth token.
-        dt = timezone.now()
-        meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
-        meteor_user.save()
-        token = Token(user=meteor_user)
-        token.save()
+        try:
+            meteor_user = User.objects.get(id=settings.METEOR_USER_ID)
+            token = Token.objects.get(user=meteor_user)
+        except User.DoesNotExist:
+            dt = timezone.now()
+            meteor_user = User(id=settings.METEOR_USER_ID, date_joined=dt)
+            meteor_user.save()
+            token = Token(user=meteor_user)
+            token.save()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
         # Mock the user and their friend having saved the event.
