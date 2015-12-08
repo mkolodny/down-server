@@ -74,7 +74,7 @@ class UserSerializer(GeoModelSerializer):
         fields = ('id', 'name', 'first_name', 'last_name',
                   'image_url', 'username', 'location', 'friends',
                   'updated_at', 'authtoken', 'facebook_friends',
-                  'points')
+                  'email', 'points')
         read_only_fields = ('updated_at', 'friends', 'facebook_friends', 'points')
 
     def get_authtoken(self, obj):
