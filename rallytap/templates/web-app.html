@@ -5,41 +5,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
-  <meta name="description" content="Ephemeral group chats for events.">
+  <meta name="description" content="Do fun stuff with your friends.">
   <title>Rallytap</title>
 
   <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Carter+One|Montserrat:400,700" rel="stylesheet">
   <link rel="shortcut icon" href="{% static 'client/images/favicon.jpg' %}">
 
+  <meta property="og:url" content="https://rallytap.com">
+  <meta property="og:title" content="Rallytap">
+  <meta property="og:description" content="Do fun stuff with your friends.">
+  <meta property="og:site_name" content="Rallytap">
+  <meta property="og:image" content="{% static 'client/images/og-image.jpg' %}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
   <link href="{% static 'client/app/main.css' %}" rel="stylesheet">
   <script>
-    // Facebook
-    window.fbAsyncInit = function() {
-      FB.init({
-        appId: '{{ FACEBOOK_APP_ID }}',
-        cookie: true,
-        version: 'v2.2'
-      });
-    };
-    (function(d){
-      var js, 
-      id = 'facebook-jssdk', 
-      ref = d.getElementsByTagName('script')[0];
-
-      if (d.getElementById(id)) {
-        return;
-      }
-
-      js = d.createElement('script'); 
-      js.id = id; 
-      js.async = true;
-      js.src = "//connect.facebook.net/en_US/sdk.js";
-
-      ref.parentNode.insertBefore(js, ref);
-
-    }(document));
-
+    
     // Branch
     (function(b,r,a,n,c,h,_,s,d,k){if(!b[n]||!b[n]._q){for(;s<_.length;)c(h,_[s++]);d=r.createElement(a);d.async=1;d.src="https://cdn.branch.io/branch-v1.6.11.min.js";k=r.getElementsByTagName(a)[0];k.parentNode.insertBefore(d,k);b[n]=h}})(window,document,"script","branch",function(b,r){b[r]=function(){b._q.push([r,arguments])}},{_q:[],_v:1},"init data first addListener removeListener setIdentity logout track link sendSMS referrals credits creditHistory applyCode validateCode getCode redeem banner closeBanner".split(" "), 0);
     branch.init('{{ BRANCH_API_KEY }}');
@@ -54,10 +37,7 @@
     ga('send', 'pageview');
 
     // Environment variables
-    window.ApiRoot = '{{ API_ROOT }}';
     window.BranchKey = '{{ BRANCH_API_KEY }}';
-    window.MixpanelToken = '{{ MIXPANEL_TOKEN }}';
-    window.MeteorUrl = '{{ METEOR_URL }}';
   </script>
   <script src="{% static 'client/app/bundle.js' %}"></script>
 </head>
