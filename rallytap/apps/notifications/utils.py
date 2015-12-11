@@ -5,7 +5,7 @@ from push_notifications.models import APNSDevice, GCMDevice
 from twilio.rest import TwilioRestClient
 from rallytap.apps.auth.models import UserPhone
 
-def send_message(user_ids, message, added_friend=False):
+def send_message(user_ids, message, added_friend=False, invited=False):
     # Notify users with iOS devices.
     apnsdevices = APNSDevice.objects.filter(user_id__in=user_ids)
     for device in apnsdevices:
@@ -20,16 +20,20 @@ def send_message(user_ids, message, added_friend=False):
         except GCMError:
             continue
 
-    # Notify users who were added from contacts.
-    if not added_friend:
+    if not added_friend and not invited:
         return
 
-    # The message is a notification that the user added a contact as a friend
-    # on rallytap. Include a link to the app.
-    message = message[:-1] # remove the exclamation point at the end.
     url = 'https://rallytap.com/app'
-    message = '{message} on Rallytap! - {url}'.format(message=message, url=url)
+    if added_friend:
+        # The message is a notification that the user added a contact as a friend
+        # on rallytap. Include a link to the app.
+        message = message[:-1] # remove the exclamation point at the end.
+        message = '{message} on Rallytap! - {url}'.format(message=message, url=url)
+    elif invited:
+        footer = '\n--\nDownload Rallytap to reply - {url}'.format(url=url)
+        message = '{message}{footer}'.format(message=message, footer=footer)
 
+    # Notify users who were added from contacts.
     client = TwilioRestClient(settings.TWILIO_ACCOUNT, settings.TWILIO_TOKEN)
     userphones = UserPhone.objects.filter(user_id__in=user_ids,
                                           user__username__isnull=True)

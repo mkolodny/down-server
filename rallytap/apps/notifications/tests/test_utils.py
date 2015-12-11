@@ -58,22 +58,6 @@ class SendMessageTests(TestCase):
 
     @mock.patch('push_notifications.apns.apns_send_message')
     @mock.patch('push_notifications.gcm.gcm_send_message')
-    def test_send_message_devices_only(self, mock_gcm, mock_apns):
-        user_ids = [self.user.id, self.contact.id]
-        message = 'Bars?!?!?!'
-        utils.send_message(user_ids, message)
-
-        # It should send push notifications to users with ios devices.
-        token = self.ios_device.registration_id
-        mock_apns.assert_any_call(registration_id=token, alert=message, badge=1)
-
-        # It should send push notifications to users with android devices.
-        token = self.android_device.registration_id
-        data = {'title': 'Rallytap', 'message': message}
-        mock_gcm.assert_any_call(registration_id=token, data=data)
-
-    @mock.patch('push_notifications.apns.apns_send_message')
-    @mock.patch('push_notifications.gcm.gcm_send_message')
     @mock.patch('rallytap.apps.notifications.utils.TwilioRestClient')
     def test_send_message_added_friend(self, mock_twilio, mock_gcm, mock_apns):
         # Mock the Twilio SMS API.
@@ -102,6 +86,30 @@ class SendMessageTests(TestCase):
         message = message[:-1] # remove the exclamation point at the end.
         url = 'https://rallytap.com/app'
         message = '{message} on Rallytap! - {url}'.format(message=message, url=url)
+        phone = unicode(self.contact_phone.phone)
+        mock_client.messages.create.assert_called_with(to=phone, 
+                                                       from_=settings.TWILIO_PHONE,
+                                                       body=message)
+
+    @mock.patch('rallytap.apps.notifications.utils.TwilioRestClient')
+    def test_send_message_invited(self, mock_twilio):
+        # Mock the Twilio SMS API.
+        mock_client = mock.MagicMock()
+        mock_twilio.return_value = mock_client
+
+        # Mock an event.
+        event = Event(title='Ball?', creator=self.user)
+        event.save()
+
+        user_ids = [self.contact.id]
+        message = 'Barack Obama: What up thug?!?!'
+        from_user = self.user
+        utils.send_message(user_ids, message, invited=True)
+
+        # It should send SMS to users without devices.
+        url = 'https://rallytap.com/app'
+        footer = '\n--\nDownload Rallytap to reply - {url}'.format(url=url)
+        message = '{message}{footer}'.format(message=message, footer=footer)
         phone = unicode(self.contact_phone.phone)
         mock_client.messages.create.assert_called_with(to=phone, 
                                                        from_=settings.TWILIO_PHONE,

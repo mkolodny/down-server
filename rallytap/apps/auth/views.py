@@ -194,7 +194,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
         user_ids = [serializer.data['to_user']]
         message = '{name}: Are you down for "{title}"?'.format(
                 name=user.name, title=serializer.data['event_title'])
-        send_message(user_ids, message)
+        send_message(user_ids, message, invited=True)
 
         # Give the user points for inviting someone to an event.
         user.points += Points.SENT_INVITATION
