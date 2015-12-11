@@ -352,7 +352,7 @@ class UserTests(APITestCase):
         user_ids = [self.friend1.id]
         message = '{name}: Are you down for "{title}"?'.format(
                 name=self.user.name, title=event_title)
-        mock_send_message.assert_any_call(user_ids, message, invited=True)
+        mock_send_message.assert_any_call(user_ids, message)
 
         # It should give the user points!
         user = User.objects.get(id=self.user.id)
