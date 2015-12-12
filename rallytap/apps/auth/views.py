@@ -70,6 +70,12 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin,
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+    def list(self, request, *args, **kwargs):
+        if request.query_params.get('ids') is '':
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        return super(UserViewSet, self).list(request, *args, **kwargs)
+
     @list_route(methods=['get'])
     def friends(self, request, pk=None):
         # TODO: Handle when the user doesn't exist.

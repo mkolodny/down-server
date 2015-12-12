@@ -194,6 +194,11 @@ class UserTests(APITestCase):
         json_users = JSONRenderer().render(serializer.data)
         self.assertEqual(response.content, json_users)
 
+    def test_query_by_ids_no_ids(self):
+        url = '{list_url}?ids='.format(list_url=self.list_url)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_get_username_unique(self):
         url = reverse('user-username-detail', kwargs={'username': 'tpain'})
         response = self.client.get(url)
