@@ -2,13 +2,17 @@ from __future__ import unicode_literals
 import json
 import random
 import string
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    PermissionsMixin,
+    UserManager,
+)
 from django.contrib.gis.db import models
 from jsonfield import JSONField
 from phonenumber_field.modelfields import PhoneNumberField
 
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(null=True, blank=True)
     name = models.TextField(null=True, blank=True)
     # Users who were added from contacts don't have first/last names.
@@ -27,12 +31,19 @@ class User(AbstractBaseUser):
     updated_at = models.DateTimeField(auto_now=True)
     points = models.IntegerField(default=100)
     is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     last_post_notification = models.DateTimeField(null=True, blank=True)
 
+    objects = UserManager()
+
     USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email']
 
     def __unicode__(self):
         return unicode(self.name) or ''
+
+    def get_short_name():
+        return self.first_name
 
 
 def default_auth_code():

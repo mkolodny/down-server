@@ -73,7 +73,10 @@ TEMPLATE_DIRS = (
 
 # Auth
 AUTH_USER_MODEL = 'down_auth.User'
-AUTHENTICATION_BACKENDS = ('rallytap.apps.auth.backends.UserInstanceBackend',)
+AUTHENTICATION_BACKENDS = (
+    'rallytap.apps.auth.backends.UserInstanceBackend',
+    'django.contrib.auth.backends.ModelBackend',
+)
 PASSWORD_HASHERS = ('django.contrib.auth.hashers.SHA1PasswordHasher',)
 
 # Logging
