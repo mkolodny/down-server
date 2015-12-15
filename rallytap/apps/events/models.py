@@ -7,11 +7,17 @@ class Place(models.Model):
     name = models.TextField()
     geo = models.PointField(null=True, blank=True)
 
+    def __unicode__(self):
+        return unicode(self.name)
+
 
 class RecommendedEvent(models.Model):
     title = models.TextField()
     datetime = models.DateTimeField(null=True, blank=True)
     place = models.ForeignKey(Place, null=True, blank=True)
+
+    def __unicode__(self):
+        return unicode(self.title)
 
 
 class Event(models.Model):
@@ -27,6 +33,9 @@ class Event(models.Model):
     recommended_event = models.ForeignKey(RecommendedEvent, null=True,
                                           blank=True)
 
+    def __unicode__(self):
+        return unicode(self.title)
+
 
 class SavedEvent(models.Model):
     user = models.ForeignKey(User)
@@ -38,3 +47,6 @@ class SavedEvent(models.Model):
 
     class Meta:
         unique_together = ('user', 'event')
+
+    def __unicode__(self):
+        return unicode(self.event.title)

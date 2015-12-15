@@ -11,3 +11,7 @@ class Friendship(models.Model):
 
     class Meta:
         unique_together = ('user', 'friend')
+
+    def __unicode__(self):
+        return '{user} -> {friend}'.format(user=unicode(self.user.name),
+                                           friend=unicode(self.friend.name))

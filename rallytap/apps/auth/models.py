@@ -55,11 +55,17 @@ class AuthCode(models.Model):
     code = models.TextField(default=default_auth_code)
     phone = PhoneNumberField(unique=True)
 
+    def __unicode__(self):
+        return unicode(self.phone)
+
 
 class UserPhone(models.Model):
     user = models.ForeignKey(User)
     phone = PhoneNumberField(unique=True)
     bulk_ref = models.TextField(null=True, blank=True, db_index=True)
+
+    def __unicode__(self):
+        return unicode(self.user.name)
 
 
 class SocialAccount(models.Model):
@@ -77,6 +83,9 @@ class SocialAccount(models.Model):
     class Meta:
         unique_together = ('provider', 'uid')
 
+    def __unicode__(self):
+        return unicode(self.user.name)
+
 
 class Points(object):
     SAVED_EVENT = 1
@@ -86,6 +95,9 @@ class Points(object):
 class LinfootFunnel(models.Model):
     phone = PhoneNumberField(unique=True)
     date_created = models.DateTimeField(auto_now_add=True)
+
+    def __unicode__(self):
+        return unicode(self.phone)
 
 
 class FellowshipApplication(models.Model):
